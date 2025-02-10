@@ -241,11 +241,11 @@ Lexer::GetMatchingTokens(const std::string& str, std::size_t line)
 			matches.emplace_back(std::make_tuple(
 				static_cast<t_symbol_id>(Token::TYPESEP), str, line));
 		}
-		else if(str == ";")
+		/*else if(str == ";")
 		{
 			matches.emplace_back(std::make_tuple(
 				static_cast<t_symbol_id>(Token::ENDSTMT), str, line));
-		}
+		}*/
 
 		// tokens represented by themselves
 		else if(str == "+" || str == "-" || str == "*" || str == "/" ||
@@ -253,7 +253,7 @@ Lexer::GetMatchingTokens(const std::string& str, std::size_t line)
 			str == "[" || str == "]" ||
 			str == "," || str == "=" || str == "'" ||
 			str == ">" || str == "<" || str == ":" ||
-			str == "!" || str == "|" || str == "&")
+			str == "#" || str == "|" || str == "&")
 			matches.emplace_back(std::make_tuple(
 				static_cast<t_symbol_id>(str[0]), std::nullopt, line));
 	}

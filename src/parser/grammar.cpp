@@ -49,7 +49,7 @@ void Grammar::CreateGrammar()
 	op_xor = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::XOR), "xor");
 	op_gt = std::make_shared<lalr1::Terminal>('>', ">");
 	op_lt = std::make_shared<lalr1::Terminal>('<', "<");
-	op_not = std::make_shared<lalr1::Terminal>('!', "!");
+	op_not = std::make_shared<lalr1::Terminal>('!', "#");
 
 	bracket_open = std::make_shared<lalr1::Terminal>('(', "(");
 	bracket_close = std::make_shared<lalr1::Terminal>(')', ")");
@@ -58,7 +58,7 @@ void Grammar::CreateGrammar()
 	range = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::RANGE), "~");
 
 	comma = std::make_shared<lalr1::Terminal>(',', ",");
-	stmt_end = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::ENDSTMT), "stmt_end");
+	//stmt_end = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::ENDSTMT), "stmt_end");
 
 	sym_real = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::REAL), "real");
 	sym_int = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::INT), "integer");
@@ -85,49 +85,53 @@ void Grammar::CreateGrammar()
 	keyword_break = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::BREAK), "break");
 	keyword_assign = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::ASSIGN), "assign");
 
-
-	// operator precedences and associativities
-	// see: https://en.wikipedia.org/wiki/Order_of_operations
-	comma->SetPrecedence(5, 'l');
-	op_assign->SetPrecedence(10, 'r');
-
-	op_xor->SetPrecedence(20, 'l');
-	op_or->SetPrecedence(21, 'l');
-	op_and->SetPrecedence(22, 'l');
-
-	op_lt->SetPrecedence(30, 'l');
-	op_gt->SetPrecedence(30, 'l');
-
-	op_geq->SetPrecedence(30, 'l');
-	op_leq->SetPrecedence(30, 'l');
-
-	op_equ->SetPrecedence(40, 'l');
-	op_neq->SetPrecedence(40, 'l');
-
-	op_plus->SetPrecedence(50, 'l');
-	op_minus->SetPrecedence(50, 'l');
-
-	op_mult->SetPrecedence(60, 'l');
-	op_div->SetPrecedence(60, 'l');
-	op_mod->SetPrecedence(60, 'l');
-
-	op_not->SetPrecedence(70, 'l');
-	// TODO: unary_ops->SetPrecedence(75, 'r');
-
-	op_pow->SetPrecedence(80, 'r');
-
-	bracket_open->SetPrecedence(90, 'l');
-	array_begin->SetPrecedence(90, 'l');
-	op_norm->SetPrecedence(90, 'l');
-	op_trans->SetPrecedence(90, 'r');
-
-	// for the if/else r/s conflict shift "else"
+	// for the if/else s/r conflict shift "else"
 	// see: https://www.gnu.org/software/bison/manual/html_node/Non-Operators.html
 	keyword_if->SetPrecedence(100, 'l');
 	keyword_then->SetPrecedence(100, 'l');
 	keyword_else->SetPrecedence(110, 'l');
 	ident->SetPrecedence(120, 'l');
 	keyword_func->SetPrecedence(0, 'l');
+
+	// s/r conflict because of missing statement end tokens
+	keyword_break->SetPrecedence(200, 'l');
+	keyword_next->SetPrecedence(200, 'l');
+	sym_int->SetPrecedence(210, 'l');
+
+	// operator precedences and associativities
+	// see: https://en.wikipedia.org/wiki/Order_of_operations
+	comma->SetPrecedence(305, 'l');
+	op_assign->SetPrecedence(310, 'r');
+
+	op_xor->SetPrecedence(320, 'l');
+	op_or->SetPrecedence(321, 'l');
+	op_and->SetPrecedence(322, 'l');
+
+	op_lt->SetPrecedence(330, 'l');
+	op_gt->SetPrecedence(330, 'l');
+
+	op_geq->SetPrecedence(330, 'l');
+	op_leq->SetPrecedence(330, 'l');
+
+	op_equ->SetPrecedence(340, 'l');
+	op_neq->SetPrecedence(340, 'l');
+
+	op_plus->SetPrecedence(350, 'l');
+	op_minus->SetPrecedence(350, 'l');
+
+	op_mult->SetPrecedence(360, 'l');
+	op_div->SetPrecedence(360, 'l');
+	op_mod->SetPrecedence(360, 'l');
+
+	op_not->SetPrecedence(370, 'l');
+	// TODO: unary_ops->SetPrecedence(75, 'r');
+
+	op_pow->SetPrecedence(380, 'r');
+
+	bracket_open->SetPrecedence(390, 'l');
+	array_begin->SetPrecedence(390, 'l');
+	op_norm->SetPrecedence(390, 'l');
+	op_trans->SetPrecedence(390, 'r');
 #endif
 
 	// rule semantic id number
@@ -268,7 +272,7 @@ void Grammar::CreateGrammar()
 	// --------------------------------------------------------------------------------
 	// statement -> expression ;
 #ifdef CREATE_PRODUCTION_RULES
-	statement->AddRule({ expression , stmt_end }, semanticindex);
+	statement->AddRule({ expression/*, stmt_end*/ }, semanticindex);
 #endif
 #ifdef CREATE_SEMANTIC_RULES
 	rules.emplace(std::make_pair(semanticindex,
@@ -298,7 +302,7 @@ void Grammar::CreateGrammar()
 
 	// (multi-)return
 #ifdef CREATE_PRODUCTION_RULES
-	statement->AddRule({ keyword_ret, expressions, stmt_end }, semanticindex);
+	statement->AddRule({ keyword_ret, expressions/*, stmt_end*/ }, semanticindex);
 #endif
 #ifdef CREATE_SEMANTIC_RULES
 	rules.emplace(std::make_pair(semanticindex,
@@ -314,7 +318,7 @@ void Grammar::CreateGrammar()
 
 	// real declaration
 #ifdef CREATE_PRODUCTION_RULES
-	statement->AddRule({ real_decl, type_sep, variables, stmt_end }, semanticindex);
+	statement->AddRule({ real_decl, type_sep, variables/*, stmt_end*/ }, semanticindex);
 #endif
 #ifdef CREATE_SEMANTIC_RULES
 	rules.emplace(std::make_pair(semanticindex,
@@ -332,7 +336,7 @@ void Grammar::CreateGrammar()
 
 	// vector declaration
 #ifdef CREATE_PRODUCTION_RULES
-	statement->AddRule({ vec_decl, type_sep, sym_int, variables, stmt_end }, semanticindex);
+	statement->AddRule({ vec_decl, type_sep, sym_int, variables/*, stmt_end*/ }, semanticindex);
 #endif
 #ifdef CREATE_SEMANTIC_RULES
 	rules.emplace(std::make_pair(semanticindex,
@@ -356,7 +360,7 @@ void Grammar::CreateGrammar()
 
 	// matrix declaration
 #ifdef CREATE_PRODUCTION_RULES
-	statement->AddRule({ mat_decl, type_sep, sym_int, sym_int, variables, stmt_end }, semanticindex);
+	statement->AddRule({ mat_decl, type_sep, sym_int, sym_int, variables/*, stmt_end*/ }, semanticindex);
 #endif
 #ifdef CREATE_SEMANTIC_RULES
 	rules.emplace(std::make_pair(semanticindex,
@@ -383,7 +387,7 @@ void Grammar::CreateGrammar()
 
 	// string declaration with default size
 #ifdef CREATE_PRODUCTION_RULES
-	statement->AddRule({ str_decl, type_sep, variables, stmt_end }, semanticindex);
+	statement->AddRule({ str_decl, type_sep, variables/*, stmt_end*/ }, semanticindex);
 #endif
 #ifdef CREATE_SEMANTIC_RULES
 	rules.emplace(std::make_pair(semanticindex,
@@ -404,7 +408,7 @@ void Grammar::CreateGrammar()
 
 	// string declaration with given static size
 #ifdef CREATE_PRODUCTION_RULES
-	statement->AddRule({ str_decl, type_sep, sym_int, variables, stmt_end }, semanticindex);
+	statement->AddRule({ str_decl, type_sep, sym_int, variables/*, stmt_end*/ }, semanticindex);
 #endif
 #ifdef CREATE_SEMANTIC_RULES
 	rules.emplace(std::make_pair(semanticindex,
@@ -428,7 +432,7 @@ void Grammar::CreateGrammar()
 
 	// int declaration
 #ifdef CREATE_PRODUCTION_RULES
-	statement->AddRule({ int_decl, type_sep, variables, stmt_end }, semanticindex);
+	statement->AddRule({ int_decl, type_sep, variables/*, stmt_end*/ }, semanticindex);
 #endif
 #ifdef CREATE_SEMANTIC_RULES
 	rules.emplace(std::make_pair(semanticindex,
@@ -498,7 +502,7 @@ void Grammar::CreateGrammar()
 
 	// break current loop
 #ifdef CREATE_PRODUCTION_RULES
-	statement->AddRule({ keyword_break, stmt_end }, semanticindex);
+	statement->AddRule({ keyword_break/*, stmt_end*/ }, semanticindex);
 #endif
 #ifdef CREATE_SEMANTIC_RULES
 	rules.emplace(std::make_pair(semanticindex,
@@ -513,7 +517,7 @@ void Grammar::CreateGrammar()
 
 	// break multiple loops
 #ifdef CREATE_PRODUCTION_RULES
-	statement->AddRule({ keyword_break, sym_int, stmt_end }, semanticindex);
+	statement->AddRule({ keyword_break, sym_int/*, stmt_end*/ }, semanticindex);
 #endif
 #ifdef CREATE_SEMANTIC_RULES
 	rules.emplace(std::make_pair(semanticindex,
@@ -531,7 +535,7 @@ void Grammar::CreateGrammar()
 
 	// continue current loop
 #ifdef CREATE_PRODUCTION_RULES
-	statement->AddRule({ keyword_next, stmt_end }, semanticindex);
+	statement->AddRule({ keyword_next/*, stmt_end*/ }, semanticindex);
 #endif
 #ifdef CREATE_SEMANTIC_RULES
 	rules.emplace(std::make_pair(semanticindex,
@@ -546,7 +550,7 @@ void Grammar::CreateGrammar()
 
 	// continue multiple loops
 #ifdef CREATE_PRODUCTION_RULES
-	statement->AddRule({ keyword_next, sym_int, stmt_end }, semanticindex);
+	statement->AddRule({ keyword_next, sym_int/*, stmt_end*/ }, semanticindex);
 #endif
 #ifdef CREATE_SEMANTIC_RULES
 	rules.emplace(std::make_pair(semanticindex,

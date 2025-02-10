@@ -1,11 +1,9 @@
 /**
- * matrix expression compiler generator example
+ * muF compiler generator
  * @author Tobias Weber (orcid: 0000-0002-7230-1932)
  * @date dec-2022
  * @license see 'LICENSE' file
  */
-
-// g++ -I.. -std=c++20 -o parsergen parsergen.cpp grammar.cpp -llalr1 -lboost_program_options
 
 #include "grammar.h"
 #include "lalr1/collection.h"
@@ -101,7 +99,7 @@ static bool lalr1_create_parser(
 		if(verbose)
 			std::cout << "\n\n" << (*collsLALR) << std::endl;
 		if(write_graph)
-			collsLALR->SaveGraph("matrix_calc_lalr", 1);
+			collsLALR->SaveGraph("muf_lalr", 1);
 
 		if(create_ascent_parser)
 		{
@@ -126,7 +124,7 @@ static bool lalr1_create_parser(
 
 			if(tabgen.CreateParseTables())
 			{
-				const char* lalr_tables = "matrix_calc.tab";
+				const char* lalr_tables = "muf_parser.tab";
 				tables_ok = TableExport::SaveParseTables(tabgen, lalr_tables);
 				std::cout << "Created LALR(1) tables \""
 					<< lalr_tables << "\"." << std::endl;
@@ -189,7 +187,7 @@ int main(int argc, char** argv)
 
 	if(show_help)
 	{
-		std::cout << "Matrix expression parser generator"
+		std::cout << "MicroF parser generator"
 			<< " by Tobias Weber <tobias.weber@tum.de>, 2022."
 			<< std::endl;
 		std::cout << "Internal data type lengths:"

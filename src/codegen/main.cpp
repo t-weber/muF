@@ -19,7 +19,7 @@
 	#include "parser.h"
 #else
 	#include "lalr1/parser.h"
-	#include "matrix_calc.tab"
+	#include "muf_parser.tab"
 #endif
 
 

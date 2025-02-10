@@ -64,7 +64,7 @@ enum class Token : lalr1::t_symbol_id
 	NEXT        = 6003,
 
 	END         = 6010,
-	ENDSTMT     = 6011,
+	//ENDSTMT     = 6011,
 
 	// functions
 	FUNC        = 7000,
