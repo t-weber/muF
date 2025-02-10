@@ -226,6 +226,13 @@ t_astret ZeroACAsm::visit(const ASTAssign* ast)
 
 	return sym_ret;
 }
+
+
+t_astret ZeroACAsm::visit([[maybe_unused]] const ASTVarRange* ast)
+{
+	// handled in ranged loop
+	return nullptr;
+}
 // ----------------------------------------------------------------------------
 
 

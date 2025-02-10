@@ -38,12 +38,14 @@ class ASTFunc;
 class ASTReturn;
 class ASTCall;
 class ASTAssign;
+class ASTVarRange;
 class ASTArrayAssign;
 class ASTArrayAccess;
 class ASTComp;
 class ASTBool;
 class ASTCond;
 class ASTLoop;
+class ASTRangedLoop;
 class ASTLoopBreak;
 class ASTLoopNext;
 class ASTExprList;
@@ -69,12 +71,14 @@ enum class ASTType
 	Return,
 	Call,
 	Assign,
+	VarRange,
 	ArrayAssign,
 	ArrayAccess,
 	Comp,
 	Bool,
 	Cond,
 	Loop,
+	RangedLoop,
 	LoopBreak,
 	LoopNext,
 	ExprList,
@@ -105,6 +109,7 @@ public:
 	virtual t_astret visit(const ASTVarDecl* ast) = 0;
 	virtual t_astret visit(const ASTVar* ast) = 0;
 	virtual t_astret visit(const ASTAssign* ast) = 0;
+	virtual t_astret visit(const ASTVarRange* ast) = 0;
 
 	virtual t_astret visit(const ASTArrayAssign* ast) = 0;
 	virtual t_astret visit(const ASTArrayAccess* ast) = 0;
@@ -120,6 +125,7 @@ public:
 
 	virtual t_astret visit(const ASTCond* ast) = 0;
 	virtual t_astret visit(const ASTLoop* ast) = 0;
+	virtual t_astret visit(const ASTRangedLoop* ast) = 0;
 	virtual t_astret visit(const ASTLoopBreak* ast) = 0;
 	virtual t_astret visit(const ASTLoopNext* ast) = 0;
 
@@ -555,6 +561,29 @@ private:
 };
 
 
+class ASTVarRange : public ASTAcceptor<ASTVarRange>
+{
+public:
+	ASTVarRange()
+	{}
+
+	ASTVarRange(const t_str& ident, ASTPtr begin, ASTPtr end, ASTPtr inc = nullptr)
+		: ident{ident}, begin{begin}, end{end}, inc{inc}
+	{}
+
+	const t_str& GetIdent() const { return ident; }
+	const ASTPtr GetBegin() const { return begin; }
+	const ASTPtr GetEnd() const { return end; }
+	const ASTPtr GetInc() const { return inc; }
+
+	virtual ASTType type() override { return ASTType::VarRange; }
+
+private:
+	t_str ident{};
+	ASTPtr begin{}, end{}, inc{};
+};
+
+
 class ASTComp : public ASTAcceptor<ASTComp>
 {
 public:
@@ -652,6 +681,24 @@ public:
 
 private:
 	ASTPtr cond{}, stmt{};
+};
+
+
+class ASTRangedLoop : public ASTAcceptor<ASTRangedLoop>
+{
+public:
+	ASTRangedLoop(std::shared_ptr<ASTVarRange> range, ASTPtr stmt)
+		: range{range}, stmt{stmt}
+	{}
+
+	const std::shared_ptr<ASTVarRange> GetRange() const { return range; }
+	const ASTPtr GetLoopStmt() const { return stmt; }
+
+	virtual ASTType type() override { return ASTType::RangedLoop; }
+
+private:
+	std::shared_ptr<ASTVarRange> range{};
+	ASTPtr stmt{};
 };
 
 

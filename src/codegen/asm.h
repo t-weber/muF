@@ -40,6 +40,7 @@ public:
 	virtual t_astret visit(const ASTVarDecl* ast) override;
 	virtual t_astret visit(const ASTVar* ast) override;
 	virtual t_astret visit(const ASTAssign* ast) override;
+	virtual t_astret visit(const ASTVarRange* ast) override;
 
 	virtual t_astret visit(const ASTArrayAccess* ast) override;
 	virtual t_astret visit(const ASTArrayAssign* ast) override;
@@ -55,6 +56,7 @@ public:
 
 	virtual t_astret visit(const ASTCond* ast) override;
 	virtual t_astret visit(const ASTLoop* ast) override;
+	virtual t_astret visit(const ASTRangedLoop* ast) override;
 	virtual t_astret visit(const ASTLoopBreak* ast) override;
 	virtual t_astret visit(const ASTLoopNext* ast) override;
 
@@ -129,6 +131,7 @@ private:
 	std::vector<std::tuple<std::streampos, std::streampos>> m_const_addrs{};
 
 	// currently active loops in function
+	std::size_t m_loop_ident{0};  // loop unique ident counter
 	std::vector<std::size_t> m_cur_loop{};
 	std::unordered_multimap<std::size_t, std::streampos>
 		m_loop_begin_comefroms{}, m_loop_end_comefroms{};

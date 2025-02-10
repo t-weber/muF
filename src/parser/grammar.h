@@ -39,6 +39,8 @@ enum : std::size_t
 
 	TYPEDECL,
 	OPT_ASSIGN,
+
+	VAR_RANGE,
 };
 
 
@@ -86,7 +88,8 @@ private:
 		identlist{}, typelist{},
 		function{},
 		typedecl{},
-		opt_assign{};
+		opt_assign{},
+		var_range{};
 
 	// terminals
 	lalr1::TerminalPtr op_assign{}, op_plus{}, op_minus{},

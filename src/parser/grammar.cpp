@@ -28,6 +28,7 @@ void Grammar::CreateGrammar()
 	function = std::make_shared<lalr1::NonTerminal>(FUNCTION, "function");
 	typedecl = std::make_shared<lalr1::NonTerminal>(TYPEDECL, "typedecl");
 	opt_assign = std::make_shared<lalr1::NonTerminal>(OPT_ASSIGN, "opt_assign");
+	var_range = std::make_shared<lalr1::NonTerminal>(VAR_RANGE, "var_range");
 
 	// terminals
 	op_assign = std::make_shared<lalr1::Terminal>('=', "=");
@@ -483,7 +484,7 @@ void Grammar::CreateGrammar()
 #endif
 	++semanticindex;
 
-	// while loop
+	// do while loop
 #ifdef CREATE_PRODUCTION_RULES
 	statement->AddRule({ keyword_do, keyword_while, bracket_open, expression, bracket_close, statements, keyword_end, keyword_do }, semanticindex);
 #endif
@@ -496,6 +497,68 @@ void Grammar::CreateGrammar()
 		auto cond = std::dynamic_pointer_cast<AST>(args[3]);
 		auto stmt = std::dynamic_pointer_cast<AST>(args[5]);
 		return std::make_shared<ASTLoop>(cond, stmt);
+	}));
+#endif
+	++semanticindex;
+
+	// ranged do loop
+#ifdef CREATE_PRODUCTION_RULES
+	statement->AddRule({ keyword_do, var_range, statements, keyword_end, keyword_do }, semanticindex);
+#endif
+#ifdef CREATE_SEMANTIC_RULES
+	rules.emplace(std::make_pair(semanticindex,
+	[](bool full_match, const lalr1::t_semanticargs& args, [[maybe_unused]] lalr1::t_astbaseptr retval) -> lalr1::t_astbaseptr
+	{
+		if(!full_match)
+			return nullptr;
+		auto range = std::dynamic_pointer_cast<ASTVarRange>(args[1]);
+		auto stmt = std::dynamic_pointer_cast<AST>(args[2]);
+		return std::make_shared<ASTRangedLoop>(range, stmt);
+	}));
+#endif
+	++semanticindex;
+
+	// variable range (for do loops)
+#ifdef CREATE_PRODUCTION_RULES
+	var_range->AddRule({ ident, op_assign, expression, comma, expression }, semanticindex);
+#endif
+#ifdef CREATE_SEMANTIC_RULES
+	rules.emplace(std::make_pair(semanticindex,
+	[](bool full_match, const lalr1::t_semanticargs& args, [[maybe_unused]] lalr1::t_astbaseptr retval) -> lalr1::t_astbaseptr
+	{
+		if(!full_match)
+			return nullptr;
+
+		auto identnode = std::dynamic_pointer_cast<ASTStrConst>(args[0]);
+		const t_str& ident = identnode->GetVal();
+
+		auto begin = std::dynamic_pointer_cast<AST>(args[2]);
+		auto end = std::dynamic_pointer_cast<AST>(args[4]);
+
+		return std::make_shared<ASTVarRange>(ident, begin, end);
+	}));
+#endif
+	++semanticindex;
+
+	// variable range with increment (for loops)
+#ifdef CREATE_PRODUCTION_RULES
+	var_range->AddRule({ ident, op_assign, expression, comma, expression, comma, expression }, semanticindex);
+#endif
+#ifdef CREATE_SEMANTIC_RULES
+	rules.emplace(std::make_pair(semanticindex,
+	[](bool full_match, const lalr1::t_semanticargs& args, [[maybe_unused]] lalr1::t_astbaseptr retval) -> lalr1::t_astbaseptr
+	{
+		if(!full_match)
+			return nullptr;
+
+		auto identnode = std::dynamic_pointer_cast<ASTStrConst>(args[0]);
+		const t_str& ident = identnode->GetVal();
+
+		auto begin = std::dynamic_pointer_cast<AST>(args[2]);
+		auto end = std::dynamic_pointer_cast<AST>(args[4]);
+		auto inc = std::dynamic_pointer_cast<AST>(args[6]);
+
+		return std::make_shared<ASTVarRange>(ident, begin, end, inc);
 	}));
 #endif
 	++semanticindex;

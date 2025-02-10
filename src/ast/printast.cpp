@@ -255,6 +255,33 @@ t_astret ASTPrinter::visit(const ASTAssign* ast)
 }
 
 
+t_astret ASTPrinter::visit(const ASTVarRange* ast)
+{
+	(*m_ostr) << "<VarRange ident=\"" << ast->GetIdent() << "\">\n";
+	if(ast->GetBegin())
+	{
+		(*m_ostr) << "<begin>\n";
+		ast->GetBegin()->accept(this);
+		(*m_ostr) << "</begin>\n";
+	}
+	if(ast->GetEnd())
+	{
+		(*m_ostr) << "<end>\n";
+		ast->GetEnd()->accept(this);
+		(*m_ostr) << "</end>\n";
+	}
+	if(ast->GetInc())
+	{
+		(*m_ostr) << "<inc>\n";
+		ast->GetInc()->accept(this);
+		(*m_ostr) << "</inc>\n";
+	}
+	(*m_ostr) << "</VarRange>\n";
+
+	return nullptr;
+}
+
+
 t_astret ASTPrinter::visit(const ASTArrayAccess* ast)
 {
 	(*m_ostr) << "<ArrayAccess"
@@ -423,6 +450,24 @@ t_astret ASTPrinter::visit(const ASTLoop* ast)
 	(*m_ostr) << "</stmt>\n";
 
 	(*m_ostr) << "</Loop>\n";
+
+	return nullptr;
+}
+
+
+t_astret ASTPrinter::visit(const ASTRangedLoop* ast)
+{
+	(*m_ostr) << "<RangedLoop>\n";
+
+	(*m_ostr) << "<range>\n";
+	ast->GetRange()->accept(this);
+	(*m_ostr) << "</range>\n";
+
+	(*m_ostr) << "<stmt>\n";
+	ast->GetLoopStmt()->accept(this);
+	(*m_ostr) << "</stmt>\n";
+
+	(*m_ostr) << "</RangedLoop>\n";
 
 	return nullptr;
 }

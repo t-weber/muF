@@ -31,6 +31,7 @@ public:
 	virtual t_astret visit(const ASTVarDecl* ast) override;
 	virtual t_astret visit(const ASTVar* ast) override;
 	virtual t_astret visit(const ASTAssign* ast) override;
+	virtual t_astret visit(const ASTVarRange* ast) override;
 
 	virtual t_astret visit(const ASTArrayAccess* ast) override;
 	virtual t_astret visit(const ASTArrayAssign* ast) override;
@@ -46,6 +47,7 @@ public:
 
 	virtual t_astret visit(const ASTCond* ast) override;
 	virtual t_astret visit(const ASTLoop* ast) override;
+	virtual t_astret visit(const ASTRangedLoop* ast) override;
 	virtual t_astret visit(const ASTLoopBreak* ast) override;
 	virtual t_astret visit(const ASTLoopNext* ast) override;
 

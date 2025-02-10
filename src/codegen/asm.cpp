@@ -239,8 +239,7 @@ t_astret ZeroACAsm::visit(const ASTCond* ast)
 
 t_astret ZeroACAsm::visit(const ASTLoop* ast)
 {
-	static std::size_t loop_ident = 0;
-	++loop_ident;
+	std::size_t loop_ident = ++m_loop_ident;
 	m_cur_loop.push_back(loop_ident);
 
 	std::streampos loop_begin = m_ostr->tellp();
@@ -252,6 +251,7 @@ t_astret ZeroACAsm::visit(const ASTLoop* ast)
 	t_vm_addr skip = 0;
 	std::streampos skip_addr = 0;
 
+	// negate loop condition
 	m_ostr->put(static_cast<t_vm_byte>(OpCode::NOT));
 
 	m_ostr->put(static_cast<t_vm_byte>(OpCode::PUSH));      // push jump address
@@ -261,9 +261,160 @@ t_astret ZeroACAsm::visit(const ASTLoop* ast)
 		vm_type_size<VMType::ADDR_IP, false>);
 	m_ostr->put(static_cast<t_vm_byte>(OpCode::JMPCND));
 
+	// loop statement block
 	std::streampos before_block = m_ostr->tellp();
 	// loop statements
 	ast->GetLoopStmt()->accept(this);
+
+	// loop back
+	m_ostr->put(static_cast<t_vm_byte>(OpCode::PUSH));      // push jump address
+	m_ostr->put(static_cast<t_vm_byte>(VMType::ADDR_IP));
+	std::streampos after_block = m_ostr->tellp();
+	skip = after_block - before_block;
+	t_vm_addr skip_back = loop_begin - after_block;
+	skip_back -= vm_type_size<VMType::ADDR_IP, true>;
+	m_ostr->write(reinterpret_cast<const char*>(&skip_back),
+		vm_type_size<VMType::ADDR_IP, false>);
+	m_ostr->put(static_cast<t_vm_byte>(OpCode::JMP));
+
+	// go back and fill in missing number of bytes to skip
+	after_block = m_ostr->tellp();
+	skip = after_block - before_block;
+	m_ostr->seekp(skip_addr);
+	m_ostr->write(reinterpret_cast<const char*>(&skip),
+		vm_type_size<VMType::ADDR_IP, false>);
+
+	// fill in any saved, unset start-of-loop jump addresses (continues)
+	while(true)
+	{
+		auto iter = m_loop_begin_comefroms.find(loop_ident);
+		if(iter == m_loop_begin_comefroms.end())
+			break;
+
+		std::streampos pos = iter->second;
+		m_loop_begin_comefroms.erase(iter);
+
+		t_vm_addr to_skip = loop_begin - pos;
+		// already skipped over address and jmp instruction
+		to_skip -= vm_type_size<VMType::ADDR_IP, true>;
+		m_ostr->seekp(pos);
+		m_ostr->write(reinterpret_cast<const char*>(&to_skip),
+			vm_type_size<VMType::ADDR_IP, false>);
+	}
+
+	// fill in any saved, unset end-of-loop jump addresses (breaks)
+	while(true)
+	{
+		auto iter = m_loop_end_comefroms.find(loop_ident);
+		if(iter == m_loop_end_comefroms.end())
+			break;
+
+		std::streampos pos = iter->second;
+		m_loop_end_comefroms.erase(iter);
+
+		t_vm_addr to_skip = after_block - pos;
+		// already skipped over address and jmp instruction
+		to_skip -= vm_type_size<VMType::ADDR_IP, true>;
+		m_ostr->seekp(pos);
+		m_ostr->write(reinterpret_cast<const char*>(&to_skip),
+			vm_type_size<VMType::ADDR_IP, false>);
+	}
+
+	// go to end of stream
+	m_ostr->seekp(0, std::ios_base::end);
+	m_cur_loop.pop_back();
+
+	return nullptr;
+}
+
+
+t_astret ZeroACAsm::visit(const ASTRangedLoop* ast)
+{
+	// --------------------------------------------------------------------
+	// assign initial counter variable
+	const std::string& ctrvar_ident = ast->GetRange()->GetIdent();
+
+	// expression for the counter's initial value
+	ast->GetRange()->GetBegin()->accept(this);
+
+	t_astret ctr_sym = GetSym(ctrvar_ident);
+	if(!ctr_sym)
+		throw std::runtime_error("ASTRangedLoop: Counter variable \"" + ctrvar_ident + "\" is not in symbol table.");
+	if(!ctr_sym->addr)
+		throw std::runtime_error("ASTRangedLoop: Counter variable \"" + ctrvar_ident + "\" has not been declared.");
+
+	CastTo(ctr_sym, std::nullopt, true);
+	AssignVar(ctr_sym);
+	// --------------------------------------------------------------------
+
+	// start loop
+	std::size_t loop_ident = ++m_loop_ident;
+	m_cur_loop.push_back(loop_ident);
+
+	std::streampos loop_begin = m_ostr->tellp();
+
+	// --------------------------------------------------------------------
+	// loop condition: check if the counter is smaller than the end value
+	// push counter variable address
+	m_ostr->put(static_cast<t_vm_byte>(OpCode::PUSH));
+	m_ostr->put(static_cast<t_vm_byte>(
+		ctr_sym->is_global ? VMType::ADDR_GBP : VMType::ADDR_BP));
+	t_vm_addr addr = static_cast<t_vm_addr>(*ctr_sym->addr);
+	m_ostr->write(reinterpret_cast<const char*>(&addr),
+		vm_type_size<VMType::ADDR_BP, false>);
+	// dereference counter variable
+	m_ostr->put(static_cast<t_vm_byte>(OpCode::RDMEM));
+
+	// end value
+	ast->GetRange()->GetEnd()->accept(this);
+
+	// ctr <= end ?
+	m_ostr->put(static_cast<t_vm_byte>(OpCode::LEQU));
+	// --------------------------------------------------------------------
+
+	// how many bytes to skip to jump to end of the block?
+	t_vm_addr skip = 0;
+	std::streampos skip_addr = 0;
+
+	// negate loop condition
+	m_ostr->put(static_cast<t_vm_byte>(OpCode::NOT));
+
+	m_ostr->put(static_cast<t_vm_byte>(OpCode::PUSH));      // push jump address
+	m_ostr->put(static_cast<t_vm_byte>(VMType::ADDR_IP));
+	skip_addr = m_ostr->tellp();
+	m_ostr->write(reinterpret_cast<const char*>(&skip),
+		vm_type_size<VMType::ADDR_IP, false>);
+	m_ostr->put(static_cast<t_vm_byte>(OpCode::JMPCND));
+
+	// --------------------------------------------------------------------
+	// loop statement block
+	std::streampos before_block = m_ostr->tellp();
+	// loop statements
+	ast->GetLoopStmt()->accept(this);
+	// --------------------------------------------------------------------
+
+	// --------------------------------------------------------------------
+	// increment counter
+	if(ast->GetRange()->GetInc())
+		ast->GetRange()->GetInc()->accept(this);
+	// increment by 1 if nothing is given
+	else
+		PushIntConst(1);
+
+	// push counter variable address
+	m_ostr->put(static_cast<t_vm_byte>(OpCode::PUSH));
+	m_ostr->put(static_cast<t_vm_byte>(
+		ctr_sym->is_global ? VMType::ADDR_GBP : VMType::ADDR_BP));
+	m_ostr->write(reinterpret_cast<const char*>(&addr),
+		vm_type_size<VMType::ADDR_BP, false>);
+	// dereference counter variable
+	m_ostr->put(static_cast<t_vm_byte>(OpCode::RDMEM));
+
+	// add counter and increment and re-assign to counter
+	// TODO: casts
+	m_ostr->put(static_cast<t_vm_byte>(OpCode::ADD));
+	AssignVar(ctr_sym);
+	// --------------------------------------------------------------------
 
 	// loop back
 	m_ostr->put(static_cast<t_vm_byte>(OpCode::PUSH));      // push jump address

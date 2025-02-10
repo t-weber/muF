@@ -150,6 +150,17 @@ t_astret Semantics::visit(const ASTAssign* ast)
 }
 
 
+t_astret Semantics::visit(const ASTVarRange* ast)
+{
+	ast->GetBegin()->accept(this);
+	ast->GetEnd()->accept(this);
+	if(ast->GetInc())
+		ast->GetInc()->accept(this);
+
+	return nullptr;
+}
+
+
 t_astret Semantics::visit(const ASTArrayAccess* ast)
 {
 	ast->GetNum1()->accept(this);
@@ -210,6 +221,15 @@ t_astret Semantics::visit(const ASTBool* ast)
 t_astret Semantics::visit(const ASTLoop* ast)
 {
 	ast->GetCond()->accept(this);
+	ast->GetLoopStmt()->accept(this);
+
+	return nullptr;
+}
+
+
+t_astret Semantics::visit(const ASTRangedLoop* ast)
+{
+	ast->GetRange()->accept(this);
 	ast->GetLoopStmt()->accept(this);
 
 	return nullptr;
