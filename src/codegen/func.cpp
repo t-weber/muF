@@ -235,7 +235,7 @@ t_astret ZeroACAsm::visit(const ASTReturn* ast)
 	t_vm_addr dummy_addr = 0;
 	m_ostr->write(reinterpret_cast<const char*>(&dummy_addr), vm_type_size<VMType::ADDR_IP, false>);
 
-	// jump to end of function
+	// jump to the end of the function
 	m_ostr->put(static_cast<t_vm_byte>(OpCode::JMP));
 
 	return sym_ret;

@@ -16,7 +16,7 @@
 
 
 /**
- * non-terminal identifiers
+ * non-terminal symbol identifiers
  */
 enum : std::size_t
 {
@@ -35,7 +35,6 @@ enum : std::size_t
 	TYPELIST,
 
 	FUNCTION,
-	PROGRAM,
 
 	TYPEDECL,
 	OPT_ASSIGN,
@@ -63,6 +62,7 @@ public:
 			function,
 			typedecl,
 			opt_assign,
+			var_range,
 		}};
 	}
 

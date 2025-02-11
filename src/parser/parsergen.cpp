@@ -124,7 +124,7 @@ static bool lalr1_create_parser(
 
 			if(tabgen.CreateParseTables())
 			{
-				const char* lalr_tables = "muf_parser.tab";
+				const char* lalr_tables = "parser.tab";
 				tables_ok = TableExport::SaveParseTables(tabgen, lalr_tables);
 				std::cout << "Created LALR(1) tables \""
 					<< lalr_tables << "\"." << std::endl;

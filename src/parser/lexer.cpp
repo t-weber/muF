@@ -138,7 +138,7 @@ Lexer::GetMatchingTokens(const std::string& str, std::size_t line)
 			matches.emplace_back(std::make_tuple(
 				static_cast<t_symbol_id>(Token::FUNC), str, line));
 		}
-		else if(str == "ret")
+		else if(str == "return")
 		{
 			matches.emplace_back(std::make_tuple(
 				static_cast<t_symbol_id>(Token::RET), str, line));
@@ -191,55 +191,70 @@ Lexer::GetMatchingTokens(const std::string& str, std::size_t line)
 
 	{
 		// operators
-		if(str == "==")
+		if(str == "==" || str == ".eq.")
 		{
 			matches.emplace_back(std::make_tuple(
 				static_cast<t_symbol_id>(Token::EQU), str, line));
 		}
-		else if(str == "!=" || str == "<>")
+		else if(str == "/=" || str == ".ne.")
 		{
 			matches.emplace_back(std::make_tuple(
 				static_cast<t_symbol_id>(Token::NEQ), str, line));
 		}
-		if(str == "||" || str == "or")
+		else if(str == "||" || str == ".or.")
 		{
 			matches.emplace_back(std::make_tuple(
 				static_cast<t_symbol_id>(Token::OR), str, line));
 		}
-		if(str == "&&" || str == "and")
+		else if(str == "&&" || str == ".and.")
 		{
 			matches.emplace_back(std::make_tuple(
 				static_cast<t_symbol_id>(Token::AND), str, line));
 		}
-		if(str == "xor")
-		{
-			matches.emplace_back(std::make_tuple(
-				static_cast<t_symbol_id>(Token::XOR), str, line));
-		}
-		if(str == "not")
-		{
-			matches.emplace_back(std::make_tuple(
-				static_cast<t_symbol_id>(Token::NOT), str, line));
-		}
-		else if(str == ">=")
-		{
-			matches.emplace_back(std::make_tuple(
-				static_cast<t_symbol_id>(Token::GEQ), str, line));
-		}
-		else if(str == "<=")
+		else if(str == "<=" || str == ".le.")
 		{
 			matches.emplace_back(std::make_tuple(
 				static_cast<t_symbol_id>(Token::LEQ), str, line));
 		}
-		else if(str == "~")
+		else if(str == ">=" || str == ".ge.")
 		{
 			matches.emplace_back(std::make_tuple(
-				static_cast<t_symbol_id>(Token::RANGE), str, line));
+				static_cast<t_symbol_id>(Token::GEQ), str, line));
+		}
+		else if(str == ".lt.")
+		{
+			matches.emplace_back(std::make_tuple(
+				static_cast<t_symbol_id>('<'), std::nullopt, line));
+		}
+		else if(str == ".gt.")
+		{
+			matches.emplace_back(std::make_tuple(
+				static_cast<t_symbol_id>('>'), std::nullopt, line));
+		}
+		else if(str == ".not.")
+		{
+			matches.emplace_back(std::make_tuple(
+				static_cast<t_symbol_id>(Token::NOT), str, line));
+		}
+		else if(str == "xor")
+		{
+			matches.emplace_back(std::make_tuple(
+				static_cast<t_symbol_id>(Token::XOR), str, line));
 		}
 		else if(str == "::")
 		{
 			matches.emplace_back(std::make_tuple(
 				static_cast<t_symbol_id>(Token::TYPESEP), str, line));
+		}
+		else if(str == "**")
+		{
+			matches.emplace_back(std::make_tuple(
+				static_cast<t_symbol_id>(Token::POW), str, line));
+		}
+		else if(str == "~")
+		{
+			matches.emplace_back(std::make_tuple(
+				static_cast<t_symbol_id>(Token::RANGE), str, line));
 		}
 		/*else if(str == ";")
 		{
@@ -249,11 +264,10 @@ Lexer::GetMatchingTokens(const std::string& str, std::size_t line)
 
 		// tokens represented by themselves
 		else if(str == "+" || str == "-" || str == "*" || str == "/" ||
-			str == "%" || str == "^" || str == "(" || str == ")" ||
-			str == "[" || str == "]" ||
-			str == "," || str == "=" || str == "'" ||
-			str == ">" || str == "<" || str == ":" ||
-			str == "#" || str == "|" || str == "&")
+			str == "%" || str == ":" || str == "," || str == "." ||
+			str == "(" || str == ")" || str == "[" || str == "]" ||
+			str == "=" || str == "'" ||
+			str == ">" || str == "<" || str == "|" || str == "&")
 			matches.emplace_back(std::make_tuple(
 				static_cast<t_symbol_id>(str[0]), std::nullopt, line));
 	}
@@ -398,6 +412,7 @@ template<std::size_t IDX> struct _Lval_LoopFunc
 			astnode->SetId(id);
 			astnode->SetTableIndex(tableidx);
 			astnode->SetLineRange(std::make_pair(line, line));
+			astnode->SetTerminalOverride(true);
 			vec->emplace_back(std::move(astnode));
 		}
 	};
@@ -444,6 +459,7 @@ std::vector<t_toknode> Lexer::GetAllTokens()
 			astnode->SetId(id);
 			astnode->SetTableIndex(tableidx);
 			astnode->SetLineRange(std::make_pair(line, line));
+			astnode->SetTerminalOverride(true);
 			vec.emplace_back(std::move(astnode));
 		}
 

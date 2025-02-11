@@ -23,6 +23,9 @@
 using t_lexer_match = std::tuple<lalr1::t_symbol_id, t_lval, std::size_t>;
 
 
+/**
+ * terminal symbol identifiers
+ */
 enum class Token : lalr1::t_symbol_id
 {
 	// tokens with an lvalue
@@ -47,7 +50,10 @@ enum class Token : lalr1::t_symbol_id
 	AND         = 3004,
 	OR          = 3005,
 	XOR         = 3006,
-	NOT         = 3007,
+	NOT         = 3010,
+
+	// arithmetical operators
+	POW         = 3500,
 
 	ASSIGN      = 4000,
 	RANGE       = 4001,

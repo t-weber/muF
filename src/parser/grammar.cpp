@@ -37,20 +37,20 @@ void Grammar::CreateGrammar()
 	op_mult = std::make_shared<lalr1::Terminal>('*', "*");
 	op_div = std::make_shared<lalr1::Terminal>('/', "/");
 	op_mod = std::make_shared<lalr1::Terminal>('%', "%");
-	op_pow = std::make_shared<lalr1::Terminal>('^', "^");
 	op_norm = std::make_shared<lalr1::Terminal>('|', "|");
 	op_trans = std::make_shared<lalr1::Terminal>('\'', "'");
+	op_pow = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::POW), "**");
 
 	op_equ = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::EQU), "==");
 	op_neq = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::NEQ), "!=");
 	op_geq = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::GEQ), ">=");
 	op_leq = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::LEQ), "<=");
-	op_and = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::AND), "&&");
-	op_or = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::OR), "||");
+	op_and = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::AND), "and");
+	op_or = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::OR), "or");
 	op_xor = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::XOR), "xor");
+	op_not = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::NOT), "not");
 	op_gt = std::make_shared<lalr1::Terminal>('>', ">");
 	op_lt = std::make_shared<lalr1::Terminal>('<', "<");
-	op_not = std::make_shared<lalr1::Terminal>('!', "#");
 
 	bracket_open = std::make_shared<lalr1::Terminal>('(', "(");
 	bracket_close = std::make_shared<lalr1::Terminal>(')', ")");
@@ -80,7 +80,7 @@ void Grammar::CreateGrammar()
 	keyword_do = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::DO), "do");
 	keyword_func = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::FUNC), "function");
 	keyword_program = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::PROGRAM), "program");
-	keyword_ret = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::RET), "ret");
+	keyword_ret = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::RET), "return");
 	keyword_next = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::NEXT), "next");
 	keyword_end = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::END), "end");
 	keyword_break = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::BREAK), "break");
@@ -95,6 +95,7 @@ void Grammar::CreateGrammar()
 	keyword_func->SetPrecedence(0, 'l');
 
 	// s/r conflict because of missing statement end tokens
+	//keyword_ret->SetPrecedence(200, 'l');
 	keyword_break->SetPrecedence(200, 'l');
 	keyword_next->SetPrecedence(200, 'l');
 	sym_int->SetPrecedence(210, 'l');
@@ -124,10 +125,10 @@ void Grammar::CreateGrammar()
 	op_div->SetPrecedence(360, 'l');
 	op_mod->SetPrecedence(360, 'l');
 
-	op_not->SetPrecedence(370, 'l');
-	// TODO: unary_ops->SetPrecedence(75, 'r');
+	op_pow->SetPrecedence(370, 'r');
 
-	op_pow->SetPrecedence(380, 'r');
+	op_not->SetPrecedence(380, 'l');
+	// TODO: unary_ops->SetPrecedence(375, 'r');
 
 	bracket_open->SetPrecedence(390, 'l');
 	array_begin->SetPrecedence(390, 'l');
@@ -141,9 +142,9 @@ void Grammar::CreateGrammar()
 	// --------------------------------------------------------------------------------
 	// start
 	// --------------------------------------------------------------------------------
-	// start -> program ident statements end program
+	// start -> statements
 #ifdef CREATE_PRODUCTION_RULES
-	start->AddRule({ keyword_program, ident, statements, keyword_end, keyword_program }, semanticindex);
+	start->AddRule({ statements }, semanticindex);
 #endif
 #ifdef CREATE_SEMANTIC_RULES
 	rules.emplace(std::make_pair(semanticindex,
@@ -151,7 +152,7 @@ void Grammar::CreateGrammar()
 	{
 		if(!full_match)
 			return nullptr;
-		auto stmts = std::dynamic_pointer_cast<ASTStmts>(args[2]);
+		auto stmts = std::dynamic_pointer_cast<ASTStmts>(args[0]);
 		m_context.SetStatements(stmts);
 		return stmts;
 	}));
@@ -286,9 +287,26 @@ void Grammar::CreateGrammar()
 #endif
 	++semanticindex;
 
+	// statement -> program ident statements end program
+#ifdef CREATE_PRODUCTION_RULES
+	statement->AddRule({ keyword_program, ident, statements, keyword_end, keyword_program }, semanticindex);
+#endif
+#ifdef CREATE_SEMANTIC_RULES
+	rules.emplace(std::make_pair(semanticindex,
+	[this](bool full_match, const lalr1::t_semanticargs& args, [[maybe_unused]] lalr1::t_astbaseptr retval) -> lalr1::t_astbaseptr
+	{
+		if(!full_match)
+			return nullptr;
+		auto stmts = std::dynamic_pointer_cast<ASTStmts>(args[2]);
+		//m_context.SetStatements(stmts);
+		return stmts;
+	}));
+#endif
+	++semanticindex;
+
 	// statement -> function
 #ifdef CREATE_PRODUCTION_RULES
-		statement->AddRule({ function }, semanticindex);
+	statement->AddRule({ function }, semanticindex);
 #endif
 #ifdef CREATE_SEMANTIC_RULES
 	rules.emplace(std::make_pair(semanticindex,
@@ -902,7 +920,7 @@ void Grammar::CreateGrammar()
 		auto ty = std::dynamic_pointer_cast<ASTTypeDecl>(args[0]);
 		auto arglist = std::dynamic_pointer_cast<ASTArgNames>(args[2]);
 
-		arglist->AddArg("ret", ty->GetType(), ty->GetDim(0), ty->GetDim(1));
+		arglist->AddArg("return", ty->GetType(), ty->GetDim(0), ty->GetDim(1));
 		return arglist;
 	}));
 #endif
@@ -921,7 +939,7 @@ void Grammar::CreateGrammar()
 		auto ty = std::dynamic_pointer_cast<ASTTypeDecl>(args[0]);
 
 		auto arglist = std::make_shared<ASTArgNames>();
-		arglist->AddArg("ret", ty->GetType(), ty->GetDim(0), ty->GetDim(1));
+		arglist->AddArg("return", ty->GetType(), ty->GetDim(0), ty->GetDim(1));
 		return arglist;
 	}));
 #endif
@@ -987,6 +1005,7 @@ void Grammar::CreateGrammar()
 #endif
 	++semanticindex;
 
+/*	TODO
 	// unary plus
 #ifdef CREATE_PRODUCTION_RULES
 	expression->AddRule({ op_plus, expression }, semanticindex);
@@ -1018,6 +1037,7 @@ void Grammar::CreateGrammar()
 	}));
 #endif
 	++semanticindex;
+*/
 
 	// norm
 #ifdef CREATE_PRODUCTION_RULES
@@ -1143,7 +1163,7 @@ void Grammar::CreateGrammar()
 #endif
 	++semanticindex;
 
-	// expression -> expression ^ expression
+	// expression -> expression ** expression
 #ifdef CREATE_PRODUCTION_RULES
 	expression->AddRule({ expression, op_pow, expression }, semanticindex);
 #endif

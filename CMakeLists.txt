@@ -98,7 +98,7 @@ if(LibLalr1_FOUND)
 			#${LibLalr1_LIBRARIES}
 			${Boost_LIBRARIES}
 		)
-	elseif(EXISTS "${CMAKE_BINARY_DIR}/compile.tab")
+	elseif(EXISTS "${CMAKE_BINARY_DIR}/parser.tab")
 		message("Building LibLalr1-based table-driven compiler.")
 
 		add_executable(compile
