@@ -19,7 +19,7 @@
 	#include "parser.h"
 #else
 	#include "lalr1/parser.h"
-	#include "muf_parser.tab"
+	#include "parser.tab"
 #endif
 
 

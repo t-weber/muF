@@ -127,7 +127,7 @@ void Grammar::CreateGrammar()
 
 	op_pow->SetPrecedence(370, 'r');
 
-	op_not->SetPrecedence(380, 'l');
+	op_not->SetPrecedence(380, 'r');
 	// TODO: unary_ops->SetPrecedence(375, 'r');
 
 	bracket_open->SetPrecedence(390, 'l');
@@ -1005,7 +1005,8 @@ void Grammar::CreateGrammar()
 #endif
 	++semanticindex;
 
-/*	TODO
+// TODO
+/*
 	// unary plus
 #ifdef CREATE_PRODUCTION_RULES
 	expression->AddRule({ op_plus, expression }, semanticindex);
@@ -1019,7 +1020,9 @@ void Grammar::CreateGrammar()
 		return args[1];
 	}));
 #endif
+	//std::cout << "Unary+ rule index: " << semanticindex << std::endl;
 	++semanticindex;
+*/
 
 	// unary minus
 #ifdef CREATE_PRODUCTION_RULES
@@ -1036,8 +1039,8 @@ void Grammar::CreateGrammar()
 		return std::make_shared<ASTUMinus>(expr);
 	}));
 #endif
+	//std::cout << "Unary- rule index: " << semanticindex << std::endl;
 	++semanticindex;
-*/
 
 	// norm
 #ifdef CREATE_PRODUCTION_RULES
