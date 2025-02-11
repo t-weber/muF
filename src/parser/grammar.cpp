@@ -1005,8 +1005,8 @@ void Grammar::CreateGrammar()
 #endif
 	++semanticindex;
 
-// TODO
 /*
+// TODO
 	// unary plus
 #ifdef CREATE_PRODUCTION_RULES
 	expression->AddRule({ op_plus, expression }, semanticindex);
