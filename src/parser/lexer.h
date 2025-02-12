@@ -31,8 +31,9 @@ enum class Token : lalr1::t_symbol_id
 	// tokens with an lvalue
 	REAL        = 1000,
 	INT         = 1001,
-	STR         = 1002,
-	IDENT       = 1003,
+	BOOL        = 1002,
+	STR         = 1003,
+	IDENT       = 1004,
 
 	// type declarations
 	TYPESEP     = 2000,
@@ -77,6 +78,8 @@ enum class Token : lalr1::t_symbol_id
 	RET         = 7001,
 	PROGRAM     = 7010,
 
+	// partial match
+	PARTIAL     = 9999,
 	HALT        = lalr1::END_IDENT,
 };
 

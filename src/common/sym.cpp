@@ -20,6 +20,7 @@ t_str Symbol::get_type_name(SymbolType ty)
 	{
 		case SymbolType::REAL: return "real";
 		case SymbolType::INT: return "integer";
+		case SymbolType::BOOL: return "bool";
 		case SymbolType::VECTOR: return "vec";
 		case SymbolType::MATRIX: return "mat";
 		case SymbolType::STRING: return "str";

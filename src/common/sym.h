@@ -31,6 +31,7 @@ enum class SymbolType
 
 	REAL,
 	INT,
+	BOOL,
 	STRING,
 
 	VECTOR,

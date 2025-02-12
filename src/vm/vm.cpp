@@ -125,6 +125,35 @@ void VM::PushAddress(t_addr addr, VMType ty)
 
 
 /**
+ * pop a bool from the stack
+ */
+bool VM::PopBool()
+{
+	t_data dat = PopData();
+	bool val = false;
+
+	if(dat.index() == m_boolidx)
+		val = std::get<m_boolidx>(dat) != 0;
+	else if(dat.index() == m_intidx)
+		val = std::get<m_intidx>(dat) != 0;
+	else
+		throw std::runtime_error("Data type not convertible to bool.");
+
+	return val;
+}
+
+
+/**
+ * push a bool to the stack
+ */
+void VM::PushBool(bool val)
+{
+	t_bool dat = static_cast<t_bool>(val);
+	PushData(t_data{std::in_place_index<m_boolidx>, dat});
+}
+
+
+/**
  * pop a string from the stack
  * a string consists of an t_addr giving the length
  * following by the string (without 0-termination)
@@ -378,6 +407,13 @@ VM::t_data VM::TopData() const
 			break;
 		}
 
+		case VMType::BOOL:
+		{
+			dat = t_data{std::in_place_index<m_boolidx>,
+				TopRaw<t_bool, m_boolsize>(m_bytesize)};
+			break;
+		}
+
 		case VMType::ADDR_MEM:
 		case VMType::ADDR_IP:
 		case VMType::ADDR_SP:
@@ -457,7 +493,20 @@ VM::t_data VM::PopData()
 				PopRaw<t_int, m_intsize>()};
 			if(m_debug)
 			{
-				std::cout << "popped int " << std::get<m_intidx>(dat)
+				std::cout << "popped integer " << std::get<m_intidx>(dat)
+					<< "." << std::endl;
+			}
+			break;
+		}
+
+		case VMType::BOOL:
+		{
+			dat = t_data{std::in_place_index<m_boolidx>,
+				PopRaw<t_bool, m_boolsize>()};
+			if(m_debug)
+			{
+				std::cout << "popped bool " << std::boolalpha
+					<< (std::get<m_boolidx>(dat) != 0)
 					<< "." << std::endl;
 			}
 			break;
@@ -556,7 +605,7 @@ void VM::PushData(const VM::t_data& data, VMType ty, bool err_on_unknown)
 	{
 		if(m_debug)
 		{
-			std::cout << "pushing int "
+			std::cout << "pushing integer "
 				<< std::get<m_intidx>(data) << "."
 				<< std::endl;
 		}
@@ -566,6 +615,23 @@ void VM::PushData(const VM::t_data& data, VMType ty, bool err_on_unknown)
 
 		// push descriptor
 		PushRaw<t_byte, m_bytesize>(static_cast<t_byte>(VMType::INT));
+	}
+
+	// bool data
+	else if(data.index() == m_boolidx)
+	{
+		if(m_debug)
+		{
+			std::cout << "pushing bool " << std::boolalpha
+				<< (std::get<m_boolidx>(data) != 0) << "."
+				<< std::endl;
+		}
+
+		// push the actual data
+		PushRaw<t_bool, m_boolsize>(std::get<m_boolidx>(data));
+
+		// push descriptor
+		PushRaw<t_byte, m_bytesize>(static_cast<t_byte>(VMType::BOOL));
 	}
 
 	// address data
@@ -695,7 +761,21 @@ std::tuple<VMType, VM::t_data> VM::ReadMemData(VM::t_addr addr)
 
 			if(m_debug)
 			{
-				std::cout << "read int " << val
+				std::cout << "read integer " << val
+					<< " from address " << (addr-1)
+					<< "." << std::endl;
+			}
+			break;
+		}
+
+		case VMType::BOOL:
+		{
+			t_bool val = ReadMemRaw<t_bool>(addr);
+			dat = t_data{std::in_place_index<m_boolidx>, val};
+
+			if(m_debug)
+			{
+				std::cout << "read bool " << std::boolalpha << (val != 0)
 					<< " from address " << (addr-1)
 					<< "." << std::endl;
 			}
@@ -810,7 +890,7 @@ void VM::WriteMemData(VM::t_addr addr, const VM::t_data& data)
 	{
 		if(m_debug)
 		{
-			std::cout << "writing int value "
+			std::cout << "writing integer value "
 				<< std::get<m_intidx>(data)
 				<< " to address " << addr
 				<< "." << std::endl;
@@ -822,6 +902,25 @@ void VM::WriteMemData(VM::t_addr addr, const VM::t_data& data)
 
 		// write the actual data
 		WriteMemRaw<t_int>(addr, std::get<m_intidx>(data));
+	}
+
+	// bool type
+	else if(data.index() == m_boolidx)
+	{
+		if(m_debug)
+		{
+			std::cout << "writing bool value " << std::boolalpha
+				<< (std::get<m_boolidx>(data) != 0)
+				<< " to address " << addr
+				<< "." << std::endl;
+		}
+
+		// write descriptor prefix
+		WriteMemRaw<t_byte>(addr, static_cast<t_byte>(VMType::BOOL));
+		addr += m_bytesize;
+
+		// write the actual data
+		WriteMemRaw<t_int>(addr, std::get<m_boolidx>(data));
 	}
 
 	// address type
@@ -918,6 +1017,8 @@ VM::t_addr VM::GetDataSize(const t_data& data) const
 		return m_realsize;
 	else if(data.index() == m_intidx)
 		return m_intsize;
+	else if(data.index() == m_boolidx)
+		return m_boolsize;
 	else if(data.index() == m_addridx)
 		return m_addrsize;
 	else if(data.index() == m_stridx)
@@ -996,8 +1097,8 @@ const char* VM::GetDataTypeName(std::size_t type_idx)
 	{
 		case m_realidx: return "real";
 		case m_intidx: return "integer";
+		case m_boolidx: return "bool";
 		case m_addridx: return "address";
-		case m_boolidx: return "boolean";
 
 		case m_stridx: return "string";
 		case m_vecidx: return "vector";

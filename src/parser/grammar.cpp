@@ -63,6 +63,7 @@ void Grammar::CreateGrammar()
 
 	sym_real = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::REAL), "real");
 	sym_int = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::INT), "integer");
+	sym_bool = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::BOOL), "bool");
 	sym_str = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::STR), "string");
 	ident = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::IDENT), "ident");
 
@@ -99,6 +100,7 @@ void Grammar::CreateGrammar()
 	keyword_break->SetPrecedence(200, 'l');
 	keyword_next->SetPrecedence(200, 'l');
 	sym_int->SetPrecedence(210, 'l');
+	sym_bool->SetPrecedence(210, 'l');
 
 	// operator precedences and associativities
 	// see: https://en.wikipedia.org/wiki/Order_of_operations
@@ -1022,7 +1024,6 @@ void Grammar::CreateGrammar()
 #endif
 	//std::cout << "Unary+ rule index: " << semanticindex << std::endl;
 	++semanticindex;
-*/
 
 	// unary minus
 #ifdef CREATE_PRODUCTION_RULES
@@ -1041,6 +1042,7 @@ void Grammar::CreateGrammar()
 #endif
 	//std::cout << "Unary- rule index: " << semanticindex << std::endl;
 	++semanticindex;
+*/
 
 	// norm
 #ifdef CREATE_PRODUCTION_RULES
@@ -1378,6 +1380,23 @@ void Grammar::CreateGrammar()
 		auto num_node = std::dynamic_pointer_cast<ASTNumConst<t_int>>(args[0]);
 		const t_int num = num_node->GetVal();
 		return std::make_shared<ASTNumConst<t_int>>(num);
+	}));
+#endif
+	++semanticindex;
+
+	// expression -> bool
+#ifdef CREATE_PRODUCTION_RULES
+	expression->AddRule({ sym_bool }, semanticindex);
+#endif
+#ifdef CREATE_SEMANTIC_RULES
+	rules.emplace(std::make_pair(semanticindex,
+	[](bool full_match, const lalr1::t_semanticargs& args, [[maybe_unused]] lalr1::t_astbaseptr retval) -> lalr1::t_astbaseptr
+	{
+		if(!full_match)
+			return nullptr;
+		auto num_node = std::dynamic_pointer_cast<ASTNumConst<t_bool>>(args[0]);
+		const t_bool val = num_node->GetVal();
+		return std::make_shared<ASTNumConst<t_bool>>(val);
 	}));
 #endif
 	++semanticindex;

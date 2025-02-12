@@ -116,6 +116,7 @@ public:
 
 	virtual t_astret visit(const ASTNumConst<t_real>* ast) = 0;
 	virtual t_astret visit(const ASTNumConst<t_int>* ast) = 0;
+	virtual t_astret visit(const ASTNumConst<bool>* ast) = 0;
 	virtual t_astret visit(const ASTStrConst* ast) = 0;
 
 	virtual t_astret visit(const ASTFunc* ast) = 0;

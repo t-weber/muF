@@ -7,6 +7,9 @@
 
 #include "printast.h"
 
+#include <iostream>
+#include <iomanip>
+
 
 ASTPrinter::ASTPrinter(std::ostream* ostr)
 	: m_ostr{ostr}
@@ -526,7 +529,16 @@ t_astret ASTPrinter::visit(const ASTNumConst<t_real>* ast)
 
 t_astret ASTPrinter::visit(const ASTNumConst<t_int>* ast)
 {
-	(*m_ostr) << "<Const type=\"int\" val=\"" << ast->GetVal() << "\" />\n";
+	(*m_ostr) << "<Const type=\"integer\" val=\"" << ast->GetVal() << "\" />\n";
+
+	return nullptr;
+}
+
+
+t_astret ASTPrinter::visit(const ASTNumConst<bool>* ast)
+{
+	(*m_ostr) << "<Const type=\"bool\" val=\"" << std::boolalpha
+		<< ast->GetVal() << "\" />\n";
 
 	return nullptr;
 }

@@ -17,8 +17,9 @@
 
 using t_real = double;
 using t_int = std::int64_t;
+using t_bool = bool;
 
-using t_lval = std::optional<std::variant<t_real, t_int, std::string>>;
+using t_lval = std::optional<std::variant<t_real, t_int, t_bool, std::string>>;
 
 
 #endif

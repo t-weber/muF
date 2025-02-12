@@ -47,6 +47,7 @@ public:
 
 	virtual t_astret visit(const ASTNumConst<t_real>* ast) override;
 	virtual t_astret visit(const ASTNumConst<t_int>* ast) override;
+	virtual t_astret visit(const ASTNumConst<bool>* ast) override;
 	virtual t_astret visit(const ASTStrConst* ast) override;
 
 	virtual t_astret visit(const ASTFunc* ast) override;
@@ -97,6 +98,7 @@ protected:
 	// push constants
 	void PushRealConst(t_vm_real);
 	void PushIntConst(t_vm_int);
+	void PushBoolConst(t_vm_bool);
 	void PushStrConst(const t_vm_str& str);
 	void PushVecConst(const std::vector<t_vm_real>& vec);
 	void PushMatConst(t_vm_addr rows, t_vm_addr cols, const std::vector<t_vm_real>& mat);
@@ -138,6 +140,7 @@ private:
 
 	// dummy symbols for constants
 	Symbol *m_scalar_const{}, *m_int_const{}, *m_str_const{};
+	Symbol *m_bool_const{};
 	Symbol *m_vec_const{}, *m_mat_const{};
 };
 

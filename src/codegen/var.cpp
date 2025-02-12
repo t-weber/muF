@@ -51,6 +51,10 @@ std::size_t ZeroACAsm::GetSymSize(const Symbol* sym) const
 	{
 		return vm_type_size<VMType::INT, true>;
 	}
+	else if(sym->ty == SymbolType::BOOL)
+	{
+		return vm_type_size<VMType::BOOL, true>;
+	}
 	else if(sym->ty == SymbolType::STRING)
 	{
 		return get_vm_str_size(std::get<0>(sym->dims), true, true);
@@ -124,6 +128,11 @@ t_astret ZeroACAsm::visit(const ASTVarDecl* ast)
 			else if(sym->ty == SymbolType::REAL)
 			{
 				PushRealConst(t_vm_real(0));
+				AssignVar(sym);
+			}
+			else if(sym->ty == SymbolType::BOOL)
+			{
+				PushBoolConst(t_vm_real(0));
 				AssignVar(sym);
 			}
 			else if(sym->ty == SymbolType::STRING)
@@ -263,6 +272,17 @@ void ZeroACAsm::PushIntConst(t_vm_int val)
 }
 
 
+void ZeroACAsm::PushBoolConst(t_vm_bool val)
+{
+	m_ostr->put(static_cast<t_vm_byte>(OpCode::PUSH));
+	// write type descriptor byte
+	m_ostr->put(static_cast<t_vm_byte>(VMType::BOOL));
+	// write data
+	m_ostr->write(reinterpret_cast<const char*>(&val),
+		vm_type_size<VMType::BOOL, false>);
+}
+
+
 void ZeroACAsm::PushStrConst(const t_vm_str& val)
 {
 	// get string constant address
@@ -340,6 +360,14 @@ t_astret ZeroACAsm::visit(const ASTNumConst<t_int>* ast)
 	t_vm_int val = static_cast<t_vm_int>(ast->GetVal());
 	PushIntConst(val);
 	return m_int_const;
+}
+
+
+t_astret ZeroACAsm::visit(const ASTNumConst<bool>* ast)
+{
+	t_vm_bool val = static_cast<t_vm_bool>(ast->GetVal());
+	PushBoolConst(val);
+	return m_bool_const;
 }
 
 

@@ -22,7 +22,7 @@ end function
 
 
 program fibo
-	do while(1 == 1)
+	do while(.true.)
 		integer :: n = getint("n = ")
 		if n < 0 then
 			break

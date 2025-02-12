@@ -129,6 +129,12 @@ protected:
 	// push an address to stack
 	void PushAddress(t_addr addr, VMType ty = VMType::ADDR_MEM);
 
+	// pop a bool from the stack
+	bool PopBool();
+
+	// push a bool to the stack
+	void PushBool(bool val);
+
 	// pop a string from the stack
 	t_str PopString();
 
@@ -806,13 +812,10 @@ protected:
 	template<char op>
 	void OpLogical()
 	{
-		// might also use PopData and PushData in case ints
-		// should also be allowed in boolean expressions
-		t_bool val2 = PopRaw<t_bool, m_boolsize>();
-		t_bool val1 = PopRaw<t_bool, m_boolsize>();
+		bool val2 = PopBool();
+		bool val1 = PopBool();
 
-		t_bool result = 0;
-
+		bool result = 0;
 		if constexpr(op == '&')
 			result = val1 && val2;
 		else if constexpr(op == '|')
@@ -820,7 +823,7 @@ protected:
 		else if constexpr(op == '^')
 			result = val1 ^ val2;
 
-		PushRaw<t_bool, m_boolsize>(result);
+		PushBool(result);
 	}
 
 
@@ -893,9 +896,9 @@ protected:
 	 * comparison operation
 	 */
 	template<class t_val, OpCode op>
-	t_bool OpComparison(const t_val& val1, const t_val& val2)
+	bool OpComparison(const t_val& val1, const t_val& val2)
 	{
-		t_bool result = 0;
+		bool result = 0;
 
 		// string comparison
 		if constexpr(std::is_same_v<std::decay_t<t_val>, t_str>)
@@ -916,7 +919,7 @@ protected:
 				result = !m::equals(val1, val2, m_eps);
 		}
 
-		// integer /  real comparison
+		// integer / real comparison
 		else
 		{
 			if constexpr(op == OpCode::GT)
@@ -965,7 +968,7 @@ protected:
 			throw std::runtime_error(err.str());
 		}
 
-		t_bool result;
+		bool result;
 
 		if(val1.index() == m_realidx)
 		{
@@ -997,7 +1000,7 @@ protected:
 			throw std::runtime_error("Invalid type in comparison operation.");
 		}
 
-		PushRaw<t_bool, m_boolsize>(result);
+		PushBool(result);
 	}
 
 

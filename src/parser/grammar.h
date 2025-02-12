@@ -107,7 +107,8 @@ private:
 	lalr1::TerminalPtr keyword_program{};
 	lalr1::TerminalPtr keyword_assign{};
 	lalr1::TerminalPtr comma{}/*, stmt_end{}*/;
-	lalr1::TerminalPtr sym_real{}, sym_int{}, sym_str{}, ident{};
+	lalr1::TerminalPtr sym_real{}, sym_int{}, sym_bool{}, sym_str{};
+	lalr1::TerminalPtr ident{};
 	lalr1::TerminalPtr type_sep{}, real_decl{}, vec_decl{}, mat_decl{},
 		int_decl{}, str_decl{};
 #endif

@@ -680,10 +680,18 @@ bool VM::Run()
 
 			case OpCode::NOT:
 			{
-				// might also use PopData and PushData in case ints
-				// should also be allowed in boolean expressions
-				t_bool val = PopRaw<t_bool, m_boolsize>();
-				PushRaw<t_bool, m_boolsize>(!val);
+				// pop old value
+				bool boolval = PopBool();
+
+				// push new value
+				PushBool(!boolval);
+
+				if(m_debug)
+				{
+					std::cout << "not: " << std::boolalpha
+						<< boolval << " -> " << !boolval
+						<< "." << std::endl;
+				}
 				break;
 			}
 
@@ -827,10 +835,19 @@ bool VM::Run()
 				t_addr addr = PopAddress();
 
 				// get boolean condition result from stack
-				t_bool cond = PopRaw<t_bool, m_boolsize>();
+				bool boolcond = PopBool();
+
+				if(m_debug)
+				{
+					if(!boolcond)
+						std::cout << "no ";
+					std::cout << "conditional jump to address "
+						<< addr << "."
+						<< std::endl;
+				}
 
 				// set instruction pointer
-				if(cond)
+				if(boolcond)
 					m_ip = addr;
 				break;
 			}
@@ -920,7 +937,7 @@ bool VM::Run()
 				}
 
 				// remove function arguments from stack
-				for(t_int arg=0; arg<num_args; ++arg)
+				for(t_int arg = 0; arg < num_args; ++arg)
 					PopData();
 
 				for(const t_data& retval : retvals)

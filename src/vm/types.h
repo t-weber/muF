@@ -32,7 +32,7 @@ enum class VMType : t_vm_byte
 
 	REAL        = 0x01,
 	INT         = 0x02,
-	BOOLEAN     = 0x03,
+	BOOL        = 0x03,
 
 	STR         = 0x10,
 	VEC         = 0x11,
@@ -82,7 +82,7 @@ constexpr t_str get_vm_type_name(VMType ty)
 
 		case VMType::REAL:        return "real";
 		case VMType::INT:         return "integer";
-		case VMType::BOOLEAN:     return "boolean";
+		case VMType::BOOL:        return "bool";
 
 		case VMType::STR:         return "string";
 		case VMType::VEC:         return "vector";
@@ -115,7 +115,7 @@ template<bool with_descr> constexpr inline t_vm_addr vm_type_size<VMType::REAL, 
 	= sizeof(t_vm_real) + (with_descr ? sizeof(t_vm_byte) : 0);
 template<bool with_descr> constexpr inline t_vm_addr vm_type_size<VMType::INT, with_descr>
 	= sizeof(t_vm_int) + (with_descr ? sizeof(t_vm_byte) : 0);
-template<bool with_descr> constexpr inline t_vm_addr vm_type_size<VMType::BOOLEAN, with_descr>
+template<bool with_descr> constexpr inline t_vm_addr vm_type_size<VMType::BOOL, with_descr>
 	= sizeof(t_vm_bool) + (with_descr ? sizeof(t_vm_byte) : 0);
 template<bool with_descr> constexpr inline t_vm_addr vm_type_size<VMType::ADDR_MEM, with_descr>
 	= sizeof(t_vm_addr) + (with_descr ? sizeof(t_vm_byte) : 0);

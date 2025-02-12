@@ -19,6 +19,8 @@ Symbol* ZeroACAsm::GetTypeConst(SymbolType ty) const
 			return m_scalar_const;
 		case SymbolType::INT:
 			return m_int_const;
+		case SymbolType::BOOL:
+			return m_bool_const;
 		case SymbolType::STRING:
 			return m_str_const;
 		case SymbolType::MATRIX:

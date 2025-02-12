@@ -261,3 +261,9 @@ t_astret Semantics::visit([[maybe_unused]] const ASTNumConst<t_int>* ast)
 {
 	return nullptr;
 }
+
+
+t_astret Semantics::visit([[maybe_unused]] const ASTNumConst<bool>* ast)
+{
+	return nullptr;
+}

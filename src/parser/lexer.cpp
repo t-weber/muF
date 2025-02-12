@@ -37,240 +37,261 @@ std::vector<t_lexer_match>
 Lexer::GetMatchingTokens(const std::string& str, std::size_t line)
 {
 	std::vector<t_lexer_match> matches;
+	if(str == "")
+		return matches;
 
-	{	// int
-		static const std::regex regex_int{"(0[xb])?([0-9]+)"};
-		std::smatch smatch;
-		if(std::regex_match(str, smatch, regex_int))
+	// int
+	static const std::regex regex_int{"(0[xb])?([0-9]+)"};
+	std::smatch smatch_int;
+	if(std::regex_match(str, smatch_int, regex_int))
+	{
+		t_int val{};
+
+		if(smatch_int.str(1) == "0x")
 		{
-			t_int val{};
+			// hexadecimal integers
+			std::istringstream{smatch_int.str(0)} >> std::hex >> val;
+		}
+		else if(smatch_int.str(1) == "0b")
+		{
+			// binary integers
+			using t_bits = std::bitset<sizeof(t_int)*8>;
+			t_bits bits(smatch_int.str(2));
 
-			if(smatch.str(1) == "0x")
-			{
-				// hexadecimal integers
-				std::istringstream{smatch.str(0)} >> std::hex >> val;
-			}
-			else if(smatch.str(1) == "0b")
-			{
-				// binary integers
-				using t_bits = std::bitset<sizeof(t_int)*8>;
-				t_bits bits(smatch.str(2));
-
-				using t_ulong = std::invoke_result_t<decltype(&t_bits::to_ulong), t_bits*>;
-				if constexpr(sizeof(t_ulong) >= sizeof(t_int))
-					val = static_cast<t_int>(bits.to_ulong());
-				else
-					val = static_cast<t_int>(bits.to_ullong());
-			}
+			using t_ulong = std::invoke_result_t<decltype(&t_bits::to_ulong), t_bits*>;
+			if constexpr(sizeof(t_ulong) >= sizeof(t_int))
+				val = static_cast<t_int>(bits.to_ulong());
 			else
-			{
-				// decimal integers
-				std::istringstream{smatch.str(2)} >> std::dec >> val;
-			}
-
-			matches.emplace_back(std::make_tuple(
-				static_cast<t_symbol_id>(Token::INT), val, line));
-		}
-		else if(str == "0x" || str == "0b")
-		{
-			// dummy matches to continue searching for longest int
-			matches.emplace_back(std::make_tuple(
-				static_cast<t_symbol_id>(Token::INT), 0, line));
-		}
-	}
-
-	{	// real
-		//static const std::regex regex_real{"[0-9]+(\\.[0-9]*)?"};
-		static const std::regex regex_real{"[0-9]+(\\.[0-9]*)?([Ee][+-]?[0-9]*)?"};
-		std::smatch smatch;
-		if(std::regex_match(str, smatch, regex_real))
-		{
-			t_real val{};
-			std::istringstream{str} >> val;
-			matches.emplace_back(std::make_tuple(
-				static_cast<t_symbol_id>(Token::REAL), val, line));
-		}
-	}
-
-	{	// keywords and identifiers
-		if(str == "if")
-		{
-			matches.emplace_back(std::make_tuple(
-				static_cast<t_symbol_id>(Token::IF), str, line));
-		}
-		else if(str == "then")
-		{
-			matches.emplace_back(std::make_tuple(
-				static_cast<t_symbol_id>(Token::THEN), str, line));
-		}
-		else if(str == "else")
-		{
-			matches.emplace_back(std::make_tuple(
-				static_cast<t_symbol_id>(Token::ELSE), str, line));
-		}
-		else if(str == "while")
-		{
-			matches.emplace_back(std::make_tuple(
-				static_cast<t_symbol_id>(Token::WHILE), str, line));
-		}
-		else if(str == "break")
-		{
-			matches.emplace_back(std::make_tuple(
-				static_cast<t_symbol_id>(Token::BREAK), str, line));
-		}
-		else if(str == "next")
-		{
-			matches.emplace_back(std::make_tuple(
-				static_cast<t_symbol_id>(Token::NEXT), str, line));
-		}
-		else if(str == "do")
-		{
-			matches.emplace_back(std::make_tuple(
-				static_cast<t_symbol_id>(Token::DO), str, line));
-		}
-		else if(str == "end")
-		{
-			matches.emplace_back(std::make_tuple(
-				static_cast<t_symbol_id>(Token::END), str, line));
-		}
-		else if(str == "function")
-		{
-			matches.emplace_back(std::make_tuple(
-				static_cast<t_symbol_id>(Token::FUNC), str, line));
-		}
-		else if(str == "return")
-		{
-			matches.emplace_back(std::make_tuple(
-				static_cast<t_symbol_id>(Token::RET), str, line));
-		}
-		else if(str == "assign")
-		{
-			matches.emplace_back(std::make_tuple(
-				static_cast<t_symbol_id>(Token::ASSIGN), str, line));
-		}
-		else if(str == "real")
-		{
-			matches.emplace_back(std::make_tuple(
-				static_cast<t_symbol_id>(Token::REALDECL), str, line));
-		}
-		else if(str == "vec")
-		{
-			matches.emplace_back(std::make_tuple(
-				static_cast<t_symbol_id>(Token::VECTORDECL), str, line));
-		}
-		else if(str == "mat")
-		{
-			matches.emplace_back(std::make_tuple(
-				static_cast<t_symbol_id>(Token::MATRIXDECL), str, line));
-		}
-		else if(str == "str")
-		{
-			matches.emplace_back(std::make_tuple(
-				static_cast<t_symbol_id>(Token::STRINGDECL), str, line));
-		}
-		else if(str == "integer")
-		{
-			matches.emplace_back(std::make_tuple(
-				static_cast<t_symbol_id>(Token::INTDECL), str, line));
-		}
-		else if(str == "program")
-		{
-			matches.emplace_back(std::make_tuple(
-				static_cast<t_symbol_id>(Token::PROGRAM), str, line));
+				val = static_cast<t_int>(bits.to_ullong());
 		}
 		else
 		{
-			// identifier
-			static const std::regex regex_ident{"[_A-Za-z]+[_A-Za-z0-9]*"};
-			std::smatch smatch;
-			if(std::regex_match(str, smatch, regex_ident))
-				matches.emplace_back(std::make_tuple(
-					static_cast<t_symbol_id>(Token::IDENT), str, line));
+			// decimal integers
+			std::istringstream{smatch_int.str(2)} >> std::dec >> val;
 		}
-	}
 
+		matches.emplace_back(std::make_tuple(
+			static_cast<t_symbol_id>(Token::INT), val, line));
+	}
+	else if(str == "0x" || str == "0b")
 	{
-		// operators
-		if(str == "==" || str == ".eq.")
-		{
-			matches.emplace_back(std::make_tuple(
-				static_cast<t_symbol_id>(Token::EQU), str, line));
-		}
-		else if(str == "/=" || str == ".ne.")
-		{
-			matches.emplace_back(std::make_tuple(
-				static_cast<t_symbol_id>(Token::NEQ), str, line));
-		}
-		else if(str == "||" || str == ".or.")
-		{
-			matches.emplace_back(std::make_tuple(
-				static_cast<t_symbol_id>(Token::OR), str, line));
-		}
-		else if(str == "&&" || str == ".and.")
-		{
-			matches.emplace_back(std::make_tuple(
-				static_cast<t_symbol_id>(Token::AND), str, line));
-		}
-		else if(str == "<=" || str == ".le.")
-		{
-			matches.emplace_back(std::make_tuple(
-				static_cast<t_symbol_id>(Token::LEQ), str, line));
-		}
-		else if(str == ">=" || str == ".ge.")
-		{
-			matches.emplace_back(std::make_tuple(
-				static_cast<t_symbol_id>(Token::GEQ), str, line));
-		}
-		else if(str == ".lt.")
-		{
-			matches.emplace_back(std::make_tuple(
-				static_cast<t_symbol_id>('<'), std::nullopt, line));
-		}
-		else if(str == ".gt.")
-		{
-			matches.emplace_back(std::make_tuple(
-				static_cast<t_symbol_id>('>'), std::nullopt, line));
-		}
-		else if(str == ".not.")
-		{
-			matches.emplace_back(std::make_tuple(
-				static_cast<t_symbol_id>(Token::NOT), str, line));
-		}
-		else if(str == "xor")
-		{
-			matches.emplace_back(std::make_tuple(
-				static_cast<t_symbol_id>(Token::XOR), str, line));
-		}
-		else if(str == "::")
-		{
-			matches.emplace_back(std::make_tuple(
-				static_cast<t_symbol_id>(Token::TYPESEP), str, line));
-		}
-		else if(str == "**")
-		{
-			matches.emplace_back(std::make_tuple(
-				static_cast<t_symbol_id>(Token::POW), str, line));
-		}
-		else if(str == "~")
-		{
-			matches.emplace_back(std::make_tuple(
-				static_cast<t_symbol_id>(Token::RANGE), str, line));
-		}
-		/*else if(str == ";")
-		{
-			matches.emplace_back(std::make_tuple(
-				static_cast<t_symbol_id>(Token::ENDSTMT), str, line));
-		}*/
-
-		// tokens represented by themselves
-		else if(str == "+" || str == "-" || str == "*" || str == "/" ||
-			str == "%" || str == ":" || str == "," || str == "." ||
-			str == "(" || str == ")" || str == "[" || str == "]" ||
-			str == "=" || str == "'" ||
-			str == ">" || str == "<" || str == "|" || str == "&")
-			matches.emplace_back(std::make_tuple(
-				static_cast<t_symbol_id>(str[0]), std::nullopt, line));
+		// dummy matches to continue searching for longest int
+		matches.emplace_back(std::make_tuple(
+			static_cast<t_symbol_id>(Token::INT), 0, line));
 	}
+
+	// real
+	//static const std::regex regex_real{"[0-9]+(\\.[0-9]*)?"};
+	static const std::regex regex_real{"[0-9]+(\\.[0-9]*)?([Ee][+-]?[0-9]*)?"};
+	std::smatch smatch_real;
+	if(std::regex_match(str, smatch_real, regex_real))
+	{
+		t_real val{};
+		std::istringstream{str} >> val;
+		matches.emplace_back(std::make_tuple(
+			static_cast<t_symbol_id>(Token::REAL), val, line));
+	}
+
+	// keywords and identifiers
+	if(str == "if")
+	{
+		matches.emplace_back(std::make_tuple(
+			static_cast<t_symbol_id>(Token::IF), str, line));
+	}
+	else if(str == "then")
+	{
+		matches.emplace_back(std::make_tuple(
+			static_cast<t_symbol_id>(Token::THEN), str, line));
+	}
+	else if(str == "else")
+	{
+		matches.emplace_back(std::make_tuple(
+			static_cast<t_symbol_id>(Token::ELSE), str, line));
+	}
+	else if(str == "while")
+	{
+		matches.emplace_back(std::make_tuple(
+			static_cast<t_symbol_id>(Token::WHILE), str, line));
+	}
+	else if(str == "break")
+	{
+		matches.emplace_back(std::make_tuple(
+			static_cast<t_symbol_id>(Token::BREAK), str, line));
+	}
+	else if(str == "next")
+	{
+		matches.emplace_back(std::make_tuple(
+			static_cast<t_symbol_id>(Token::NEXT), str, line));
+	}
+	else if(str == "do")
+	{
+		matches.emplace_back(std::make_tuple(
+			static_cast<t_symbol_id>(Token::DO), str, line));
+	}
+	else if(str == "end")
+	{
+		matches.emplace_back(std::make_tuple(
+			static_cast<t_symbol_id>(Token::END), str, line));
+	}
+	else if(str == "function")
+	{
+		matches.emplace_back(std::make_tuple(
+			static_cast<t_symbol_id>(Token::FUNC), str, line));
+	}
+	else if(str == "return")
+	{
+		matches.emplace_back(std::make_tuple(
+			static_cast<t_symbol_id>(Token::RET), str, line));
+	}
+	else if(str == "assign")
+	{
+		matches.emplace_back(std::make_tuple(
+			static_cast<t_symbol_id>(Token::ASSIGN), str, line));
+	}
+	else if(str == "real")
+	{
+		matches.emplace_back(std::make_tuple(
+			static_cast<t_symbol_id>(Token::REALDECL), str, line));
+	}
+	else if(str == "vec")
+	{
+		matches.emplace_back(std::make_tuple(
+			static_cast<t_symbol_id>(Token::VECTORDECL), str, line));
+	}
+	else if(str == "mat")
+	{
+		matches.emplace_back(std::make_tuple(
+			static_cast<t_symbol_id>(Token::MATRIXDECL), str, line));
+	}
+	else if(str == "str")
+	{
+		matches.emplace_back(std::make_tuple(
+			static_cast<t_symbol_id>(Token::STRINGDECL), str, line));
+	}
+	else if(str == "integer")
+	{
+		matches.emplace_back(std::make_tuple(
+			static_cast<t_symbol_id>(Token::INTDECL), str, line));
+	}
+	else if(str == "program")
+	{
+		matches.emplace_back(std::make_tuple(
+			static_cast<t_symbol_id>(Token::PROGRAM), str, line));
+	}
+	else if(str == ".true.")
+	{
+		matches.emplace_back(std::make_tuple(
+			static_cast<t_symbol_id>(Token::BOOL), true, line));
+	}
+	else if(str == ".false.")
+	{
+		matches.emplace_back(std::make_tuple(
+			static_cast<t_symbol_id>(Token::BOOL), false, line));
+	}
+	else
+	{
+		// identifier
+		static const std::regex regex_ident{"[_A-Za-z]+[_A-Za-z0-9]*"};
+		std::smatch smatch_ident;
+		if(std::regex_match(str, smatch_ident, regex_ident))
+		{
+			matches.emplace_back(std::make_tuple(
+				static_cast<t_symbol_id>(Token::IDENT), str, line));
+		}
+		else
+		{
+			// partially matching keywords
+			// otherwise the lexer would give up before seeing a full keyword like ".true."
+			static const std::regex regex_partial{"\\.[_A-Za-z]*\\.*"};
+			std::smatch smatch_partial;
+			if(std::regex_match(str, smatch_partial, regex_partial))
+			{
+				matches.emplace_back(std::make_tuple(
+					static_cast<t_symbol_id>(Token::PARTIAL), str, line));
+			}
+		}
+	}
+
+	// operators
+	if(str == "==" || str == ".eq.")
+	{
+		matches.emplace_back(std::make_tuple(
+			static_cast<t_symbol_id>(Token::EQU), str, line));
+	}
+	else if(str == "/=" || str == ".ne.")
+	{
+		matches.emplace_back(std::make_tuple(
+			static_cast<t_symbol_id>(Token::NEQ), str, line));
+	}
+	else if(str == "||" || str == ".or.")
+	{
+		matches.emplace_back(std::make_tuple(
+			static_cast<t_symbol_id>(Token::OR), str, line));
+	}
+	else if(str == "&&" || str == ".and.")
+	{
+		matches.emplace_back(std::make_tuple(
+			static_cast<t_symbol_id>(Token::AND), str, line));
+	}
+	else if(str == "<=" || str == ".le.")
+	{
+		matches.emplace_back(std::make_tuple(
+			static_cast<t_symbol_id>(Token::LEQ), str, line));
+	}
+	else if(str == ">=" || str == ".ge.")
+	{
+		matches.emplace_back(std::make_tuple(
+			static_cast<t_symbol_id>(Token::GEQ), str, line));
+	}
+	else if(str == ".lt.")
+	{
+		matches.emplace_back(std::make_tuple(
+			static_cast<t_symbol_id>('<'), std::nullopt, line));
+	}
+	else if(str == ".gt.")
+	{
+		matches.emplace_back(std::make_tuple(
+			static_cast<t_symbol_id>('>'), std::nullopt, line));
+	}
+	else if(str == ".not.")
+	{
+		matches.emplace_back(std::make_tuple(
+			static_cast<t_symbol_id>(Token::NOT), str, line));
+	}
+	else if(str == "xor")
+	{
+		matches.emplace_back(std::make_tuple(
+			static_cast<t_symbol_id>(Token::XOR), str, line));
+	}
+	else if(str == "::")
+	{
+		matches.emplace_back(std::make_tuple(
+			static_cast<t_symbol_id>(Token::TYPESEP), str, line));
+	}
+	else if(str == "**")
+	{
+		matches.emplace_back(std::make_tuple(
+			static_cast<t_symbol_id>(Token::POW), str, line));
+	}
+	else if(str == "~")
+	{
+		matches.emplace_back(std::make_tuple(
+			static_cast<t_symbol_id>(Token::RANGE), str, line));
+	}
+	/*else if(str == ";")
+	{
+		matches.emplace_back(std::make_tuple(
+			static_cast<t_symbol_id>(Token::ENDSTMT), str, line));
+	}*/
+
+	// tokens represented by themselves
+	else if(str == "+" || str == "-" || str == "*" || str == "/" ||
+		str == "%" || str == ":" || str == "," ||
+		str == "(" || str == ")" || str == "[" || str == "]" ||
+		str == "=" || str == "'" ||
+		str == ">" || str == "<" || str == "|" || str == "&")
+		matches.emplace_back(std::make_tuple(
+			static_cast<t_symbol_id>(str[0]), std::nullopt, line));
 
 	//std::cerr << "Input \"" << str << "\" has " << matches.size() << " matches." << std::endl;
 	return matches;
@@ -392,6 +413,9 @@ t_lexer_match Lexer::GetNextToken(std::size_t* _line)
 }
 
 
+/**
+ * create an l-value constant ast node
+ */
 template<std::size_t IDX> struct _Lval_LoopFunc
 {
 	void operator()(

@@ -27,7 +27,13 @@ ZeroACAsm::ZeroACAsm(SymTab* syms, std::ostream* ostr)
 	m_int_const = new Symbol();
 	m_int_const->ty = SymbolType::INT;
 	m_int_const->is_tmp = true;
-	m_int_const->name = "<int>";
+	m_int_const->name = "<integer>";
+
+	// dummy symbol for bool constants
+	m_bool_const = new Symbol();
+	m_bool_const->ty = SymbolType::BOOL;
+	m_bool_const->is_tmp = true;
+	m_bool_const->name = "<bool>";
 
 	// dummy symbol for string constants
 	m_str_const = new Symbol();
@@ -54,7 +60,7 @@ ZeroACAsm::~ZeroACAsm()
 	for(Symbol** sym : {
 		&m_scalar_const, &m_int_const,
 		&m_str_const, &m_vec_const,
-		&m_mat_const })
+		&m_mat_const, &m_bool_const })
 	{
 		delete *sym;
 		*sym = nullptr;
