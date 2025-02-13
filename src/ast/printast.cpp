@@ -542,3 +542,22 @@ t_astret ASTPrinter::visit(const ASTNumConst<bool>* ast)
 
 	return nullptr;
 }
+
+
+t_astret ASTPrinter::visit(const ASTLabel* ast)
+{
+	(*m_ostr) << "<Label ident=\"" << ast->GetIdent() << "\" />\n";
+
+	return nullptr;
+}
+
+
+t_astret ASTPrinter::visit(const ASTJump* ast)
+{
+	if(ast->IsComefrom())
+		(*m_ostr) << "<Comefrom label=\"" << ast->GetLabel() << "\" />\n";
+	else
+		(*m_ostr) << "<Jump label=\"" << ast->GetLabel() << "\" />\n";
+
+	return nullptr;
+}

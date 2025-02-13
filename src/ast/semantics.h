@@ -44,6 +44,8 @@ public:
 	virtual t_astret visit(const ASTNumConst<t_real>* ast) override;
 	virtual t_astret visit(const ASTNumConst<t_int>* ast) override;
 	virtual t_astret visit(const ASTNumConst<bool>* ast) override;
+	virtual t_astret visit(const ASTLabel* ast) override;
+	virtual t_astret visit(const ASTJump* ast) override;
 
 	// ------------------------------------------------------------------------
 	// internally handled dummy nodes

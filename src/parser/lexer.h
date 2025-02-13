@@ -75,11 +75,20 @@ enum class Token : lalr1::t_symbol_id
 
 	// functions
 	FUNC        = 7000,
-	RET         = 7001,
+	PROC        = 7001,
+	RET         = 7002,
+	RESULT      = 7003,
+	RESULTS     = 7004,
 	PROGRAM     = 7010,
 
-	// partial match
+	// jumps
+	LABEL       = 8000,
+	GOTO        = 8001,
+	COMEFROM    = 8002,
+
+	// partial match (should not be left after final lexer run)
 	PARTIAL     = 9999,
+
 	HALT        = lalr1::END_IDENT,
 };
 

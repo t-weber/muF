@@ -56,6 +56,9 @@ public:
 	virtual t_astret visit(const ASTBool* ast) override;
 	virtual t_astret visit(const ASTExprList* ast) override;
 
+	virtual t_astret visit(const ASTLabel* ast) override;
+	virtual t_astret visit(const ASTJump* ast) override;
+
 	// ------------------------------------------------------------------------
 	// internally handled dummy nodes
 	// ------------------------------------------------------------------------

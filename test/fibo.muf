@@ -3,7 +3,7 @@
 !
 
 
-function integer fibo(integer n)
+function fibo(integer :: n) result(integer)
 	if n <= 1 then
 		return 1
 	else
@@ -12,7 +12,7 @@ function integer fibo(integer n)
 end function
 
 
-function integer fac(integer n)
+function fac(integer :: n) result(integer)
 	if n <= 1 then
 		return 1
 	end if

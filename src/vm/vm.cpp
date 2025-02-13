@@ -586,122 +586,122 @@ void VM::PushData(const VM::t_data& data, VMType ty, bool err_on_unknown)
 	// real data
 	if(data.index() == m_realidx)
 	{
-		if(m_debug)
-		{
-			std::cout << "pushing real "
-				<< std::get<m_realidx>(data) << "."
-				<< std::endl;
-		}
-
 		// push the actual data
 		PushRaw<t_real, m_realsize>(std::get<m_realidx>(data));
 
 		// push descriptor
 		PushRaw<t_byte, m_bytesize>(static_cast<t_byte>(VMType::REAL));
+
+		if(m_debug)
+		{
+			std::cout << "pushed real "
+				<< std::get<m_realidx>(data) << "."
+				<< std::endl;
+		}
 	}
 
 	// integer data
 	else if(data.index() == m_intidx)
 	{
-		if(m_debug)
-		{
-			std::cout << "pushing integer "
-				<< std::get<m_intidx>(data) << "."
-				<< std::endl;
-		}
-
 		// push the actual data
 		PushRaw<t_int, m_intsize>(std::get<m_intidx>(data));
 
 		// push descriptor
 		PushRaw<t_byte, m_bytesize>(static_cast<t_byte>(VMType::INT));
+
+		if(m_debug)
+		{
+			std::cout << "pushed integer "
+				<< std::get<m_intidx>(data) << "."
+				<< std::endl;
+		}
 	}
 
 	// bool data
 	else if(data.index() == m_boolidx)
 	{
-		if(m_debug)
-		{
-			std::cout << "pushing bool " << std::boolalpha
-				<< (std::get<m_boolidx>(data) != 0) << "."
-				<< std::endl;
-		}
-
 		// push the actual data
 		PushRaw<t_bool, m_boolsize>(std::get<m_boolidx>(data));
 
 		// push descriptor
 		PushRaw<t_byte, m_bytesize>(static_cast<t_byte>(VMType::BOOL));
+
+		if(m_debug)
+		{
+			std::cout << "pushed bool " << std::boolalpha
+				<< (std::get<m_boolidx>(data) != 0) << "."
+				<< std::endl;
+		}
 	}
 
 	// address data
 	else if(data.index() == m_addridx)
 	{
-		if(m_debug)
-		{
-			std::cout << "pushing address "
-				<< std::get<m_addridx>(data) << "."
-				<< std::endl;
-		}
-
 		// push the actual address
 		PushRaw<t_addr, m_addrsize>(std::get<m_addridx>(data));
 
 		// push descriptor
 		PushRaw<t_byte, m_bytesize>(static_cast<t_byte>(ty));
+
+		if(m_debug)
+		{
+			std::cout << "pushed address "
+				<< std::get<m_addridx>(data) << "."
+				<< std::endl;
+		}
 	}
 
 	// string data
 	else if(data.index() == m_stridx)
 	{
-		if(m_debug)
-		{
-			std::cout << "pushing string \""
-				<< std::get<m_stridx>(data) << "\"."
-				<< std::endl;
-		}
-
 		// push the actual string
 		PushString(std::get<m_stridx>(data));
 
 		// push descriptor
 		PushRaw<t_byte, m_bytesize>(static_cast<t_byte>(VMType::STR));
+
+		if(m_debug)
+		{
+			std::cout << "pushed string \""
+				<< std::get<m_stridx>(data) << "\"."
+				<< std::endl;
+		}
 	}
 
 	// vector data
 	else if(data.index() == m_vecidx)
 	{
-		if(m_debug)
-		{
-			using namespace m_ops;
-			std::cout << "pushing vector "
-				<< std::get<m_vecidx>(data) << "."
-				<< std::endl;
-		}
-
 		// push the actual vector
 		PushVector(std::get<m_vecidx>(data));
 
 		// push descriptor
 		PushRaw<t_byte, m_bytesize>(static_cast<t_byte>(VMType::VEC));
+
+		if(m_debug)
+		{
+			using namespace m_ops;
+			std::cout << "pushed vector "
+				<< std::get<m_vecidx>(data) << "."
+				<< std::endl;
+		}
 	}
 
 	// matrix data
 	else if(data.index() == m_matidx)
 	{
-		if(m_debug)
-		{
-			using namespace m_ops;
-			std::cout << "pushing matrix "
-				<< std::get<m_matidx>(data) << "."
-				<< std::endl;
-		}
-
 		// push the actual matrix
 		PushMatrix(std::get<m_matidx>(data));
 
 		// push descriptor
 		PushRaw<t_byte, m_bytesize>(static_cast<t_byte>(VMType::MAT));
+
+		if(m_debug)
+		{
+			using namespace m_ops;
+			std::cout << "pushed matrix "
+				<< std::get<m_matidx>(data) << "."
+				<< std::endl;
+		}
 	}
 
 	// unknown data

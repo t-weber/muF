@@ -104,11 +104,14 @@ private:
 	lalr1::TerminalPtr keyword_while{}, keyword_do{},
 		keyword_break{}, keyword_next{}, keyword_end{};
 	lalr1::TerminalPtr keyword_func{}, keyword_ret{};
+	lalr1::TerminalPtr keyword_procedure{};
+	lalr1::TerminalPtr keyword_result{}, keyword_results{};
 	lalr1::TerminalPtr keyword_program{};
 	lalr1::TerminalPtr keyword_assign{};
 	lalr1::TerminalPtr comma{}/*, stmt_end{}*/;
 	lalr1::TerminalPtr sym_real{}, sym_int{}, sym_bool{}, sym_str{};
-	lalr1::TerminalPtr ident{};
+	lalr1::TerminalPtr ident{}, label{};
+	lalr1::TerminalPtr keyword_goto{}, keyword_comefrom{};
 	lalr1::TerminalPtr type_sep{}, real_decl{}, vec_decl{}, mat_decl{},
 		int_decl{}, str_decl{};
 #endif

@@ -140,8 +140,7 @@ void ZeroACAsm::Finish()
 			vm_type_size<VMType::ADDR_MEM, false>);
         }
 
-
-	// patch function addresses
+	// patch in function addresses
 	for(const auto& [func_name, pos, num_args, call_ast] : m_func_comefroms)
 	{
 		t_astret sym = GetSym(func_name);
@@ -168,6 +167,29 @@ void ZeroACAsm::Finish()
 		m_ostr->write(reinterpret_cast<const char*>(&to_skip), vm_type_size<VMType::ADDR_IP, false>);
 	}
 
+	// patch in the jump addresses
+	for(const auto& [ label, goto_pos ] : m_goto_comefroms)
+	{
+		auto iter_label = m_labels.find(label);
+		if(iter_label == m_labels.end())
+		{
+			std::ostringstream msg;
+			msg << "Label \"" << label << "\" not found.";
+			throw std::runtime_error(msg.str());
+		}
+
+		std::streampos label_pos = iter_label->second;
+		t_vm_addr to_skip = label_pos - goto_pos;
+
+		// already skipped over address and jmp instruction
+		to_skip -= vm_type_size<VMType::ADDR_IP, true>;
+		m_ostr->seekp(goto_pos);
+		m_ostr->write(reinterpret_cast<const char*>(&to_skip),
+			vm_type_size<VMType::ADDR_IP, false>);
+	}
+
+	m_goto_comefroms.clear();
+	m_labels.clear();
 
 	// seek to end of stream
 	m_ostr->seekp(0, std::ios_base::end);
@@ -338,7 +360,7 @@ t_astret ZeroACAsm::visit(const ASTRangedLoop* ast)
 {
 	// --------------------------------------------------------------------
 	// assign initial counter variable
-	const std::string& ctrvar_ident = ast->GetRange()->GetIdent();
+	const t_str& ctrvar_ident = ast->GetRange()->GetIdent();
 
 	// expression for the counter's initial value
 	ast->GetRange()->GetBegin()->accept(this);
@@ -536,4 +558,33 @@ t_astret ZeroACAsm::visit(const ASTLoopNext* ast)
 
 	return nullptr;
 }
+
+
+t_astret ZeroACAsm::visit(const ASTLabel* ast)
+{
+	// save current stream position
+	std::streampos addr = m_ostr->tellp();
+	m_labels.emplace(std::make_pair(ast->GetIdent(), addr));
+
+	return nullptr;
+}
+
+
+t_astret ZeroACAsm::visit(const ASTJump* ast)
+{
+	if(ast->IsComefrom())
+		throw std::runtime_error("Comefrom is not (yet) implemented...");
+
+	// jump to the label
+	m_ostr->put(static_cast<t_vm_byte>(OpCode::PUSH));  // push jump address
+	m_ostr->put(static_cast<t_vm_byte>(VMType::ADDR_IP));
+	m_goto_comefroms.emplace_back(std::make_pair(ast->GetLabel(), m_ostr->tellp()));
+	t_vm_addr dummy_addr = 0;
+	m_ostr->write(reinterpret_cast<const char*>(&dummy_addr),
+		vm_type_size<VMType::ADDR_IP, false>);
+	m_ostr->put(static_cast<t_vm_byte>(OpCode::JMP));
+
+	return nullptr;
+}
+
 // ----------------------------------------------------------------------------

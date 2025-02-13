@@ -66,6 +66,7 @@ void Grammar::CreateGrammar()
 	sym_bool = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::BOOL), "bool");
 	sym_str = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::STR), "string");
 	ident = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::IDENT), "ident");
+	label = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::LABEL), "label");
 
 	type_sep = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::TYPESEP), "::");
 	real_decl = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::REALDECL), "real_decl");
@@ -80,12 +81,17 @@ void Grammar::CreateGrammar()
 	keyword_while = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::WHILE), "while");
 	keyword_do = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::DO), "do");
 	keyword_func = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::FUNC), "function");
+	keyword_procedure = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::PROC), "procedure");
 	keyword_program = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::PROGRAM), "program");
 	keyword_ret = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::RET), "return");
+	keyword_result = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::RESULT), "result");
+	keyword_results = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::RESULTS), "results");
 	keyword_next = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::NEXT), "next");
 	keyword_end = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::END), "end");
 	keyword_break = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::BREAK), "break");
 	keyword_assign = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::ASSIGN), "assign");
+	keyword_goto = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::GOTO), "goto");
+	keyword_comefrom = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::COMEFROM), "comefrom");
 
 	// for the if/else s/r conflict shift "else"
 	// see: https://www.gnu.org/software/bison/manual/html_node/Non-Operators.html
@@ -274,7 +280,64 @@ void Grammar::CreateGrammar()
 	// --------------------------------------------------------------------------------
 	// statement
 	// --------------------------------------------------------------------------------
-	// statement -> expression ;
+	// statement -> label
+#ifdef CREATE_PRODUCTION_RULES
+	statement->AddRule({ label }, semanticindex);
+#endif
+#ifdef CREATE_SEMANTIC_RULES
+	rules.emplace(std::make_pair(semanticindex,
+	[](bool full_match, const lalr1::t_semanticargs& args, [[maybe_unused]] lalr1::t_astbaseptr retval) -> lalr1::t_astbaseptr
+	{
+		if(!full_match)
+			return nullptr;
+
+		auto varident = std::dynamic_pointer_cast<ASTStrConst>(args[0]);
+		const t_str& ident = varident->GetVal();
+
+		return std::make_shared<ASTLabel>(ident);
+	}));
+#endif
+	++semanticindex;
+
+	// statement -> goto label
+#ifdef CREATE_PRODUCTION_RULES
+	statement->AddRule({ keyword_goto, label }, semanticindex);
+#endif
+#ifdef CREATE_SEMANTIC_RULES
+	rules.emplace(std::make_pair(semanticindex,
+	[](bool full_match, const lalr1::t_semanticargs& args, [[maybe_unused]] lalr1::t_astbaseptr retval) -> lalr1::t_astbaseptr
+	{
+		if(!full_match)
+			return nullptr;
+
+		auto varident = std::dynamic_pointer_cast<ASTStrConst>(args[1]);
+		const t_str& ident = varident->GetVal();
+
+		return std::make_shared<ASTJump>(ident);
+	}));
+#endif
+	++semanticindex;
+
+	// statement -> comefrom label
+#ifdef CREATE_PRODUCTION_RULES
+	statement->AddRule({ keyword_comefrom, label }, semanticindex);
+#endif
+#ifdef CREATE_SEMANTIC_RULES
+	rules.emplace(std::make_pair(semanticindex,
+	[](bool full_match, const lalr1::t_semanticargs& args, [[maybe_unused]] lalr1::t_astbaseptr retval) -> lalr1::t_astbaseptr
+	{
+		if(!full_match)
+			return nullptr;
+
+		auto varident = std::dynamic_pointer_cast<ASTStrConst>(args[1]);
+		const t_str& ident = varident->GetVal();
+
+		return std::make_shared<ASTJump>(ident, true);
+	}));
+#endif
+	++semanticindex;
+
+	// statement -> expression
 #ifdef CREATE_PRODUCTION_RULES
 	statement->AddRule({ expression/*, stmt_end*/ }, semanticindex);
 #endif
@@ -295,7 +358,7 @@ void Grammar::CreateGrammar()
 #endif
 #ifdef CREATE_SEMANTIC_RULES
 	rules.emplace(std::make_pair(semanticindex,
-	[this](bool full_match, const lalr1::t_semanticargs& args, [[maybe_unused]] lalr1::t_astbaseptr retval) -> lalr1::t_astbaseptr
+	[/*this*/](bool full_match, const lalr1::t_semanticargs& args, [[maybe_unused]] lalr1::t_astbaseptr retval) -> lalr1::t_astbaseptr
 	{
 		if(!full_match)
 			return nullptr;
@@ -824,7 +887,7 @@ void Grammar::CreateGrammar()
 	// argumentlist
 	// --------------------------------------------------------------------------------
 #ifdef CREATE_PRODUCTION_RULES
-	argumentlist->AddRule({ typedecl, ident, comma, argumentlist }, semanticindex);
+	argumentlist->AddRule({ typedecl, type_sep, ident, comma, argumentlist }, semanticindex);
 #endif
 #ifdef CREATE_SEMANTIC_RULES
 	rules.emplace(std::make_pair(semanticindex,
@@ -834,8 +897,8 @@ void Grammar::CreateGrammar()
 			return nullptr;
 
 		auto ty = std::dynamic_pointer_cast<ASTTypeDecl>(args[0]);
-		auto argname = std::dynamic_pointer_cast<ASTStrConst>(args[1]);
-		auto arglist = std::dynamic_pointer_cast<ASTArgNames>(args[3]);
+		auto argname = std::dynamic_pointer_cast<ASTStrConst>(args[2]);
+		auto arglist = std::dynamic_pointer_cast<ASTArgNames>(args[4]);
 
 		arglist->AddArg(argname->GetVal(), ty->GetType(), ty->GetDim(0), ty->GetDim(1));
 		return arglist;
@@ -844,7 +907,7 @@ void Grammar::CreateGrammar()
 	++semanticindex;
 
 #ifdef CREATE_PRODUCTION_RULES
-	argumentlist->AddRule({ typedecl, ident }, semanticindex);
+	argumentlist->AddRule({ typedecl, type_sep, ident }, semanticindex);
 #endif
 #ifdef CREATE_SEMANTIC_RULES
 	rules.emplace(std::make_pair(semanticindex,
@@ -854,7 +917,7 @@ void Grammar::CreateGrammar()
 			return nullptr;
 
 		auto ty = std::dynamic_pointer_cast<ASTTypeDecl>(args[0]);
-		auto argname = std::dynamic_pointer_cast<ASTStrConst>(args[1]);
+		auto argname = std::dynamic_pointer_cast<ASTStrConst>(args[2]);
 
 		auto arglist = std::make_shared<ASTArgNames>();
 		arglist->AddArg(argname->GetVal(), ty->GetType(), ty->GetDim(0), ty->GetDim(1));
@@ -1008,7 +1071,9 @@ void Grammar::CreateGrammar()
 	++semanticindex;
 
 /*
-// TODO
+// TODO: since there's no statement end symbols like ';', the grammar can't yet distiguish
+	unary+/- of a following statement and binary +/- of the current statement
+	=> handle newline tokens as statement deliminators in the grammar, not in the lexer
 	// unary plus
 #ifdef CREATE_PRODUCTION_RULES
 	expression->AddRule({ op_plus, expression }, semanticindex);
@@ -1793,24 +1858,27 @@ void Grammar::CreateGrammar()
 	// --------------------------------------------------------------------------------
 	// function with a single return value
 #ifdef CREATE_PRODUCTION_RULES
-	function->AddRule({ keyword_func, typedecl /*1*/, ident /*2*/,
-		bracket_open, full_argumentlist /*4*/, bracket_close,
-		statements /*6*/, keyword_end, keyword_func }, semanticindex);
+	function->AddRule({ keyword_func, ident /*1*/,
+		bracket_open, full_argumentlist /*3*/, bracket_close,
+		keyword_result, bracket_open, typedecl /*7*/, bracket_close,
+		statements /*9*/, keyword_end, keyword_func }, semanticindex);
 #endif
 #ifdef CREATE_SEMANTIC_RULES
 	rules.emplace(std::make_pair(semanticindex,
 	[this](bool full_match, const lalr1::t_semanticargs& args, [[maybe_unused]] lalr1::t_astbaseptr retval) -> lalr1::t_astbaseptr
 	{
-		if(args.size() == 3)
+		//std::cout << args.size() << std::endl;
+		if(args.size() == 5)  // keyword_result is the first unique partial match
 		{
-			auto funcname = std::dynamic_pointer_cast<ASTStrConst>(args[2]);
+			auto funcname = std::dynamic_pointer_cast<ASTStrConst>(args[1]);
 			m_context.EnterScope(funcname->GetVal());
+			//std::cout << "Entering function \"" << funcname->GetVal() << "\" scope." << std::endl;
 		}
-		else if(args.size() == /*6*/ 5) // check
+		else if(args.size() == 8)
 		{
-			auto rettype = std::dynamic_pointer_cast<ASTTypeDecl>(args[1]);
-			auto funcname = std::dynamic_pointer_cast<ASTStrConst>(args[2]);
-			auto funcargs = std::dynamic_pointer_cast<ASTArgNames>(args[4]);
+			auto funcname = std::dynamic_pointer_cast<ASTStrConst>(args[1]);
+			auto funcargs = std::dynamic_pointer_cast<ASTArgNames>(args[3]);
+			auto rettype = std::dynamic_pointer_cast<ASTTypeDecl>(args[7]);
 
 			// register argument variables
 			std::size_t argidx = 0;
@@ -1836,10 +1904,10 @@ void Grammar::CreateGrammar()
 		if(!full_match)
 			return nullptr;
 
-		auto rettype = std::dynamic_pointer_cast<ASTTypeDecl>(args[1]);
-		auto funcname = std::dynamic_pointer_cast<ASTStrConst>(args[2]);
-		auto funcargs = std::dynamic_pointer_cast<ASTArgNames>(args[4]);
-		auto funcblock = std::dynamic_pointer_cast<ASTStmts>(args[6]);
+		auto funcname = std::dynamic_pointer_cast<ASTStrConst>(args[1]);
+		auto funcargs = std::dynamic_pointer_cast<ASTArgNames>(args[3]);
+		auto rettype = std::dynamic_pointer_cast<ASTTypeDecl>(args[7]);
+		auto funcblock = std::dynamic_pointer_cast<ASTStmts>(args[9]);
 
 		auto res = std::make_shared<ASTFunc>(
 			funcname->GetVal(), rettype, funcargs, funcblock);
@@ -1849,9 +1917,9 @@ void Grammar::CreateGrammar()
 #endif
 	++semanticindex;
 
-	// function with no return value
+	// procedure with no return value
 #ifdef CREATE_PRODUCTION_RULES
-	function->AddRule({ keyword_func, ident /*1*/,
+	function->AddRule({ keyword_procedure, ident /*1*/,
 		bracket_open, full_argumentlist /*3*/, bracket_close,
 		statements /*5*/, keyword_end, keyword_func }, semanticindex);
 #endif
@@ -1863,6 +1931,7 @@ void Grammar::CreateGrammar()
 		{
 			auto funcname = std::dynamic_pointer_cast<ASTStrConst>(args[1]);
 			m_context.EnterScope(funcname->GetVal());
+			//std::cout << "Entering function \"" << funcname->GetVal() << "\" scope." << std::endl;
 		}
 		else if(args.size() == /*5*/ 4) // check
 		{
@@ -1906,25 +1975,26 @@ void Grammar::CreateGrammar()
 
 	// function with multiple return values
 #ifdef CREATE_PRODUCTION_RULES
-	function->AddRule({ keyword_func,
-		bracket_open, typelist /*2*/, bracket_close,
-		ident /*4*/, bracket_open, full_argumentlist /*6*/, bracket_close,
-		statements /*8*/, keyword_end, keyword_func }, semanticindex);
+	function->AddRule({ keyword_func, ident /*1*/,
+		bracket_open, full_argumentlist /*3*/, bracket_close,
+		keyword_results, bracket_open, typelist /*7*/, bracket_close,
+		statements /*9*/, keyword_end, keyword_func }, semanticindex);
 #endif
 #ifdef CREATE_SEMANTIC_RULES
 	rules.emplace(std::make_pair(semanticindex,
 	[this](bool full_match, const lalr1::t_semanticargs& args, [[maybe_unused]] lalr1::t_astbaseptr retval) -> lalr1::t_astbaseptr
 	{
-		if(args.size() == 5)
+		if(args.size() == 5)  // keyword_results is the first unique partial match
 		{
-			auto funcname = std::dynamic_pointer_cast<ASTStrConst>(args[4]);
+			auto funcname = std::dynamic_pointer_cast<ASTStrConst>(args[1]);
 			m_context.EnterScope(funcname->GetVal());
+			//std::cout << "Entering function \"" << funcname->GetVal() << "\" scope." << std::endl;
 		}
-		else if(args.size() == /*8*/ 7) // check
+		else if(args.size() == 8)
 		{
-			auto retargs = std::dynamic_pointer_cast<ASTArgNames>(args[2]);
-			auto funcname = std::dynamic_pointer_cast<ASTStrConst>(args[4]);
-			auto funcargs = std::dynamic_pointer_cast<ASTArgNames>(args[6]);
+			auto retargs = std::dynamic_pointer_cast<ASTArgNames>(args[7]);
+			auto funcname = std::dynamic_pointer_cast<ASTStrConst>(args[1]);
+			auto funcargs = std::dynamic_pointer_cast<ASTArgNames>(args[3]);
 
 			// register argument variables
 			std::size_t argidx = 0;
@@ -1951,10 +2021,10 @@ void Grammar::CreateGrammar()
 			return nullptr;
 
 		auto rettype = std::make_shared<ASTTypeDecl>(SymbolType::COMP);
-		auto retargs = std::dynamic_pointer_cast<ASTArgNames>(args[2]);
-		auto funcname = std::dynamic_pointer_cast<ASTStrConst>(args[4]);
-		auto funcargs = std::dynamic_pointer_cast<ASTArgNames>(args[6]);
-		auto funcblock = std::dynamic_pointer_cast<ASTStmts>(args[8]);
+		auto retargs = std::dynamic_pointer_cast<ASTArgNames>(args[7]);
+		auto funcname = std::dynamic_pointer_cast<ASTStrConst>(args[1]);
+		auto funcargs = std::dynamic_pointer_cast<ASTArgNames>(args[3]);
+		auto funcblock = std::dynamic_pointer_cast<ASTStmts>(args[9]);
 
 		auto res = std::make_shared<ASTFunc>(
 			funcname->GetVal(), rettype, funcargs, funcblock, retargs);

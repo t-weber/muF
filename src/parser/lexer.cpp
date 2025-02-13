@@ -138,10 +138,25 @@ Lexer::GetMatchingTokens(const std::string& str, std::size_t line)
 		matches.emplace_back(std::make_tuple(
 			static_cast<t_symbol_id>(Token::FUNC), str, line));
 	}
+	else if(str == "procedure")
+	{
+		matches.emplace_back(std::make_tuple(
+			static_cast<t_symbol_id>(Token::PROC), str, line));
+	}
 	else if(str == "return")
 	{
 		matches.emplace_back(std::make_tuple(
 			static_cast<t_symbol_id>(Token::RET), str, line));
+	}
+	else if(str == "result")
+	{
+		matches.emplace_back(std::make_tuple(
+			static_cast<t_symbol_id>(Token::RESULT), str, line));
+	}
+	else if(str == "results")
+	{
+		matches.emplace_back(std::make_tuple(
+			static_cast<t_symbol_id>(Token::RESULTS), str, line));
 	}
 	else if(str == "assign")
 	{
@@ -178,6 +193,16 @@ Lexer::GetMatchingTokens(const std::string& str, std::size_t line)
 		matches.emplace_back(std::make_tuple(
 			static_cast<t_symbol_id>(Token::PROGRAM), str, line));
 	}
+	else if(str == "goto")
+	{
+		matches.emplace_back(std::make_tuple(
+			static_cast<t_symbol_id>(Token::GOTO), str, line));
+	}
+	else if(str == "comefrom")
+	{
+		matches.emplace_back(std::make_tuple(
+			static_cast<t_symbol_id>(Token::COMEFROM), str, line));
+	}
 	else if(str == ".true.")
 	{
 		matches.emplace_back(std::make_tuple(
@@ -190,6 +215,8 @@ Lexer::GetMatchingTokens(const std::string& str, std::size_t line)
 	}
 	else
 	{
+		bool found_match = false;
+
 		// identifier
 		static const std::regex regex_ident{"[_A-Za-z]+[_A-Za-z0-9]*"};
 		std::smatch smatch_ident;
@@ -197,8 +224,25 @@ Lexer::GetMatchingTokens(const std::string& str, std::size_t line)
 		{
 			matches.emplace_back(std::make_tuple(
 				static_cast<t_symbol_id>(Token::IDENT), str, line));
+
+			found_match = true;
 		}
-		else
+
+		if(!found_match)
+		{
+			// labels
+			static const std::regex regex_label{"\\.[_A-Za-z]+[_A-Za-z0-9]*"};
+			std::smatch smatch_label;
+			if(std::regex_match(str, smatch_label, regex_label))
+			{
+				matches.emplace_back(std::make_tuple(
+					static_cast<t_symbol_id>(Token::LABEL), str, line));
+
+				found_match = true;
+			}
+		}
+
+		if(!found_match)
 		{
 			// partially matching keywords
 			// otherwise the lexer would give up before seeing a full keyword like ".true."
@@ -208,6 +252,8 @@ Lexer::GetMatchingTokens(const std::string& str, std::size_t line)
 			{
 				matches.emplace_back(std::make_tuple(
 					static_cast<t_symbol_id>(Token::PARTIAL), str, line));
+
+				found_match = true;
 			}
 		}
 	}

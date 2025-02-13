@@ -49,6 +49,8 @@ class ASTRangedLoop;
 class ASTLoopBreak;
 class ASTLoopNext;
 class ASTExprList;
+class ASTJump;
+class ASTLabel;
 template<class> class ASTNumConst;
 
 
@@ -83,6 +85,8 @@ enum class ASTType
 	LoopNext,
 	ExprList,
 	NumConst,
+	Label,
+	Jump,
 };
 
 
@@ -133,6 +137,9 @@ public:
 	virtual t_astret visit(const ASTComp* ast) = 0;
 	virtual t_astret visit(const ASTBool* ast) = 0;
 	virtual t_astret visit(const ASTExprList* ast) = 0;
+
+	virtual t_astret visit(const ASTLabel* ast) = 0;
+	virtual t_astret visit(const ASTJump* ast) = 0;
 
 	virtual t_astret visit(const ASTArgNames* ast) = 0;
 	virtual t_astret visit(const ASTTypeDecl* ast) = 0;
@@ -300,6 +307,41 @@ public:
 
 private:
 	t_str ident{};
+};
+
+
+class ASTLabel : public ASTAcceptor<ASTLabel>
+{
+public:
+	ASTLabel(const t_str& ident)
+		: ident{ident}
+	{}
+
+	const t_str& GetIdent() const { return ident; }
+
+	virtual ASTType type() override { return ASTType::Label; }
+
+private:
+	t_str ident{};
+};
+
+
+class ASTJump : public ASTAcceptor<ASTJump>
+{
+public:
+	ASTJump(const t_str& label, bool is_comefrom = false)
+		: label{label}, is_comefrom{is_comefrom}
+	{}
+
+	const t_str& GetLabel() const { return label; }
+	bool IsComefrom() const { return is_comefrom; }
+
+	virtual ASTType type() override { return ASTType::Jump; }
+
+private:
+	// label to jump to (or come from)
+	t_str label{};
+	bool is_comefrom{false};
 };
 
 

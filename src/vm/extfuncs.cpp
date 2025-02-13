@@ -17,9 +17,9 @@ VM::t_data VM::CallExternal(const t_str& func_name)
 
 	if(m_debug)
 	{
-		std::cout << "Calling external function \"" << func_name << "\""
+		std::cout << "calling external function \"" << func_name << "\""
 			//<< " with " << num_args << " arguments."
-			<< std::endl;
+			<< "." << std::endl;
 	}
 
 	if(func_name == "abs" || func_name == "fabs" ||

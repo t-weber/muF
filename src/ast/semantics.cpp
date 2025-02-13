@@ -267,3 +267,17 @@ t_astret Semantics::visit([[maybe_unused]] const ASTNumConst<bool>* ast)
 {
 	return nullptr;
 }
+
+
+t_astret Semantics::visit(const ASTLabel* ast)
+{
+	return nullptr;
+}
+
+
+t_astret Semantics::visit(const ASTJump* ast)
+{
+	ast->GetLabel()->accept(this);
+
+	return nullptr;
+}

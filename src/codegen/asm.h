@@ -65,6 +65,9 @@ public:
 	virtual t_astret visit(const ASTBool* ast) override;
 	virtual t_astret visit(const ASTExprList* ast) override;
 
+	virtual t_astret visit(const ASTLabel* ast) override;
+	virtual t_astret visit(const ASTJump* ast) override;
+
 	// ------------------------------------------------------------------------
 	// internally handled dummy nodes
 	// ------------------------------------------------------------------------
@@ -122,12 +125,12 @@ private:
 	// currently active function scope
 	std::vector<t_str> m_curscope{};
 	// current address on stack for local variables
-	std::unordered_map<std::string, t_vm_addr> m_local_stack{};
+	std::unordered_map<t_str, t_vm_addr> m_local_stack{};
 	// current address on stack for global variables
 	t_vm_addr m_global_stack{};
 
 	// stream positions where addresses need to be patched in
-	std::vector<std::tuple<std::string, std::streampos, t_vm_addr, const AST*>>
+	std::vector<std::tuple<t_str, std::streampos, t_vm_addr, const AST*>>
 		m_func_comefroms{};
 	std::vector<std::streampos> m_endfunc_comefroms{};
 	std::vector<std::tuple<std::streampos, std::streampos>> m_const_addrs{};
@@ -137,6 +140,10 @@ private:
 	std::vector<std::size_t> m_cur_loop{};
 	std::unordered_multimap<std::size_t, std::streampos>
 		m_loop_begin_comefroms{}, m_loop_end_comefroms{};
+
+	// addresses of labels
+	std::unordered_map<t_str, std::streampos> m_labels{};
+	std::vector<std::pair<t_str, std::streampos>> m_goto_comefroms{};
 
 	// dummy symbols for constants
 	Symbol *m_scalar_const{}, *m_int_const{}, *m_str_const{};
