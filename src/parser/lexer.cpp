@@ -246,7 +246,7 @@ Lexer::GetMatchingTokens(const std::string& str, std::size_t line)
 		{
 			// partially matching keywords
 			// otherwise the lexer would give up before seeing a full keyword like ".true."
-			static const std::regex regex_partial{"\\.[_A-Za-z]*\\.*"};
+			static const std::regex regex_partial{"\\.[_A-Za-z]*"};
 			std::smatch smatch_partial;
 			if(std::regex_match(str, smatch_partial, regex_partial))
 			{

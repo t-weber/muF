@@ -4,7 +4,7 @@
 
 
 function fibo(integer :: n) result(integer)
-	if n <= 1 then
+	if(n <= 1) then
 		return 1
 	else
 		return fibo(n - 1) + fibo(n - 2)
@@ -13,7 +13,7 @@ end function
 
 
 function fac(integer :: n) result(integer)
-	if n <= 1 then
+	if(n <= 1) then
 		return 1
 	end if
 
@@ -24,7 +24,7 @@ end function
 program fibo
 	do while(.true.)
 		integer :: n = getint("n = ")
-		if n < 0 then
+		if(n < 0) then
 			break
 		end if
 
