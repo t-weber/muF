@@ -37,12 +37,12 @@ public:
 	using t_addr = ::t_vm_addr;
 	using t_int = ::t_vm_int;
 	using t_real = ::t_vm_real;
+	using t_cplx = ::t_vm_cplx;
 	using t_byte = ::t_vm_byte;
 	using t_bool = ::t_vm_byte;
 
 	using t_str = ::t_vm_str;
 	using t_vec = ::t_vm_vec;
-	using t_mat = ::t_vm_mat;
 
 	using t_uint = typename std::make_unsigned<t_int>::type;
 	using t_char = typename t_str::value_type;
@@ -50,22 +50,23 @@ public:
 	// variant of all data types
 	using t_data = std::variant<
 		std::monostate /*prevents default-construction of first type (t_real)*/,
-		t_real, t_int, t_bool, t_addr, t_str, t_vec, t_mat>;
+		t_real, t_int, t_cplx, t_bool, t_addr, t_str, t_vec>;
 
 	// use variant type indices and std::in_place_index instead of direct types
 	// because two types might be identical (e.g. t_int and t_addr)
 	static constexpr const std::size_t m_realidx = 1;
 	static constexpr const std::size_t m_intidx  = 2;
-	static constexpr const std::size_t m_boolidx = 3;
-	static constexpr const std::size_t m_addridx = 4;
-	static constexpr const std::size_t m_stridx  = 5;
-	static constexpr const std::size_t m_vecidx  = 6;
-	static constexpr const std::size_t m_matidx  = 7;
+	static constexpr const std::size_t m_cplxidx = 3;
+	static constexpr const std::size_t m_boolidx = 4;
+	static constexpr const std::size_t m_addridx = 5;
+	static constexpr const std::size_t m_stridx  = 6;
+	static constexpr const std::size_t m_vecidx  = 7;
 
 	// data type sizes
 	static constexpr const t_addr m_bytesize = sizeof(t_byte);
 	static constexpr const t_addr m_addrsize = sizeof(t_addr);
 	static constexpr const t_addr m_realsize = sizeof(t_real);
+	static constexpr const t_addr m_cplxsize = 2*sizeof(t_real);
 	static constexpr const t_addr m_intsize = sizeof(t_int);
 	static constexpr const t_addr m_boolsize = sizeof(t_bool);
 	static constexpr const t_addr m_charsize = sizeof(t_char);
@@ -135,6 +136,15 @@ protected:
 	// push a bool to the stack
 	void PushBool(bool val);
 
+	// pop a complex number from the stack
+	t_cplx PopComplex();
+
+	// get the complex number on top of the stack
+	t_cplx TopComplex(t_addr sp_offs = 0) const;
+
+	// push a complex number to the stack
+	void PushComplex(const t_cplx& val);
+
 	// pop a string from the stack
 	t_str PopString();
 
@@ -152,15 +162,6 @@ protected:
 
 	// push a vector to the stack
 	void PushVector(const t_vec& vec);
-
-	// pop a matrix from the stack
-	t_mat PopMatrix(bool raw_elems = true);
-
-	// get the matrix on top of the stack
-	t_mat TopMatrix(t_addr sp_offs = 0) const;
-
-	// push a matrix to the stack
-	void PushMatrix(const t_mat& vec);
 
 	// push data onto the stack
 	void PushData(const t_data& data, VMType ty = VMType::UNKNOWN, bool err_on_unknown = true);
@@ -190,8 +191,7 @@ protected:
 			CheckMemoryBounds(addr, len*m_charsize);
 			const t_char* begin = reinterpret_cast<t_char*>(&m_mem[addr]);
 
-			t_str str(begin, len);
-			return str;
+			return t_str(begin, len);
 		}
 
 		// vector type
@@ -203,23 +203,17 @@ protected:
 			CheckMemoryBounds(addr, num_elems*m_realsize);
 			const t_real* begin = reinterpret_cast<t_real*>(&m_mem[addr]);
 
-			t_vec vec(begin, num_elems);
-			return vec;
+			return t_vec(begin, num_elems);
 		}
 
-		// matrix type
-		else if constexpr(std::is_same_v<std::decay_t<t_val>, t_mat>)
+		// complex type
+		else if constexpr(std::is_same_v<std::decay_t<t_val>, t_cplx>)
 		{
-			t_addr num_elems_1 = ReadMemRaw<t_addr>(addr);
-			addr += m_addrsize;
-			t_addr num_elems_2 = ReadMemRaw<t_addr>(addr);
-			addr += m_addrsize;
+			CheckMemoryBounds(addr, m_cplxsize);
+			const t_real* real = reinterpret_cast<t_real*>(&m_mem[addr]);
+			const t_real* imag = reinterpret_cast<t_real*>(&m_mem[addr + m_realsize]);
 
-			CheckMemoryBounds(addr, num_elems_1*num_elems_2*m_realsize);
-			const t_real* begin = reinterpret_cast<t_real*>(&m_mem[addr]);
-
-			t_mat mat(begin, num_elems_1, num_elems_2);
-			return mat;
+			return t_cplx{*real, *imag};
 		}
 
 		// primitive types
@@ -269,22 +263,14 @@ protected:
 			std::memcpy(begin, val.data(), num_elems*m_realsize);
 		}
 
-		// matrix type
-		else if constexpr(std::is_same_v<std::decay_t<t_val>, t_mat>)
+		// complex type
+		else if constexpr(std::is_same_v<std::decay_t<t_val>, t_cplx>)
 		{
-			t_addr num_elems_1 = static_cast<t_addr>(val.size1());
-			t_addr num_elems_2 = static_cast<t_addr>(val.size2());
-			CheckMemoryBounds(addr, m_addrsize + num_elems_1*num_elems_2*m_realsize);
+			CheckMemoryBounds(addr, m_cplxsize);
 
-			// write matrix lengths
-			WriteMemRaw<t_addr>(addr, num_elems_1);
-			addr += m_addrsize;
-			WriteMemRaw<t_addr>(addr, num_elems_2);
-			addr += m_addrsize;
-
-			// write matrix
 			t_real* begin = reinterpret_cast<t_real*>(&m_mem[addr]);
-			std::memcpy(begin, val.data(), num_elems_1*num_elems_2*m_realsize);
+			*(begin + 0) = val.real();
+			*(begin + 1) = val.imag();
 		}
 
 		// primitive types
@@ -408,6 +394,42 @@ protected:
 			}
 		}
 
+		// casting from complex
+		if(data.index() == m_cplxidx)
+		{
+			if constexpr(std::is_same_v<std::decay_t<t_to>, t_cplx>)
+				return;  // don't need to cast to the same type
+
+			t_cplx val = std::get<m_cplxidx>(data);
+
+			// convert to string
+			if constexpr(std::is_same_v<std::decay_t<t_to>, t_str>)
+			{
+				t_real real = val.real();
+				t_real imag = val.imag();
+
+				if(m::equals_0<t_real>(real, m_eps))
+					real = t_real(0);
+				if(m::equals_0<t_real>(imag, m_eps))
+					imag = t_real(0);
+
+				std::ostringstream ostr;
+				ostr.precision(m_prec);
+				ostr << "(" << real << ", " << imag << ")";
+				PopData();
+				PushData(t_data{std::in_place_index<m_stridx>, ostr.str()});
+			}
+
+			// convert to primitive type
+			else
+			{
+				std::ostringstream msg;
+				msg << "Invalid cast from complex to "
+					<< GetDataTypeName(toidx) << ".";
+				throw std::runtime_error(msg.str());
+			}
+		}
+
 		// casting from string
 		else if(data.index() == m_stridx)
 		{
@@ -459,57 +481,14 @@ protected:
 				throw std::runtime_error(msg.str());
 			}
 		}
-
-		// casting from matrix
-		else if(data.index() == m_matidx)
-		{
-			if constexpr(std::is_same_v<std::decay_t<t_to>, t_mat>)
-				return;  // don't need to cast to the same type
-
-			const t_mat& val = std::get<m_matidx>(data);
-
-			// convert to string
-			if constexpr(std::is_same_v<std::decay_t<t_to>, t_str>)
-			{
-				std::ostringstream ostr;
-				ostr.precision(m_prec);
-				ostr << "[ ";
-				for(std::size_t i=0; i<val.size1(); ++i)
-				{
-					for(std::size_t j=0; j<val.size2(); ++j)
-					{
-						t_real elem = val(i, j);
-						if(m::equals_0<t_real>(elem, m_eps))
-							elem = t_real(0);
-
-						ostr << elem;
-						if(j != val.size2()-1)
-							ostr << ", ";
-					}
-						if(i != val.size1()-1)
-							ostr << "; ";
-				}
-				ostr << " ]";
-
-				PopData();
-				PushData(t_data{std::in_place_index<m_stridx>, ostr.str()});
-			}
-			else
-			{
-				std::ostringstream msg;
-				msg << "Invalid cast from matrix to "
-					<< GetDataTypeName(toidx) << ".";
-				throw std::runtime_error(msg.str());
-			}
-		}
 	}
 
 
 	/**
-	 * cast to an array variable type (matrix or vector)
+	 * cast to an array variable type
 	 */
 	template<std::size_t toidx>
-	void OpArrayCast(t_addr size1, t_addr size2 = 0)
+	void OpArrayCast(t_addr size)
 	{
 		//using t_to = std::variant_alternative_t<toidx, t_data>;
 		t_data data = TopData();
@@ -528,8 +507,8 @@ protected:
 				PopData();
 
 				// set every element of the vector to the real value
-				t_vec vec = m::create<t_vec>(size1);
-				for(t_addr i=0; i<size1; ++i)
+				t_vec vec = m::create<t_vec>(size);
+				for(t_addr i = 0; i < size; ++i)
 					vec[i] = val;
 				PushData(t_data{std::in_place_index<m_vecidx>, vec});
 			}
@@ -541,72 +520,10 @@ protected:
 				PopData();
 
 				// set every element of the vector to the int value
-				t_vec vec = m::create<t_vec>(size1);
-				for(t_addr i=0; i<size1; ++i)
+				t_vec vec = m::create<t_vec>(size);
+				for(t_addr i = 0; i < size; ++i)
 					vec[i] = t_real(val);
 				PushData(t_data{std::in_place_index<m_vecidx>, vec});
-			}
-
-			// casting from matrix
-			else if(data.index() == m_matidx)
-			{
-				const t_mat& val = std::get<m_matidx>(data);
-				PopData();
-
-				// flatten the matrix
-				t_vec vec = m::create<t_vec>(size1);
-				for(t_addr i=0; i<size1; ++i)
-					vec[i] = val(i/val.size2(), i%val.size2());
-				PushData(t_data{std::in_place_index<m_vecidx>, vec});
-			}
-		}
-
-		// casting to matrix
-		else if constexpr(toidx == m_matidx)
-		{
-			// casting from matrix
-			if(data.index() == m_matidx)
-				return;  // no action needed, TODO: check sizes
-
-			// casting from real
-			else if(data.index() == m_realidx)
-			{
-				t_real val = std::get<m_realidx>(data);
-				PopData();
-
-				// set every element of the matrix to the real value
-				t_mat mat = m::create<t_mat>(size1, size2);
-				for(t_addr i=0; i<size1; ++i)
-					for(t_addr j=0; j<size2; ++j)
-						mat(i, j) = val;
-				PushData(t_data{std::in_place_index<m_matidx>, mat});
-			}
-
-			// casting from int
-			else if(data.index() == m_intidx)
-			{
-				t_real val = std::get<m_intidx>(data);
-				PopData();
-
-				// set every element of the matrix to the int value
-				t_mat mat = m::create<t_mat>(size1, size2);
-				for(t_addr i=0; i<size1; ++i)
-					for(t_addr j=0; j<size2; ++j)
-						mat(i, j) = t_real(val);
-				PushData(t_data{std::in_place_index<m_matidx>, mat});
-			}
-
-			// casting from vector
-			else if(data.index() == m_vecidx)
-			{
-				const t_vec& val = std::get<m_vecidx>(data);
-				PopData();
-
-				t_mat mat = m::create<t_mat>(size1, size2);
-				for(t_addr i=0; i<size1; ++i)
-					for(t_addr j=0; j<size2; ++j)
-						mat(i, j) = val[i*size2 + j];
-				PushData(t_data{std::in_place_index<m_matidx>, mat});
 			}
 		}
 	}
@@ -636,17 +553,6 @@ protected:
 				result = val1 - val2;
 		}
 
-		// matrix operators
-		else if constexpr(std::is_same_v<std::decay_t<t_val>, t_mat>)
-		{
-			if constexpr(op == '+')
-				result = val1 + val2;
-			else if constexpr(op == '-')
-				result = val1 - val2;
-			else if constexpr(op == '*')
-				result = val1 * val2;
-		}
-
 		// int / real operators
 		else if constexpr(std::is_same_v<std::decay_t<t_val>, t_int> ||
 			std::is_same_v<std::decay_t<t_val>, t_real>)
@@ -667,6 +573,21 @@ protected:
 				result = pow<t_val>(val1, val2);
 		}
 
+		// complex operators
+		else if constexpr(std::is_same_v<std::decay_t<t_val>, t_cplx>)
+		{
+			if constexpr(op == '+')
+				result = val1 + val2;
+			else if constexpr(op == '-')
+				result = val1 - val2;
+			else if constexpr(op == '*')
+				result = val1 * val2;
+			else if constexpr(op == '/')
+				result = val1 / val2;
+			else if constexpr(op == '^')
+				result = pow<t_val>(val1, val2);
+		}
+
 		return result;
 	}
 
@@ -681,28 +602,8 @@ protected:
 		t_data val1 = PopData();
 		t_data result;
 
-		// matrix-vector product
-		if(val1.index() == m_matidx && val2.index() == m_vecidx && op == '*')
-		{
-			using namespace m_ops;
-			const t_mat& mat = std::get<m_matidx>(val1);
-			const t_vec& vec = std::get<m_vecidx>(val2);
-			result = t_data{std::in_place_index<m_vecidx>, mat*vec};
-		}
-
-		// matrix power
-		else if(val1.index() == m_matidx && val2.index() == m_realidx && op == '^')
-		{
-			const t_mat& mat = std::get<m_matidx>(val1);
-			t_int pow = static_cast<t_int>(std::get<m_realidx>(val2));
-			auto [matpow, ok] = m::pow<t_mat, t_vec, t_int>(mat, pow);
-			if(!ok)
-				throw std::runtime_error("Matrix power could not be calculated.");
-			result = t_data{std::in_place_index<m_matidx>, matpow};
-		}
-
 		// dot product
-		else if(val1.index() == m_vecidx && val2.index() == m_vecidx && op == '*')
+		if(val1.index() == m_vecidx && val2.index() == m_vecidx && op == '*')
 		{
 			const t_vec& vec1 = std::get<m_vecidx>(val1);
 			const t_vec& vec2 = std::get<m_vecidx>(val2);
@@ -737,33 +638,6 @@ protected:
 			result = t_data{std::in_place_index<m_vecidx>, s * vec};
 		}
 
-		// scale matrix
-		else if(val1.index() == m_matidx && val2.index() == m_realidx && op == '*')
-		{
-			using namespace m_ops;
-			const t_mat& mat = std::get<m_matidx>(val1);
-			const t_real s = std::get<m_realidx>(val2);
-			result = t_data{std::in_place_index<m_matidx>, s * mat};
-		}
-
-		// scale matrix
-		else if(val1.index() == m_matidx && val2.index() == m_realidx && op == '/')
-		{
-			using namespace m_ops;
-			const t_mat& mat = std::get<m_matidx>(val1);
-			const t_real s = std::get<m_realidx>(val2);
-			result = t_data{std::in_place_index<m_matidx>, mat / s};
-		}
-
-		// scale matrix
-		else if(val2.index() == m_matidx && val1.index() == m_realidx && op == '*')
-		{
-			using namespace m_ops;
-			const t_mat& mat = std::get<m_matidx>(val2);
-			const t_real s = std::get<m_realidx>(val1);
-			result = t_data{std::in_place_index<m_matidx>, s * mat};
-		}
-
 		// same-type operations
 		else if(val1.index() == val2.index())
 		{
@@ -777,6 +651,11 @@ protected:
 				result = t_data{std::in_place_index<m_intidx>, OpArithmetic<t_int, op>(
 					std::get<m_intidx>(val1), std::get<m_intidx>(val2))};
 			}
+			else if(val1.index() == m_cplxidx)
+			{
+				result = t_data{std::in_place_index<m_cplxidx>, OpArithmetic<t_cplx, op>(
+					std::get<m_cplxidx>(val1), std::get<m_cplxidx>(val2))};
+			}
 			else if(val1.index() == m_stridx)
 			{
 				result = t_data{std::in_place_index<m_stridx>, OpArithmetic<t_str, op>(
@@ -786,11 +665,6 @@ protected:
 			{
 				result = t_data{std::in_place_index<m_vecidx>, OpArithmetic<t_vec, op>(
 					std::get<m_vecidx>(val1), std::get<m_vecidx>(val2))};
-			}
-			else if(val1.index() == m_matidx)
-			{
-				result = t_data{std::in_place_index<m_matidx>, OpArithmetic<t_mat, op>(
-					std::get<m_matidx>(val1), std::get<m_matidx>(val2))};
 			}
 		}
 		else
@@ -909,9 +783,8 @@ protected:
 				result = (val1 != val2);
 		}
 
-		// vector or matrix comparison
-		else if constexpr(std::is_same_v<std::decay_t<t_val>, t_vec> ||
-			std::is_same_v<std::decay_t<t_val>, t_mat>)
+		// vector comparison
+		else if constexpr(std::is_same_v<std::decay_t<t_val>, t_vec>)
 		{
 			if constexpr(op == OpCode::EQU)
 				result = m::equals(val1, val2, m_eps);
@@ -990,11 +863,6 @@ protected:
 			result = OpComparison<t_vec, op>(
 				std::get<m_vecidx>(val1), std::get<m_vecidx>(val2));
 		}
-		else if(val1.index() == m_matidx)
-		{
-			result = OpComparison<t_mat, op>(
-				std::get<m_matidx>(val1), std::get<m_matidx>(val2));
-		}
 		else
 		{
 			throw std::runtime_error("Invalid type in comparison operation.");
@@ -1034,7 +902,7 @@ private:
 	t_addr m_ip{};                     // instruction pointer
 	t_addr m_sp{};                     // stack pointer
 	t_addr m_bp{};                     // base pointer for local variables
-	t_addr m_gbp{};                    // gloabl base pointer for global variables
+	t_addr m_gbp{};                    // global base pointer for global variables
 
 	// memory sizes and ranges
 	t_addr m_memsize = 0x1000;         // total memory size

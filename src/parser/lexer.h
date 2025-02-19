@@ -38,10 +38,10 @@ enum class Token : lalr1::t_symbol_id
 	// type declarations
 	TYPESEP     = 2000,
 	REALDECL    = 2010,
-	VECTORDECL  = 2011,
-	MATRIXDECL  = 2012,
-	INTDECL     = 2013,
-	STRINGDECL  = 2014,
+	CPLXDECL    = 2011,
+	INTDECL     = 2012,
+	ARRDECL     = 2020,
+	STRINGDECL  = 2030,
 
 	// logical operators
 	EQU         = 3000,

@@ -20,6 +20,10 @@ t_val pow(t_val val1, t_val val2)
 	{
 		return std::pow(val1, val2);
 	}
+	else if(m::is_complex<t_val>)
+	{
+		return std::pow(val1, val2);
+	}
 	else if constexpr(std::is_integral_v<t_val>)
 	{
 		if(val2 == 0)
@@ -32,6 +36,8 @@ t_val pow(t_val val1, t_val val2)
 			result *= val1;
 		return result;
 	}
+
+	return t_val{};
 }
 
 

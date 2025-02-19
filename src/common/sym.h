@@ -11,7 +11,6 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
-#include <array>
 #include <vector>
 #include <optional>
 #include <iostream>
@@ -31,11 +30,11 @@ enum class SymbolType
 
 	REAL,
 	INT,
+	CPLX,
 	BOOL,
 	STRING,
 
 	VECTOR,
-	MATRIX,
 
 	COMP,     // compound
 	FUNC,     // function pointer
@@ -53,12 +52,12 @@ struct Symbol
 	std::optional<t_str> ext_name{};  // name of external symbol (if different from internal name)
 
 	SymbolType ty { SymbolType::VOID };
-	std::array<std::size_t, 2> dims{{ 1, 1 }};
+	std::vector<std::size_t> dims{ 1 };
 
 	// for functions
 	std::vector<SymbolType> argty{};
 	SymbolType retty = SymbolType::VOID;
-	std::array<std::size_t, 2> retdims{{1,1}};
+	std::vector<std::size_t> retdims{ 1 };
 
 	// for compound type
 	std::vector<SymbolPtr> elems{};
@@ -88,13 +87,13 @@ class SymTab
 public:
 	Symbol* AddSymbol(const t_str& scope,
 		const t_str& name, SymbolType ty,
-		const std::array<std::size_t, 2>& dims,
+		const std::vector<std::size_t>& dims,
 		bool is_temp = false);
 
 	Symbol* AddFunc(const t_str& scope,
 		const t_str& name, SymbolType retty,
 		const std::vector<SymbolType>& argtypes,
-		const std::array<std::size_t, 2>* retdims = nullptr,
+		const std::vector<std::size_t>* retdims = nullptr,
 		const std::vector<SymbolType>* multirettypes = nullptr,
 		bool is_external = false);
 
@@ -102,7 +101,7 @@ public:
 		const t_str& name, const t_str& extfunc_name,
 		SymbolType retty,
 		const std::vector<SymbolType>& argtypes,
-		const std::array<std::size_t, 2>* retdims = nullptr,
+		const std::vector<std::size_t>* retdims = nullptr,
 		const std::vector<SymbolType>* multirettypes = nullptr);
 
 	Symbol* FindSymbol(const t_str& name);
@@ -119,33 +118,6 @@ public:
 private:
 	std::unordered_map<t_str, Symbol> m_syms{};
 };
-
-
-
-// ----------------------------------------------------------------------------
-// helper functions
-// ----------------------------------------------------------------------------
-/**
- * multiplies the elements of a container
- */
-template<class t_cont, std::size_t ...seq>
-constexpr typename t_cont::value_type multiply_elements(
-	const t_cont& cont, const std::index_sequence<seq...>&)
-{
-	return (std::get<seq>(cont) * ...);
-}
-
-
-
-/**
- * multiplies all dimensions of an array type
- */
-template<std::size_t NUM_DIMS = 2>
-std::size_t get_arraydim(const std::array<std::size_t, NUM_DIMS>& dims)
-{
-	return multiply_elements(dims, std::make_index_sequence<NUM_DIMS>());
-}
-// ----------------------------------------------------------------------------
 
 
 #endif

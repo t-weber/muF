@@ -20,9 +20,9 @@ t_str Symbol::get_type_name(SymbolType ty)
 	{
 		case SymbolType::REAL: return "real";
 		case SymbolType::INT: return "integer";
+		case SymbolType::CPLX: return "complex";
 		case SymbolType::BOOL: return "bool";
 		case SymbolType::VECTOR: return "vec";
-		case SymbolType::MATRIX: return "mat";
 		case SymbolType::STRING: return "str";
 		case SymbolType::VOID: return "void";
 		case SymbolType::COMP: return "comp";
@@ -44,7 +44,7 @@ const t_str& Symbol::get_scopenameseparator()
 
 Symbol* SymTab::AddSymbol(const t_str& scope,
 	const t_str& name, SymbolType ty,
-	const std::array<std::size_t, 2>& dims,
+	const std::vector<std::size_t>& dims,
 	bool is_temp)
 {
 	Symbol sym{.name = name,
@@ -61,7 +61,7 @@ Symbol* SymTab::AddSymbol(const t_str& scope,
 Symbol* SymTab::AddFunc(const t_str& scope,
 	const t_str& name, SymbolType retty,
 	const std::vector<SymbolType>& argtypes,
-	const std::array<std::size_t, 2>* retdims,
+	const std::vector<std::size_t>* retdims,
 	const std::vector<SymbolType>* multirettypes,
 	bool is_external)
 {
@@ -95,7 +95,7 @@ Symbol* SymTab::AddExtFunc(const t_str& scope,
 	const t_str& name, const t_str& extfunc_name,
 	SymbolType retty,
 	const std::vector<SymbolType>& argtypes,
-	const std::array<std::size_t, 2>* retdims,
+	const std::vector<std::size_t>* retdims,
 	const std::vector<SymbolType>* multirettypes)
 {
 	Symbol *sym = AddFunc(scope, name, retty, argtypes, retdims, multirettypes, true);
@@ -154,11 +154,11 @@ std::ostream& operator<<(std::ostream& ostr, const SymTab& tab)
 	const int dims_len = 8;
 	//const int addr_len = 8;
 
-	ostr << std::left << std::setw(name_len) << "full name"
+	ostr
+		<< std::left << std::setw(name_len) << "full name"
 		<< std::left << std::setw(type_len) << "type"
 		<< std::left << std::setw(refs_len) << "refs"
-		<< std::left << std::setw(dims_len) << "dim1"
-		<< std::left << std::setw(dims_len) << "dim2"
+		<< std::left << std::setw(dims_len) << "dims"
 		//<< std::left << std::setw(addr_len) << "addr"
 		<< "\n";
 	ostr << "--------------------------------------------------------------------------------\n";
@@ -181,9 +181,10 @@ std::ostream& operator<<(std::ostream& ostr, const SymTab& tab)
 
 		ostr << std::left << std::setw(name_len) << pair.first
 			<< std::left << std::setw(type_len) << ty
-			<< std::left << std::setw(refs_len) << sym.refcnt
-			<< std::left << std::setw(dims_len) << std::get<0>(sym.dims)
-			<< std::left << std::setw(dims_len) << std::get<1>(sym.dims)
+			<< std::left << std::setw(refs_len) << sym.refcnt;
+		for(std::size_t i = 0; i < sym.dims.size(); ++i)
+			ostr << std::left << std::setw(dims_len) << sym.dims[i];
+		ostr
 			//<< std::left << std::setw(addr_len) << addr
 			<< "\n";
 	}

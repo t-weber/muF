@@ -36,8 +36,7 @@ enum class OpCode : t_vm_byte
 	TOI      = 0x30,  // cast to int
 	TOF      = 0x31,  // cast to real
 	TOS      = 0x32,  // cast to string
-	TOV      = 0x33,  // cast to vector
-	TOM      = 0x34,  // cast to matrix
+	TOA      = 0x33,  // cast to array
 
 	// jumps
 	JMP      = 0x40,  // unconditional jump
@@ -73,19 +72,13 @@ enum class OpCode : t_vm_byte
 	ROTR     = 0x87,  // rotate right
 
 	// array operations
-	MAKEVEC  = 0x90,  // create a vector
-	MAKEMAT  = 0x91,  // create a matrix
+	MAKEARR  = 0x90,  // create an array
 
 	// array memory operations
-	RDARR1D  = 0xa0,  // read element from a 1d array type
-	RDARR1DR = 0xa1,  // read range from a 1d array type
-	RDARR2D  = 0xa2,  // read element from a 2d array type
-	RDARR2DR = 0xa3,  // read range from a 2d array type
-
-	WRARR1D  = 0xa4,  // write element to a 1d array type
-	WRARR1DR = 0xa5,  // write range to a 1d array type
-	WRARR2D  = 0xa6,  // write element to a 2d array type
-	WRARR2DR = 0xa7,  // write range to a 2d array type
+	RDARR    = 0xa0,  // read element from an array type
+	RDARRR   = 0xa1,  // read range from an array type
+	WRARR    = 0xa4,  // write element to an array type
+	WRARRR   = 0xa5,  // write range to an array type
 };
 
 
@@ -114,8 +107,7 @@ constexpr t_str get_vm_opcode_name(OpCode op)
 		case OpCode::TOI:       return "toi";
 		case OpCode::TOF:       return "tof";
 		case OpCode::TOS:       return "tos";
-		case OpCode::TOV:       return "tov";
-		case OpCode::TOM:       return "tom";
+		case OpCode::TOA:       return "toa";
 		case OpCode::JMP:       return "jmp";
 		case OpCode::JMPCND:    return "jmpcnd";
 		case OpCode::AND:       return "and";
@@ -139,16 +131,11 @@ constexpr t_str get_vm_opcode_name(OpCode op)
 		case OpCode::SHR:       return "shr";
 		case OpCode::ROTL:      return "rotl";
 		case OpCode::ROTR:      return "rotr";
-		case OpCode::MAKEVEC:   return "makevec";
-		case OpCode::MAKEMAT:   return "makemat";
-		case OpCode::RDARR1D:   return "rdarr1d";
-		case OpCode::RDARR1DR:  return "rdarr1dr";
-		case OpCode::RDARR2D:   return "rdarr2d";
-		case OpCode::RDARR2DR:  return "rdarr2dr";
-		case OpCode::WRARR1D:   return "wrarr1d";
-		case OpCode::WRARR1DR:  return "wrarr1dr";
-		case OpCode::WRARR2D:   return "wrarr2d";
-		case OpCode::WRARR2DR:  return "wrarr2dr";
+		case OpCode::MAKEARR:   return "makearr";
+		case OpCode::RDARR:     return "rdarr";
+		case OpCode::RDARRR:    return "rdarrr";
+		case OpCode::WRARR:     return "wrarr";
+		case OpCode::WRARRR:    return "wrarrr";
 		default:                return "<unknown>";
 	}
 }

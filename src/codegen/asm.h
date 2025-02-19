@@ -34,7 +34,6 @@ public:
 	virtual t_astret visit(const ASTMult* ast) override;
 	virtual t_astret visit(const ASTMod* ast) override;
 	virtual t_astret visit(const ASTPow* ast) override;
-	virtual t_astret visit(const ASTTransp* ast) override;
 	virtual t_astret visit(const ASTNorm* ast) override;
 
 	virtual t_astret visit(const ASTVarDecl* ast) override;
@@ -47,6 +46,7 @@ public:
 
 	virtual t_astret visit(const ASTNumConst<t_real>* ast) override;
 	virtual t_astret visit(const ASTNumConst<t_int>* ast) override;
+	virtual t_astret visit(const ASTNumConst<t_cplx>* ast) override;
 	virtual t_astret visit(const ASTNumConst<bool>* ast) override;
 	virtual t_astret visit(const ASTStrConst* ast) override;
 
@@ -101,10 +101,10 @@ protected:
 	// push constants
 	void PushRealConst(t_vm_real);
 	void PushIntConst(t_vm_int);
+	void PushCplxConst(const t_vm_cplx&);
 	void PushBoolConst(t_vm_bool);
 	void PushStrConst(const t_vm_str& str);
 	void PushVecConst(const std::vector<t_vm_real>& vec);
-	void PushMatConst(t_vm_addr rows, t_vm_addr cols, const std::vector<t_vm_real>& mat);
 
 	void AssignVar(t_astret sym);
 	void CallExternal(const t_str& funcname);
@@ -146,9 +146,8 @@ private:
 	std::vector<std::pair<t_str, std::streampos>> m_goto_comefroms{};
 
 	// dummy symbols for constants
-	Symbol *m_scalar_const{}, *m_int_const{}, *m_str_const{};
-	Symbol *m_bool_const{};
-	Symbol *m_vec_const{}, *m_mat_const{};
+	Symbol *m_scalar_const{}, *m_int_const{}, *m_cplx_const{}, *m_bool_const{};
+	Symbol *m_vec_const{}, *m_str_const{};
 };
 
 

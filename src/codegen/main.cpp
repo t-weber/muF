@@ -237,12 +237,12 @@ int main(int argc, char** argv)
 		std::ostream* ostr = &ofstr;
 		ostr->precision(std::numeric_limits<t_real>::digits10);
 
-		ZeroACAsm zeroacasm{&ctx.GetSymbols(), ostr};
-		zeroacasm.Start();
+		ZeroACAsm codegen{&ctx.GetSymbols(), ostr};
+		codegen.Start();
 		auto stmts = ctx.GetStatements()->GetStatementList();
 		for(auto iter = stmts.begin(); iter != stmts.end(); ++iter)
-			(*iter)->accept(&zeroacasm);
-		zeroacasm.Finish();
+			(*iter)->accept(&codegen);
+		codegen.Finish();
 		// --------------------------------------------------------------------
 
 

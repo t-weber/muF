@@ -17,6 +17,7 @@
 
 using t_vm_int = ::t_int;
 using t_vm_real = ::t_real;
+using t_vm_cplx = ::t_cplx;
 using t_vm_addr = std::int32_t;
 using t_vm_byte = std::uint8_t;
 using t_vm_bool = t_vm_byte;
@@ -33,6 +34,7 @@ enum class VMType : t_vm_byte
 	REAL        = 0x01,
 	INT         = 0x02,
 	BOOL        = 0x03,
+	CPLX        = 0x04,
 
 	STR         = 0x10,
 	VEC         = 0x11,
@@ -81,6 +83,7 @@ constexpr t_str get_vm_type_name(VMType ty)
 		case VMType::UNKNOWN:     return "unknown";
 
 		case VMType::REAL:        return "real";
+		case VMType::CPLX:        return "complex";
 		case VMType::INT:         return "integer";
 		case VMType::BOOL:        return "bool";
 
@@ -113,6 +116,8 @@ template<bool with_descr> constexpr inline t_vm_addr vm_type_size<VMType::UNKNOW
 	= g_vm_longest_size + (with_descr ? sizeof(t_vm_byte) : 0);
 template<bool with_descr> constexpr inline t_vm_addr vm_type_size<VMType::REAL, with_descr>
 	= sizeof(t_vm_real) + (with_descr ? sizeof(t_vm_byte) : 0);
+template<bool with_descr> constexpr inline t_vm_addr vm_type_size<VMType::CPLX, with_descr>
+	= sizeof(t_vm_cplx) + (with_descr ? sizeof(t_vm_byte) : 0);
 template<bool with_descr> constexpr inline t_vm_addr vm_type_size<VMType::INT, with_descr>
 	= sizeof(t_vm_int) + (with_descr ? sizeof(t_vm_byte) : 0);
 template<bool with_descr> constexpr inline t_vm_addr vm_type_size<VMType::BOOL, with_descr>
@@ -145,16 +150,6 @@ static inline t_vm_addr get_vm_vec_size(t_vm_addr raw_len,
 {
 	return raw_len*sizeof(t_vm_real)
 		+ (with_len ? sizeof(t_vm_addr) : 0)
-		+ (with_descr ? sizeof(t_vm_byte) : 0);
-}
-
-
-static inline t_vm_addr get_vm_mat_size(
-	t_vm_addr raw_len_1, t_vm_addr raw_len_2,
-	bool with_descr = false, bool with_len = false)
-{
-	return raw_len_1*raw_len_2*sizeof(t_vm_real)
-		+ (with_len ? 2*sizeof(t_vm_addr) : 0)
 		+ (with_descr ? sizeof(t_vm_byte) : 0);
 }
 

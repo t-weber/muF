@@ -10,7 +10,7 @@
 
 #include <iostream>
 #include <string>
-#include <array>
+#include <vector>
 #include <variant>
 #include <unordered_map>
 #include <cmath>
@@ -55,7 +55,7 @@ protected:
 	// information about currently parsed symbol
 	std::vector<t_str> m_curscope{};
 	SymbolType m_symtype = SymbolType::REAL;
-	std::array<std::size_t, 2> m_symdims = {1, 1};
+	std::vector<std::size_t> m_symdims{ 1 };
 
 
 public:

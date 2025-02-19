@@ -168,15 +168,15 @@ Lexer::GetMatchingTokens(const std::string& str, std::size_t line)
 		matches.emplace_back(std::make_tuple(
 			static_cast<t_symbol_id>(Token::REALDECL), str, line));
 	}
+	else if(str == "complex")
+	{
+		matches.emplace_back(std::make_tuple(
+			static_cast<t_symbol_id>(Token::CPLXDECL), str, line));
+	}
 	else if(str == "vec")
 	{
 		matches.emplace_back(std::make_tuple(
-			static_cast<t_symbol_id>(Token::VECTORDECL), str, line));
-	}
-	else if(str == "mat")
-	{
-		matches.emplace_back(std::make_tuple(
-			static_cast<t_symbol_id>(Token::MATRIXDECL), str, line));
+			static_cast<t_symbol_id>(Token::ARRDECL), str, line));
 	}
 	else if(str == "str")
 	{
@@ -332,9 +332,8 @@ Lexer::GetMatchingTokens(const std::string& str, std::size_t line)
 
 	// tokens represented by themselves
 	else if(str == "+" || str == "-" || str == "*" || str == "/" ||
-		str == "%" || str == ":" || str == "," ||
+		str == "%" || str == ":" || str == "," || str == "=" ||
 		str == "(" || str == ")" || str == "[" || str == "]" ||
-		str == "=" || str == "'" ||
 		str == ">" || str == "<" || str == "|" || str == "&")
 		matches.emplace_back(std::make_tuple(
 			static_cast<t_symbol_id>(str[0]), std::nullopt, line));

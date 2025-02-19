@@ -57,14 +57,6 @@ t_astret Semantics::visit(const ASTPow* ast)
 }
 
 
-t_astret Semantics::visit(const ASTTransp* ast)
-{
-	ast->GetTerm()->accept(this);
-
-	return nullptr;
-}
-
-
 t_astret Semantics::visit(const ASTNorm* ast)
 {
 	ast->GetTerm()->accept(this);
@@ -258,6 +250,12 @@ t_astret Semantics::visit([[maybe_unused]] const ASTNumConst<t_real>* ast)
 
 
 t_astret Semantics::visit([[maybe_unused]] const ASTNumConst<t_int>* ast)
+{
+	return nullptr;
+}
+
+
+t_astret Semantics::visit([[maybe_unused]] const ASTNumConst<t_cplx>* ast)
 {
 	return nullptr;
 }

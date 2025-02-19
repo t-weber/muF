@@ -48,7 +48,7 @@ t_astret ZeroACAsm::visit(const ASTFunc* ast)
 	// function arguments
 	std::size_t argidx = 0;
 	t_vm_addr frame_addr = 2 * (vm_type_size<VMType::ADDR_IP, true>); // skip old bp and ip on frame
-	for(const auto& [argname, argtype, dim1, dim2] : argnames)
+	for(const auto& [argname, argtype, dims] : argnames)
 	{
 		// get variable from symbol table and assign an address
 		t_astret sym = GetSym(argname);

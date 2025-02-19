@@ -51,21 +51,21 @@ std::size_t ZeroACAsm::GetSymSize(const Symbol* sym) const
 	{
 		return vm_type_size<VMType::INT, true>;
 	}
+	else if(sym->ty == SymbolType::CPLX)
+	{
+		return vm_type_size<VMType::CPLX, true>;
+	}
 	else if(sym->ty == SymbolType::BOOL)
 	{
 		return vm_type_size<VMType::BOOL, true>;
 	}
 	else if(sym->ty == SymbolType::STRING)
 	{
-		return get_vm_str_size(std::get<0>(sym->dims), true, true);
+		return get_vm_str_size(sym->dims[0], true, true);
 	}
 	else if(sym->ty == SymbolType::VECTOR)
 	{
-		return get_vm_vec_size(std::get<0>(sym->dims), true, true);
-	}
-	else if(sym->ty == SymbolType::MATRIX)
-	{
-		return get_vm_mat_size(std::get<0>(sym->dims), std::get<1>(sym->dims), true, true);
+		return get_vm_vec_size(sym->dims[0], true, true);
 	}
 	else
 	{
@@ -130,6 +130,11 @@ t_astret ZeroACAsm::visit(const ASTVarDecl* ast)
 				PushRealConst(t_vm_real(0));
 				AssignVar(sym);
 			}
+			else if(sym->ty == SymbolType::CPLX)
+			{
+				PushCplxConst(t_vm_cplx(0, 0));
+				AssignVar(sym);
+			}
 			else if(sym->ty == SymbolType::BOOL)
 			{
 				PushBoolConst(t_vm_real(0));
@@ -142,19 +147,8 @@ t_astret ZeroACAsm::visit(const ASTVarDecl* ast)
 			}
 			else if(sym->ty == SymbolType::VECTOR)
 			{
-				std::vector<t_vm_real> vec(std::get<0>(sym->dims));
+				std::vector<t_vm_real> vec(sym->dims[0]);
 				PushVecConst(vec);
-				AssignVar(sym);
-			}
-			else if(sym->ty == SymbolType::MATRIX)
-			{
-				t_vm_addr rows = static_cast<t_vm_addr>(
-					std::get<0>(sym->dims));
-				t_vm_addr cols = static_cast<t_vm_addr>(
-					std::get<1>(sym->dims));
-
-				std::vector<t_vm_real> mat(rows * cols);
-				PushMatConst(rows, cols, mat);
 				AssignVar(sym);
 			}
 		}
@@ -272,6 +266,23 @@ void ZeroACAsm::PushIntConst(t_vm_int val)
 }
 
 
+void ZeroACAsm::PushCplxConst(const t_vm_cplx& val)
+{
+	t_real real = val.real();
+	t_real imag = val.imag();
+
+	m_ostr->put(static_cast<t_vm_byte>(OpCode::PUSH));
+	// write type descriptor byte
+	m_ostr->put(static_cast<t_vm_byte>(VMType::CPLX));
+
+	// write value components
+	m_ostr->write(reinterpret_cast<const char*>(&real),
+		vm_type_size<VMType::REAL, false>);
+	m_ostr->write(reinterpret_cast<const char*>(&imag),
+		vm_type_size<VMType::REAL, false>);
+}
+
+
 void ZeroACAsm::PushBoolConst(t_vm_bool val)
 {
 	m_ostr->put(static_cast<t_vm_byte>(OpCode::PUSH));
@@ -320,30 +331,7 @@ void ZeroACAsm::PushVecConst(const std::vector<t_vm_real>& vec)
 	m_ostr->write(reinterpret_cast<const char*>(&num_elems),
 		vm_type_size<VMType::ADDR_MEM, false>);
 
-	m_ostr->put(static_cast<t_vm_byte>(OpCode::MAKEVEC));
-}
-
-
-void ZeroACAsm::PushMatConst(t_vm_addr rows, t_vm_addr cols, const std::vector<t_vm_real>& mat)
-{
-	// push elements
-	for(t_vm_addr i=0; i<rows; ++i)
-		for(t_vm_addr j=0; j<cols; ++j)
-			PushRealConst(mat[i*cols + j]);
-
-	// push number of columns
-	m_ostr->put(static_cast<t_vm_byte>(OpCode::PUSH));
-	m_ostr->put(static_cast<t_vm_byte>(VMType::ADDR_MEM));
-	m_ostr->write(reinterpret_cast<const char*>(&cols),
-		vm_type_size<VMType::ADDR_MEM, false>);
-
-	// push number of rows
-	m_ostr->put(static_cast<t_vm_byte>(OpCode::PUSH));
-	m_ostr->put(static_cast<t_vm_byte>(VMType::ADDR_MEM));
-	m_ostr->write(reinterpret_cast<const char*>(&rows),
-		vm_type_size<VMType::ADDR_MEM, false>);
-
-	m_ostr->put(static_cast<t_vm_byte>(OpCode::MAKEMAT));
+	m_ostr->put(static_cast<t_vm_byte>(OpCode::MAKEARR));
 }
 
 
@@ -360,6 +348,14 @@ t_astret ZeroACAsm::visit(const ASTNumConst<t_int>* ast)
 	t_vm_int val = static_cast<t_vm_int>(ast->GetVal());
 	PushIntConst(val);
 	return m_int_const;
+}
+
+
+t_astret ZeroACAsm::visit(const ASTNumConst<t_cplx>* ast)
+{
+	t_vm_cplx val = static_cast<t_vm_cplx>(ast->GetVal());
+	PushCplxConst(val);
+	return m_cplx_const;
 }
 
 

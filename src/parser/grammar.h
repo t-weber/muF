@@ -83,28 +83,24 @@ private:
 	lalr1::NonTerminalPtr start{},
 		expressions{}, expression{},
 		statements{}, statement{},
-		variables{},
+		typedecl{}, variables{},
 		full_argumentlist{}, argumentlist{},
 		identlist{}, typelist{},
-		function{},
-		typedecl{},
-		opt_assign{},
-		var_range{};
+		function{}, opt_assign{}, var_range{};
 
 	// terminals
 	lalr1::TerminalPtr op_assign{}, op_plus{}, op_minus{},
 		op_mult{}, op_div{}, op_mod{}, op_pow{},
-		op_norm{}, op_trans{};
+		op_norm{};
 	lalr1::TerminalPtr op_and{}, op_or{}, op_not{}, op_xor{},
 		op_equ{}, op_neq{},
 		op_lt{}, op_gt{}, op_geq{}, op_leq{};
 	lalr1::TerminalPtr bracket_open{}, bracket_close{};
 	lalr1::TerminalPtr array_begin{}, array_end{}, range{};
 	lalr1::TerminalPtr keyword_if{}, keyword_then{}, keyword_else{};
-	lalr1::TerminalPtr keyword_while{}, keyword_do{},
-		keyword_break{}, keyword_next{}, keyword_end{};
-	lalr1::TerminalPtr keyword_func{}, keyword_ret{};
-	lalr1::TerminalPtr keyword_procedure{};
+	lalr1::TerminalPtr keyword_while{}, keyword_do{};
+	lalr1::TerminalPtr keyword_break{}, keyword_next{}, keyword_end{};
+	lalr1::TerminalPtr keyword_func{}, keyword_procedure{}, keyword_ret{};
 	lalr1::TerminalPtr keyword_result{}, keyword_results{};
 	lalr1::TerminalPtr keyword_program{};
 	lalr1::TerminalPtr keyword_assign{};
@@ -112,8 +108,8 @@ private:
 	lalr1::TerminalPtr sym_real{}, sym_int{}, sym_bool{}, sym_str{};
 	lalr1::TerminalPtr ident{}, label{};
 	lalr1::TerminalPtr keyword_goto{}, keyword_comefrom{};
-	lalr1::TerminalPtr type_sep{}, real_decl{}, vec_decl{}, mat_decl{},
-		int_decl{}, str_decl{};
+	lalr1::TerminalPtr type_sep{}, real_decl{}, cplx_decl{}, int_decl{};
+	lalr1::TerminalPtr arr_decl{}, str_decl{};
 #endif
 
 	ParserContext m_context{};

@@ -289,93 +289,50 @@ void VM::PushVector(const VM::t_vec& vec)
 
 
 /**
- * pop a matrix from the stack
- * a matrix consists of two t_addr fields giving the lengths
- * following by the matrix elements
+ * pop a complex number from the stack
  */
-VM::t_mat VM::PopMatrix(bool raw_elems)
+VM::t_cplx VM::PopComplex()
 {
-	// raw real array and matrix sizes follow without descriptors
-	if(raw_elems)
-	{
-		t_addr num_elems_1 = PopRaw<t_addr, m_addrsize>();
-		t_addr num_elems_2 = PopRaw<t_addr, m_addrsize>();
-		CheckMemoryBounds(m_sp, num_elems_1*num_elems_2*m_realsize);
+	CheckMemoryBounds(m_sp, m_cplxsize);
 
-		t_real* begin = reinterpret_cast<t_real*>(m_mem.get() + m_sp);
-		t_mat mat(begin, num_elems_1, num_elems_2);
-		m_sp += num_elems_1*num_elems_2*m_realsize;
-
-		if(m_zeropoppedvals)
-			std::memset(begin, 0, num_elems_1*num_elems_2*m_realsize);
-
-		return mat;
-	}
-
-	// individual elements and matrix sizes with descriptor are on the stack
-	else
-	{
-		t_addr num_elems_1 = PopAddress();
-		t_addr num_elems_2 = PopAddress();
-
-		t_mat mat(num_elems_1, num_elems_2);
-
-		for(t_addr i = 0; i < num_elems_1; ++i)
-		{
-			for(t_addr j = 0; j < num_elems_2; ++j)
-			{
-				t_data val = PopData();
-				if(val.index() != m_realidx)
-					throw std::runtime_error("Matrix expects real elements.");
-
-				t_real elem = std::get<m_realidx>(val);
-				mat(num_elems_1 - i - 1, num_elems_2 - j - 1) = elem;
-			}
-		}
-
-		if(m_debug)
-		{
-			using namespace m_ops;
-			std::cout << "popped non-raw matrix " << mat << "." << std::endl;
-		}
-
-		return mat;
-	}
-}
-
-
-/**
- * get a matrix from the top of the stack
- */
-VM::t_mat VM::TopMatrix(t_addr sp_offs) const
-{
-	t_addr num_elems_1 = TopRaw<t_addr, m_addrsize>(sp_offs);
-	t_addr num_elems_2 = TopRaw<t_addr, m_addrsize>(sp_offs + m_addridx);
-	t_addr addr = m_sp + sp_offs + 2*m_addrsize;
-
-	CheckMemoryBounds(addr, num_elems_1*num_elems_2*m_realsize);
-	const t_real* begin = reinterpret_cast<t_real*>(m_mem.get() + addr);
-	t_mat mat(begin, num_elems_1, num_elems_2);
-
-	return mat;
-}
-
-
-/**
- * push a matrix to the stack
- */
-void VM::PushMatrix(const VM::t_mat& mat)
-{
-	t_addr num_elems_1 = static_cast<t_addr>(mat.size1());
-	t_addr num_elems_2 = static_cast<t_addr>(mat.size2());
-	CheckMemoryBounds(m_sp, -num_elems_1*num_elems_2*m_realsize);
-
-	m_sp -= num_elems_1*num_elems_2*m_realsize;
 	t_real* begin = reinterpret_cast<t_real*>(m_mem.get() + m_sp);
-	std::memcpy(begin, mat.data(), num_elems_1*num_elems_2*m_realsize);
+	t_cplx cplx{*begin, *(begin + 1)};
 
-	PushRaw<t_addr, m_addrsize>(num_elems_2);
-	PushRaw<t_addr, m_addrsize>(num_elems_1);
+	m_sp += m_cplxsize;
+
+	if(m_zeropoppedvals)
+		std::memset(begin, 0, m_cplxsize);
+
+	return cplx;
+}
+
+
+/**
+ * get a complex number from the top of the stack
+ */
+VM::t_cplx VM::TopComplex(t_addr sp_offs) const
+{
+	t_addr addr = m_sp + sp_offs;
+
+	CheckMemoryBounds(addr, m_cplxsize);
+	const t_real* begin = reinterpret_cast<t_real*>(m_mem.get() + addr);
+
+	return t_cplx{*begin, *(begin + 1)};
+}
+
+
+/**
+ * push a complex number to the stack
+ */
+void VM::PushComplex(const VM::t_cplx& cplx)
+{
+	CheckMemoryBounds(m_sp, -m_cplxsize);
+
+	m_sp -= m_cplxsize;
+	t_real* begin = reinterpret_cast<t_real*>(m_mem.get() + m_sp);
+
+	*(begin + 0) = cplx.real();
+	*(begin + 1) = cplx.imag();
 }
 
 
@@ -404,6 +361,13 @@ VM::t_data VM::TopData() const
 		{
 			dat = t_data{std::in_place_index<m_intidx>,
 				TopRaw<t_int, m_intsize>(m_bytesize)};
+			break;
+		}
+
+		case VMType::CPLX:
+		{
+			dat = t_data{std::in_place_index<m_cplxidx>,
+				TopComplex(m_bytesize)};
 			break;
 		}
 
@@ -436,13 +400,6 @@ VM::t_data VM::TopData() const
 		{
 			dat = t_data{std::in_place_index<m_vecidx>,
 				TopVector(m_bytesize)};
-				break;
-		}
-
-		case VMType::MAT:
-		{
-			dat = t_data{std::in_place_index<m_matidx>,
-				TopMatrix(m_bytesize)};
 				break;
 		}
 
@@ -499,6 +456,18 @@ VM::t_data VM::PopData()
 			break;
 		}
 
+		case VMType::CPLX:
+		{
+			dat = t_data{std::in_place_index<m_cplxidx>, PopComplex()};
+			if(m_debug)
+			{
+				std::cout << "popped complex " << std::get<m_cplxidx>(dat)
+					<< "." << std::endl;
+			}
+			break;
+		}
+
+
 		case VMType::BOOL:
 		{
 			dat = t_data{std::in_place_index<m_boolidx>,
@@ -546,18 +515,6 @@ VM::t_data VM::PopData()
 			{
 				using namespace m_ops;
 				std::cout << "popped vector " << std::get<m_vecidx>(dat)
-					<< "." << std::endl;
-			}
-			break;
-		}
-
-		case VMType::MAT:
-		{
-			dat = t_data{std::in_place_index<m_matidx>, PopMatrix()};
-			if(m_debug)
-			{
-				using namespace m_ops;
-				std::cout << "popped matrix " << std::get<m_matidx>(dat)
 					<< "." << std::endl;
 			}
 			break;
@@ -613,6 +570,23 @@ void VM::PushData(const VM::t_data& data, VMType ty, bool err_on_unknown)
 		{
 			std::cout << "pushed integer "
 				<< std::get<m_intidx>(data) << "."
+				<< std::endl;
+		}
+	}
+
+	// complex data
+	else if(data.index() == m_cplxidx)
+	{
+		// push the actual complex number
+		PushComplex(std::get<m_cplxidx>(data));
+
+		// push descriptor
+		PushRaw<t_byte, m_bytesize>(static_cast<t_byte>(VMType::CPLX));
+
+		if(m_debug)
+		{
+			std::cout << "pushed complex "
+				<< std::get<m_cplxidx>(data) << "."
 				<< std::endl;
 		}
 	}
@@ -686,24 +660,6 @@ void VM::PushData(const VM::t_data& data, VMType ty, bool err_on_unknown)
 		}
 	}
 
-	// matrix data
-	else if(data.index() == m_matidx)
-	{
-		// push the actual matrix
-		PushMatrix(std::get<m_matidx>(data));
-
-		// push descriptor
-		PushRaw<t_byte, m_bytesize>(static_cast<t_byte>(VMType::MAT));
-
-		if(m_debug)
-		{
-			using namespace m_ops;
-			std::cout << "pushed matrix "
-				<< std::get<m_matidx>(data) << "."
-				<< std::endl;
-		}
-	}
-
 	// unknown data
 	else if(err_on_unknown)
 	{
@@ -763,6 +719,20 @@ std::tuple<VMType, VM::t_data> VM::ReadMemData(VM::t_addr addr)
 			{
 				std::cout << "read integer " << val
 					<< " from address " << (addr-1)
+					<< "." << std::endl;
+			}
+			break;
+		}
+
+		case VMType::CPLX:
+		{
+			t_cplx val = ReadMemRaw<t_cplx>(addr);
+			dat = t_data{std::in_place_index<m_cplxidx>, val};
+
+			if(m_debug)
+			{
+				std::cout << "read complex \"" << val
+					<< "\" from address " << (addr-1)
 					<< "." << std::endl;
 			}
 			break;
@@ -830,22 +800,6 @@ std::tuple<VMType, VM::t_data> VM::ReadMemData(VM::t_addr addr)
 			break;
 		}
 
-		case VMType::MAT:
-		{
-			t_mat mat = ReadMemRaw<t_mat>(addr);
-			dat = t_data{std::in_place_index<m_matidx>, mat};
-
-			if(m_debug)
-			{
-				using namespace m_ops;
-
-				std::cout << "read matrix \"" << mat
-					<< "\" from address " << (addr-1)
-					<< "." << std::endl;
-			}
-			break;
-		}
-
 		default:
 		{
 			std::ostringstream msg;
@@ -902,6 +856,25 @@ void VM::WriteMemData(VM::t_addr addr, const VM::t_data& data)
 
 		// write the actual data
 		WriteMemRaw<t_int>(addr, std::get<m_intidx>(data));
+	}
+
+	// complex type
+	else if(data.index() == m_cplxidx)
+	{
+		if(m_debug)
+		{
+			std::cout << "writing complex \""
+				<< std::get<m_cplxidx>(data)
+				<< "\" to address " << addr
+				<< "." << std::endl;
+		}
+
+		// write descriptor prefix
+		WriteMemRaw<t_byte>(addr, static_cast<t_byte>(VMType::CPLX));
+		addr += m_bytesize;
+
+		// write the actual data
+		WriteMemRaw<t_cplx>(addr, std::get<m_cplxidx>(data));
 	}
 
 	// bool type
@@ -982,27 +955,6 @@ void VM::WriteMemData(VM::t_addr addr, const VM::t_data& data)
 		WriteMemRaw<t_vec>(addr, std::get<m_vecidx>(data));
 	}
 
-	// matrix type
-	else if(data.index() == m_matidx)
-	{
-		if(m_debug)
-		{
-			using namespace m_ops;
-
-			std::cout << "writing matrix \""
-				<< std::get<m_matidx>(data)
-				<< "\" to address " << addr
-				<< "." << std::endl;
-		}
-
-		// write descriptor prefix
-		WriteMemRaw<t_byte>(addr, static_cast<t_byte>(VMType::MAT));
-		addr += m_bytesize;
-
-		// write the actual data
-		WriteMemRaw<t_mat>(addr, std::get<m_matidx>(data));
-	}
-
 	// unknown type
 	else
 	{
@@ -1017,6 +969,8 @@ VM::t_addr VM::GetDataSize(const t_data& data) const
 		return m_realsize;
 	else if(data.index() == m_intidx)
 		return m_intsize;
+	else if(data.index() == m_cplxidx)
+		return m_cplxsize;
 	else if(data.index() == m_boolidx)
 		return m_boolsize;
 	else if(data.index() == m_addridx)
@@ -1097,12 +1051,12 @@ const char* VM::GetDataTypeName(std::size_t type_idx)
 	{
 		case m_realidx: return "real";
 		case m_intidx: return "integer";
+		case m_cplxidx: return "complex";
 		case m_boolidx: return "bool";
 		case m_addridx: return "address";
 
 		case m_stridx: return "string";
 		case m_vecidx: return "vector";
-		case m_matidx: return "matrix";
 
 		default: return "unknown";
 	}

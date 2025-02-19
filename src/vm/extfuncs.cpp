@@ -22,8 +22,7 @@ VM::t_data VM::CallExternal(const t_str& func_name)
 			<< "." << std::endl;
 	}
 
-	if(func_name == "abs" || func_name == "fabs" ||
-		func_name == "norm" || func_name == "determinant")
+	if(func_name == "abs" || func_name == "fabs" || func_name == "norm")
 	{
 		t_data dat = PopData();
 
@@ -46,13 +45,6 @@ VM::t_data VM::CallExternal(const t_str& func_name)
 			t_vec arg = std::get<m_vecidx>(dat);
 			t_real len = m::norm<t_vec>(arg);
 			retval = t_data{std::in_place_index<m_realidx>, len};
-		}
-		else if(dat.index() == m_matidx)
-		{	// determinant for matrices
-			const t_mat arg = std::get<m_matidx>(dat);
-			t_real det = m::det<t_mat, t_vec>(arg);
-
-			retval = t_data{std::in_place_index<m_realidx>, det};
 		}
 		else
 		{
@@ -96,23 +88,6 @@ VM::t_data VM::CallExternal(const t_str& func_name)
 		t_real arg = std::get<m_realidx>(PopData());
 
 		retval = t_data{std::in_place_index<m_realidx>, std::tan(arg)};
-	}
-	else if(func_name == "transpose")
-	{
-		t_data dat = PopData();
-		if(dat.index() == m_matidx)
-		{
-			// transpose matrix
-			const t_mat arg = std::get<m_matidx>(dat);
-			t_mat transposed = m::trans(arg);
-
-			retval = t_data{std::in_place_index<m_matidx>, transposed};
-		}
-		else
-		{
-			// keep original data for non-matrix types
-			retval = dat;
-		}
 	}
 	else if(func_name == "set_eps")
 	{

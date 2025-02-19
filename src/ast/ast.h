@@ -26,7 +26,6 @@ class ASTPlus;
 class ASTMult;
 class ASTMod;
 class ASTPow;
-class ASTTransp;
 class ASTNorm;
 class ASTStrConst;
 class ASTVar;
@@ -61,7 +60,6 @@ enum class ASTType
 	Mult,
 	Mod,
 	Pow,
-	Transp,
 	Norm,
 	StrConst,
 	Var,
@@ -107,7 +105,6 @@ public:
 	virtual t_astret visit(const ASTMult* ast) = 0;
 	virtual t_astret visit(const ASTMod* ast) = 0;
 	virtual t_astret visit(const ASTPow* ast) = 0;
-	virtual t_astret visit(const ASTTransp* ast) = 0;
 	virtual t_astret visit(const ASTNorm* ast) = 0;
 
 	virtual t_astret visit(const ASTVarDecl* ast) = 0;
@@ -120,6 +117,7 @@ public:
 
 	virtual t_astret visit(const ASTNumConst<t_real>* ast) = 0;
 	virtual t_astret visit(const ASTNumConst<t_int>* ast) = 0;
+	virtual t_astret visit(const ASTNumConst<t_cplx>* ast) = 0;
 	virtual t_astret visit(const ASTNumConst<bool>* ast) = 0;
 	virtual t_astret visit(const ASTStrConst* ast) = 0;
 
@@ -264,21 +262,6 @@ private:
 };
 
 
-class ASTTransp : public ASTAcceptor<ASTTransp>
-{
-public:
-	ASTTransp(ASTPtr term) : term{term}
-	{}
-
-	const ASTPtr GetTerm() const { return term; }
-
-	virtual ASTType type() override { return ASTType::Transp; }
-
-private:
-	ASTPtr term{};
-};
-
-
 class ASTNorm : public ASTAcceptor<ASTNorm>
 {
 public:
@@ -402,12 +385,12 @@ public:
 
 	void AddArg(const t_str& argname,
 		SymbolType ty=SymbolType::UNKNOWN,
-		std::size_t dim1=1, std::size_t dim2=1)
+		const std::vector<std::size_t>& dims = { 1 })
 	{
-		argnames.push_front(std::make_tuple(argname, ty, dim1, dim2));
+		argnames.push_front(std::make_tuple(argname, ty, dims));
 	}
 
-	const std::list<std::tuple<t_str, SymbolType, std::size_t, std::size_t>>& GetArgs() const
+	const std::list<std::tuple<t_str, SymbolType, std::vector<std::size_t>>>& GetArgs() const
 	{
 		return argnames;
 	}
@@ -431,36 +414,36 @@ public:
 	virtual ASTType type() override { return ASTType::ArgNames; }
 
 private:
-	std::list<std::tuple<t_str, SymbolType, std::size_t, std::size_t>> argnames{};
+	std::list<std::tuple<t_str, SymbolType, std::vector<std::size_t>>> argnames{};
 };
 
 
 class ASTTypeDecl : public ASTAcceptor<ASTTypeDecl>
 {
 public:
-	ASTTypeDecl(SymbolType ty, std::size_t dim1=1, std::size_t dim2=1)
-		: ty{ty}, dim1{dim1}, dim2{dim2}
+	ASTTypeDecl(SymbolType ty)
+		: ty{ty}, dims{1}
+	{}
+
+	template<template<class...> class t_vec = std::vector>
+	ASTTypeDecl(SymbolType ty, const t_vec<std::size_t>& dims)
+		: ty{ty}, dims{dims}
 	{}
 
 	SymbolType GetType() const { return ty; }
 
-	std::size_t GetDim(int i=0) const
-	{
-		if(i==0) return dim1;
-		else if(i==1) return dim2;
-		return 0;
-	}
+	const std::vector<std::size_t>& GetDims() const { return dims; }
 
-	std::tuple<SymbolType, std::size_t, std::size_t> GetRet() const
+	std::tuple<SymbolType, std::vector<std::size_t>> GetRet() const
 	{
-		return std::make_tuple(ty, dim1, dim2);
+		return std::make_tuple(ty, dims);
 	}
 
 	virtual ASTType type() override { return ASTType::TypeDecl; }
 
 private:
 	SymbolType ty{SymbolType::UNKNOWN};
-	std::size_t dim1=1, dim2=1;
+	std::vector<std::size_t> dims{ 1 };
 };
 
 
@@ -478,12 +461,12 @@ public:
 	}
 
 	const t_str& GetIdent() const { return ident; }
-	std::tuple<SymbolType, std::size_t, std::size_t> GetRetType() const { return rettype; }
+	std::tuple<SymbolType, std::vector<std::size_t>> GetRetType() const { return rettype; }
 
-	const std::list<std::tuple<t_str, SymbolType, std::size_t, std::size_t>>&
+	const std::list<std::tuple<t_str, SymbolType, std::vector<std::size_t>>>&
 	GetArgs() const { return args; }
 
-	const std::list<std::tuple<t_str, SymbolType, std::size_t, std::size_t>>&
+	const std::list<std::tuple<t_str, SymbolType, std::vector<std::size_t>>>&
 	GetRets() const { return rets; }
 
 	const std::shared_ptr<ASTStmts> GetStatements() const { return stmts; }
@@ -492,10 +475,10 @@ public:
 
 private:
 	t_str ident{};
-	std::tuple<SymbolType, std::size_t, std::size_t> rettype{};
-	std::list<std::tuple<t_str, SymbolType, std::size_t, std::size_t>> args{};
+	std::tuple<SymbolType, std::vector<std::size_t>> rettype{};
+	std::list<std::tuple<t_str, SymbolType, std::vector<std::size_t>>> args{};
 	std::shared_ptr<ASTStmts> stmts{};
-	std::list<std::tuple<t_str, SymbolType, std::size_t, std::size_t>> rets{};
+	std::list<std::tuple<t_str, SymbolType, std::vector<std::size_t>>> rets{};
 };
 
 

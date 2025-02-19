@@ -22,7 +22,6 @@ public:
 	virtual t_astret visit(const ASTMult* ast) override;
 	virtual t_astret visit(const ASTMod* ast) override;
 	virtual t_astret visit(const ASTPow* ast) override;
-	virtual t_astret visit(const ASTTransp* ast) override;
 	virtual t_astret visit(const ASTNorm* ast) override;
 	virtual t_astret visit(const ASTVar* ast) override;
 	virtual t_astret visit(const ASTCall* ast) override;
@@ -43,6 +42,7 @@ public:
 	virtual t_astret visit(const ASTExprList* ast) override;
 	virtual t_astret visit(const ASTNumConst<t_real>* ast) override;
 	virtual t_astret visit(const ASTNumConst<t_int>* ast) override;
+	virtual t_astret visit(const ASTNumConst<t_cplx>* ast) override;
 	virtual t_astret visit(const ASTNumConst<bool>* ast) override;
 	virtual t_astret visit(const ASTLabel* ast) override;
 	virtual t_astret visit(const ASTJump* ast) override;

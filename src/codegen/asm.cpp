@@ -29,6 +29,12 @@ ZeroACAsm::ZeroACAsm(SymTab* syms, std::ostream* ostr)
 	m_int_const->is_tmp = true;
 	m_int_const->name = "<integer>";
 
+	// dummy symbol for complex constants
+	m_cplx_const = new Symbol();
+	m_cplx_const->ty = SymbolType::CPLX;
+	m_cplx_const->is_tmp = true;
+	m_cplx_const->name = "<complex>";
+
 	// dummy symbol for bool constants
 	m_bool_const = new Symbol();
 	m_bool_const->ty = SymbolType::BOOL;
@@ -46,12 +52,6 @@ ZeroACAsm::ZeroACAsm(SymTab* syms, std::ostream* ostr)
 	m_vec_const->ty = SymbolType::VECTOR;
 	m_vec_const->is_tmp = true;
 	m_vec_const->name = "<vec>";
-
-	// dummy symbol for matrix constants
-	m_mat_const = new Symbol();
-	m_mat_const->ty = SymbolType::MATRIX;
-	m_mat_const->is_tmp = true;
-	m_mat_const->name = "<mat>";
 }
 
 
@@ -59,8 +59,8 @@ ZeroACAsm::~ZeroACAsm()
 {
 	for(Symbol** sym : {
 		&m_scalar_const, &m_int_const,
-		&m_str_const, &m_vec_const,
-		&m_mat_const, &m_bool_const })
+		&m_cplx_const, &m_bool_const,
+		&m_str_const, &m_vec_const, })
 	{
 		delete *sym;
 		*sym = nullptr;

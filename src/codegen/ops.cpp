@@ -23,8 +23,6 @@ Symbol* ZeroACAsm::GetTypeConst(SymbolType ty) const
 			return m_bool_const;
 		case SymbolType::STRING:
 			return m_str_const;
-		case SymbolType::MATRIX:
-			return m_mat_const;
 		case SymbolType::VECTOR:
 			return m_vec_const;
 		default:
@@ -71,16 +69,6 @@ ZeroACAsm::GetCastSymType(t_astret term1, t_astret term2)
 	else if(ty1 == SymbolType::INT && ty2 == SymbolType::STRING)
 		return std::make_tuple(term2, nullptr, term2);
 
-	// no casts between matrix/real operations
-	else if(ty1 == SymbolType::MATRIX && ty2 == SymbolType::REAL)
-		return std::make_tuple(nullptr, nullptr, term1);
-	else if(ty1 == SymbolType::MATRIX && ty2 == SymbolType::INT)
-		return std::make_tuple(nullptr, m_scalar_const, term1);
-	else if(ty1 == SymbolType::REAL && ty2 == SymbolType::MATRIX)
-		return std::make_tuple(nullptr, nullptr, term2);
-	else if(ty1 == SymbolType::INT && ty2 == SymbolType::MATRIX)
-		return std::make_tuple(m_scalar_const, nullptr, term2);
-
 	// no casts between vector/real operations
 	else if(ty1 == SymbolType::VECTOR && ty2 == SymbolType::REAL)
 		return std::make_tuple(nullptr, nullptr, term1);
@@ -121,34 +109,15 @@ void ZeroACAsm::CastTo(t_astret ty_to,
 	}
 	else if(ty_to->ty == SymbolType::VECTOR && allow_array_cast)
 	{
-		op = static_cast<t_vm_byte>(OpCode::TOV);
+		op = static_cast<t_vm_byte>(OpCode::TOA);
 
 		// TODO: this doesn't work if "pos" is also given
 		// push vector length
-		t_vm_addr cols = static_cast<t_vm_addr>(std::get<0>(ty_to->dims));
+		t_vm_addr cols = static_cast<t_vm_addr>(ty_to->dims[0]);
 
 		m_ostr->put(static_cast<t_vm_byte>(OpCode::PUSH));
 		m_ostr->put(static_cast<t_vm_byte>(VMType::ADDR_MEM));
 		m_ostr->write(reinterpret_cast<const char*>(&cols),
-			vm_type_size<VMType::ADDR_MEM, false>);
-	}
-	else if(ty_to->ty == SymbolType::MATRIX && allow_array_cast)
-	{
-		op = static_cast<t_vm_byte>(OpCode::TOM);
-
-		// TODO: this doesn't work if "pos" is also given
-		// push number of columns
-		t_vm_addr cols = static_cast<t_vm_addr>(std::get<0>(ty_to->dims));
-		m_ostr->put(static_cast<t_vm_byte>(OpCode::PUSH));
-		m_ostr->put(static_cast<t_vm_byte>(VMType::ADDR_MEM));
-		m_ostr->write(reinterpret_cast<const char*>(&cols),
-			vm_type_size<VMType::ADDR_MEM, false>);
-
-		// push number of rows
-		t_vm_addr rows = static_cast<t_vm_addr>(std::get<1>(ty_to->dims));
-		m_ostr->put(static_cast<t_vm_byte>(OpCode::PUSH));
-		m_ostr->put(static_cast<t_vm_byte>(VMType::ADDR_MEM));
-		m_ostr->write(reinterpret_cast<const char*>(&rows),
 			vm_type_size<VMType::ADDR_MEM, false>);
 	}
 
@@ -280,25 +249,6 @@ t_astret ZeroACAsm::visit(const ASTPow* ast)
 	m_ostr->put(static_cast<t_vm_byte>(OpCode::POW));
 
 	return common_type;
-}
-
-
-t_astret ZeroACAsm::visit(const ASTTransp* ast)
-{
-	t_astret term = ast->GetTerm()->accept(this);
-
-	if(term->ty == SymbolType::MATRIX)
-	{
-		CallExternal("transpose");
-	}
-	else
-	{
-		throw std::runtime_error(
-			"ASTTrans: Transposing is not possible for \""
-				+ term->name + "\".");
-	}
-
-	return term;
 }
 
 

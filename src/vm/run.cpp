@@ -104,7 +104,7 @@ bool VM::Run()
 				break;
 			}
 
-			case OpCode::RDARR1D:
+			case OpCode::RDARR:
 			{
 				t_int idx = std::get<m_intidx>(PopData());
 				t_data arr = PopData();
@@ -127,17 +127,6 @@ bool VM::Run()
 					newstr += str[idx];
 					PushData(t_data{std::in_place_index<m_stridx>, newstr});
 				}
-				else if(arr.index() == m_matidx)
-				{
-					// gets matrix column
-					const t_mat& mat = std::get<m_matidx>(arr);
-					idx = safe_array_index<t_int>(idx, mat.size2());
-
-					t_vec col = m::zero<t_vec>(mat.size1());
-					for(std::size_t i=0; i<mat.size1(); ++i)
-						col[i] = mat(i, idx);
-					PushData(t_data{std::in_place_index<m_vecidx>, col});
-				}
 				else
 				{
 					throw std::runtime_error("Cannot index non-array type.");
@@ -146,7 +135,7 @@ bool VM::Run()
 				break;
 			}
 
-			case OpCode::RDARR1DR:
+			case OpCode::RDARRR:
 			{
 				t_int idx2 = std::get<m_intidx>(PopData());
 				t_int idx1 = std::get<m_intidx>(PopData());
@@ -183,22 +172,6 @@ bool VM::Run()
 						newstr += str[idx];
 					PushData(t_data{std::in_place_index<m_stridx>, newstr});
 				}
-				else if(arr.index() == m_matidx)
-				{
-					// gets matrix columns
-					const t_mat& mat = std::get<m_matidx>(arr);
-					idx1 = safe_array_index<t_int>(idx1, mat.size2());
-					idx2 = safe_array_index<t_int>(idx2, mat.size2());
-
-					t_int delta = (idx2 >= idx1 ? 1 : -1);
-					idx2 += delta;
-
-					t_mat cols = m::zero<t_mat, std::size_t>(mat.size1(), idx2 - idx1);
-					for(t_int idx=idx1; idx!=idx2; idx += delta)
-						for(std::size_t i=0; i<mat.size1(); i += delta)
-							cols(i, idx) = mat(i, idx);
-					PushData(t_data{std::in_place_index<m_matidx>, cols});
-				}
 				else
 				{
 					throw std::runtime_error("Cannot index non-array type.");
@@ -207,75 +180,7 @@ bool VM::Run()
 				break;
 			}
 
-			case OpCode::RDARR2D:
-			{
-				t_int idx2 = std::get<m_intidx>(PopData());
-				t_int idx1 = std::get<m_intidx>(PopData());
-				t_data arr = PopData();
-
-				if(arr.index() == m_matidx)
-				{
-					// gets matrix element
-					const t_mat& mat = std::get<m_matidx>(arr);
-					idx1 = safe_array_index<t_int>(idx1, mat.size2());
-					idx2 = safe_array_index<t_int>(idx2, mat.size2()) + 1;
-
-					PushData(t_data{std::in_place_index<m_realidx>, mat(idx1, idx2)});
-				}
-				else
-				{
-					throw std::runtime_error("Cannot double-index non-matrix type.");
-				}
-
-				break;
-			}
-
-			case OpCode::RDARR2DR:
-			{
-				t_int idx4 = std::get<m_intidx>(PopData());
-				t_int idx3 = std::get<m_intidx>(PopData());
-				t_int idx2 = std::get<m_intidx>(PopData());
-				t_int idx1 = std::get<m_intidx>(PopData());
-				t_data arr = PopData();
-
-				if(arr.index() == m_matidx)
-				{
-					// gets matrix range
-					const t_mat& mat = std::get<m_matidx>(arr);
-					idx1 = safe_array_index<t_int>(idx1, mat.size1());
-					idx2 = safe_array_index<t_int>(idx2, mat.size1());
-					idx3 = safe_array_index<t_int>(idx3, mat.size2());
-					idx4 = safe_array_index<t_int>(idx4, mat.size2());
-
-					t_int delta1 = (idx2 >= idx1 ? 1 : -1);
-					t_int delta2 = (idx4 >= idx3 ? 1 : -1);
-
-					idx2 += delta1;
-					idx4 += delta2;
-
-					t_mat newmat = m::create<t_mat>(
-						std::abs(idx2-idx1), std::abs(idx4-idx3));
-
-					t_int new_i = 0;
-					for(t_int i=idx1; i!=idx2; i+=delta1)
-					{
-						t_int new_j = 0;
-						for(t_int j=idx3; j!=idx4; j+=delta2)
-							newmat(new_i, new_j++) = mat(i, j);
-						++new_i;
-					}
-
-					PushData(t_data{std::in_place_index<m_matidx>, newmat});
-				}
-				else
-				{
-					throw std::runtime_error("Cannot double-index non-matrix type.");
-				}
-
-				break;
-			}
-
-			case OpCode::WRARR1D:
+			case OpCode::WRARR:
 			{
 				t_int idx = std::get<m_intidx>(PopData());
 
@@ -313,50 +218,7 @@ bool VM::Run()
 				break;
 			}
 
-			case OpCode::WRARR2D:
-			{
-				t_int idx2 = std::get<m_intidx>(PopData());
-				t_int idx1 = std::get<m_intidx>(PopData());
-
-				t_data data = PopData();
-				t_addr addr = PopAddress();
-
-				// get variable data type
-				VMType ty = ReadMemType(addr);
-				// skip type descriptor byte
-				addr += m_bytesize;
-
-				if(ty == VMType::MAT)
-				{
-					if(data.index() != m_realidx)
-					{
-						throw std::runtime_error(
-							"Matrix element has to be of scalar type.");
-					}
-
-					// get matrix length indicators
-					t_addr num_rows = ReadMemRaw<t_addr>(addr);
-					addr += m_addrsize;
-					t_addr num_cols = ReadMemRaw<t_addr>(addr);
-					addr += m_addrsize;
-
-					idx1 = safe_array_index<t_addr>(idx1, num_rows);
-					idx2 = safe_array_index<t_addr>(idx2, num_cols);
-
-					// skip to element and overwrite it
-					addr += (idx1*num_cols + idx2) * m_realsize;
-					//std::cout << ReadMemRaw<t_real>(addr) << std::endl;
-					WriteMemRaw(addr, std::get<m_realidx>(data));
-				}
-				else
-				{
-					throw std::runtime_error("Cannot double-index non-matrix type.");
-				}
-
-				break;
-			}
-
-			case OpCode::WRARR1DR:
+			case OpCode::WRARRR:
 			{
 				t_int idx2 = std::get<m_intidx>(PopData());
 				t_int idx1 = std::get<m_intidx>(PopData());
@@ -474,119 +336,6 @@ bool VM::Run()
 				break;
 			}
 
-			case OpCode::WRARR2DR:
-			{
-				t_int idx4 = std::get<m_intidx>(PopData());
-				t_int idx3 = std::get<m_intidx>(PopData());
-				t_int idx2 = std::get<m_intidx>(PopData());
-				t_int idx1 = std::get<m_intidx>(PopData());
-
-				t_data rhsdata = PopData();
-				t_addr addr = PopAddress();
-
-				// get variable data type
-				VMType ty = ReadMemType(addr);
-				// skip type descriptor byte
-				addr += m_bytesize;
-
-				// assign to matrix
-				if(ty == VMType::MAT)
-				{
-					// get matrix length indicators
-					t_addr num_rows = ReadMemRaw<t_addr>(addr);
-					addr += m_addrsize;
-					t_addr num_cols = ReadMemRaw<t_addr>(addr);
-					addr += m_addrsize;
-
-					idx1 = safe_array_index<t_addr>(idx1, num_rows);
-					idx2 = safe_array_index<t_addr>(idx2, num_rows);
-					idx3 = safe_array_index<t_addr>(idx3, num_cols);
-					idx4 = safe_array_index<t_addr>(idx4, num_cols);
-
-					t_int delta1 = (idx2 >= idx1 ? 1 : -1);
-					t_int delta2 = (idx4 >= idx3 ? 1 : -1);
-
-					idx2 += delta1;
-					idx4 += delta2;
-
-					// assign from scalar
-					if(rhsdata.index() == m_realidx)
-					{
-						t_real rhsreal = std::get<m_realidx>(rhsdata);
-						for(t_int i=idx1; i!=idx2; i+=delta1)
-						{
-							for(t_int j=idx3; j!=idx4; j+=delta2)
-							{
-								t_int elem_idx = i*num_cols + j;
-								WriteMemRaw(addr + elem_idx*m_realsize, rhsreal);
-							}
-						}
-					}
-
-					// assign from vector
-					else if(rhsdata.index() == m_vecidx)
-					{
-						const t_vec& rhsvec = std::get<m_vecidx>(rhsdata);
-
-						t_addr vecidx = 0;
-						for(t_int i=idx1; i!=idx2; i+=delta1)
-						{
-							for(t_int j=idx3; j!=idx4; j+=delta2)
-							{
-								if(std::size_t(vecidx) >= rhsvec.size())
-								{
-									throw std::runtime_error(
-										"Vector index out of bounds.");
-								}
-
-								t_int elem_idx = i*num_cols + j;
-								t_real elem = rhsvec[vecidx++];
-								WriteMemRaw(addr + elem_idx*m_realsize, elem);
-							}
-						}
-					}
-
-					// assign from matrix
-					else if(rhsdata.index() == m_matidx)
-					{
-						const t_mat& rhsmat = std::get<m_matidx>(rhsdata);
-
-						t_int i_rhs = 0;
-						for(t_int i=idx1; i!=idx2; i+=delta1)
-						{
-							t_int j_rhs = 0;
-							for(t_int j=idx3; j!=idx4; j+=delta2)
-							{
-								if(std::size_t(i_rhs) >= rhsmat.size1() ||
-									std::size_t(j_rhs) >= rhsmat.size2())
-								{
-									throw std::runtime_error(
-										"Matrix index out of bounds.");
-								}
-
-								t_int elem_idx = i*num_cols + j;
-								t_real elem = rhsmat(i_rhs, j_rhs);
-								WriteMemRaw(addr + elem_idx*m_realsize, elem);
-								++j_rhs;
-							}
-							++i_rhs;
-						}
-					}
-
-					else
-					{
-						throw std::runtime_error(
-							"Invalid matrix range assignment.");
-					}
-				}
-				else
-				{
-					throw std::runtime_error("Cannot index non-array type.");
-				}
-
-				break;
-			}
-
 			case OpCode::USUB:
 			{
 				t_data val = PopData();
@@ -607,12 +356,6 @@ bool VM::Run()
 					using namespace m_ops;
 					result = t_data{std::in_place_index<m_vecidx>,
 						-std::get<m_vecidx>(val)};
-				}
-				else if(val.index() == m_matidx)
-				{
-					using namespace m_ops;
-					result = t_data{std::in_place_index<m_matidx>,
-						-std::get<m_matidx>(val)};
 				}
 				else
 				{
@@ -807,18 +550,10 @@ bool VM::Run()
 				break;
 			}
 
-			case OpCode::TOV: // converts value to t_vec
+			case OpCode::TOA: // converts value to t_vec
 			{
 				t_addr vec_size = PopAddress();
 				OpArrayCast<m_vecidx>(vec_size);
-				break;
-			}
-
-			case OpCode::TOM: // converts value to t_mat
-			{
-				t_addr size1 = PopAddress();
-				t_addr size2 = PopAddress();
-				OpArrayCast<m_matidx>(size1, size2);
 				break;
 			}
 
@@ -955,17 +690,10 @@ bool VM::Run()
 				break;
 			}
 
-			case OpCode::MAKEVEC:
+			case OpCode::MAKEARR:
 			{
 				t_vec vec = PopVector(false);
 				PushData(t_data{std::in_place_index<m_vecidx>, vec});
-				break;
-			}
-
-			case OpCode::MAKEMAT:
-			{
-				t_mat mat = PopMatrix(false);
-				PushData(t_data{std::in_place_index<m_matidx>, mat});
 				break;
 			}
 
