@@ -53,6 +53,7 @@ bool VM::Run()
 			std::cout << "*** read instruction at ip = " << t_int(m_ip)
 				<< ", sp = " << t_int(m_sp)
 				<< ", bp = " << t_int(m_bp)
+				<< ", gbp = " << t_int(m_gbp)
 				<< ", opcode: " << std::hex
 				<< static_cast<std::size_t>(op)
 				<< " (" << get_vm_opcode_name(op) << ")"
@@ -656,7 +657,7 @@ bool VM::Run()
 
 				// zero the stack frame
 				if(m_zeropoppedvals)
-					std::memset(m_mem.get()+m_sp, 0, (m_bp-m_sp)*m_bytesize);
+					std::memset(m_mem.get() + m_sp, 0, (m_bp - m_sp)*m_bytesize);
 
 				// remove the function's stack frame
 				m_sp = m_bp;
@@ -690,6 +691,39 @@ bool VM::Run()
 				break;
 			}
 
+			case OpCode::ADDFRAME: // create a stack frame
+			{
+				t_int framesize = std::get<m_intidx>(PopData());
+				m_sp -= framesize;
+
+				if(m_debug)
+				{
+					std::cout << "created stack frame of size "
+						<< framesize << "."
+						<< std::endl;
+				}
+				break;
+			}
+
+			case OpCode::REMFRAME: // remove a stack frame
+			{
+				t_int framesize = std::get<m_intidx>(PopData());
+
+				// zero the stack frame
+				if(m_zeropoppedvals)
+					std::memset(m_mem.get() + m_sp, 0, framesize*m_bytesize);
+
+				m_sp += framesize;
+
+				if(m_debug)
+				{
+					std::cout << "removed stack frame of size "
+						<< framesize << "."
+						<< std::endl;
+				}
+				break;
+			}
+
 			case OpCode::MAKEARR:
 			{
 				t_vec vec = PopVector(false);
@@ -707,7 +741,7 @@ bool VM::Run()
 		}
 
 		// wrap around
-		if(m_ip > m_memsize)
+		if(m_ip >= m_memsize)
 			m_ip %= m_memsize;
 	}
 

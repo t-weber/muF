@@ -238,6 +238,7 @@ int main(int argc, char** argv)
 		ostr->precision(std::numeric_limits<t_real>::digits10);
 
 		ZeroACAsm codegen{&ctx.GetSymbols(), ostr};
+		codegen.SetDebug(debug);
 		codegen.Start();
 		auto stmts = ctx.GetStatements()->GetStatementList();
 		for(auto iter = stmts.begin(); iter != stmts.end(); ++iter)

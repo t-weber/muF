@@ -149,7 +149,7 @@ const std::unordered_map<t_str, Symbol>& SymTab::GetSymbols() const
 std::ostream& operator<<(std::ostream& ostr, const SymTab& tab)
 {
 	const int name_len = 32;
-	const int type_len = 18;
+	const int type_len = 24;
 	const int refs_len = 8;
 	const int dims_len = 8;
 	//const int addr_len = 8;
@@ -170,6 +170,8 @@ std::ostream& operator<<(std::ostream& ostr, const SymTab& tab)
 		std::string ty = Symbol::get_type_name(sym.ty);
 		if(sym.is_external)
 			ty += " (ext)";
+		if(sym.is_global)
+			ty += " (global)";
 		if(sym.is_arg)
 			ty += " (arg " + std::to_string(sym.argidx) + ")";
 		if(sym.is_tmp)

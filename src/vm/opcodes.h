@@ -60,6 +60,8 @@ enum class OpCode : t_vm_byte
 	CALL     = 0x70,  // call function
 	RET      = 0x71,  // return from function
 	EXTCALL  = 0x72,  // call system function
+	ADDFRAME = 0x75,  // create stack frame
+	REMFRAME = 0x76,  // remove stack frame
 
 	// binary operations
 	BINAND   = 0x80,  // &
@@ -123,6 +125,8 @@ constexpr t_str get_vm_opcode_name(OpCode op)
 		case OpCode::CALL:      return "call";
 		case OpCode::RET:       return "ret";
 		case OpCode::EXTCALL:   return "extcall";
+		case OpCode::ADDFRAME:  return "addframe";
+		case OpCode::REMFRAME:  return "remframe";
 		case OpCode::BINAND:    return "binand";
 		case OpCode::BINOR:     return "binor";
 		case OpCode::BINXOR:    return "binxor";

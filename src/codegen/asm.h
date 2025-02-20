@@ -78,6 +78,8 @@ public:
 	void Start();
 	void Finish();
 
+	void SetDebug(bool b) { m_debug = b; }
+
 
 protected:
 	// finds the symbol with a specific name in the symbol table
@@ -148,6 +150,8 @@ private:
 	// dummy symbols for constants
 	Symbol *m_scalar_const{}, *m_int_const{}, *m_cplx_const{}, *m_bool_const{};
 	Symbol *m_vec_const{}, *m_str_const{};
+
+	bool m_debug{false};
 };
 
 

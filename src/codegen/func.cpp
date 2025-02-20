@@ -13,13 +13,30 @@
  */
 std::size_t ZeroACAsm::GetStackFrameSize(const Symbol* func) const
 {
-	auto syms = m_syms->FindSymbolsWithSameScope(
-		func->scoped_name + Symbol::get_scopenameseparator());
+	std::vector<const Symbol*> syms;
+	if(func)
+	{
+		// local symbols of a function
+		syms = m_syms->FindSymbolsWithSameScope(
+			func->scoped_name + Symbol::get_scopenameseparator());
+	}
+	else
+	{
+		// global symbols
+		syms = m_syms->FindSymbolsWithSameScope("");
+	}
+
 	std::size_t needed_size = 0;
 
 	//for(const auto symty : func->argty)
 	for(const Symbol* sym : syms)
+	{
+		// ignore functions
+		if(sym->ty == SymbolType::FUNC)
+			continue;
+
 		needed_size += GetSymSize(sym);
+	}
 
 	return needed_size;
 }

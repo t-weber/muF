@@ -704,7 +704,7 @@ std::tuple<VMType, VM::t_data> VM::ReadMemData(VM::t_addr addr)
 			if(m_debug)
 			{
 				std::cout << "read real " << val
-					<< " from address " << (addr-1)
+					<< " from address " << (addr - 1)
 					<< "." << std::endl;
 			}
 			break;
@@ -718,7 +718,7 @@ std::tuple<VMType, VM::t_data> VM::ReadMemData(VM::t_addr addr)
 			if(m_debug)
 			{
 				std::cout << "read integer " << val
-					<< " from address " << (addr-1)
+					<< " from address " << (addr - 1)
 					<< "." << std::endl;
 			}
 			break;
@@ -731,8 +731,8 @@ std::tuple<VMType, VM::t_data> VM::ReadMemData(VM::t_addr addr)
 
 			if(m_debug)
 			{
-				std::cout << "read complex \"" << val
-					<< "\" from address " << (addr-1)
+				std::cout << "read complex " << val
+					<< " from address " << (addr - 1)
 					<< "." << std::endl;
 			}
 			break;
@@ -746,7 +746,7 @@ std::tuple<VMType, VM::t_data> VM::ReadMemData(VM::t_addr addr)
 			if(m_debug)
 			{
 				std::cout << "read bool " << std::boolalpha << (val != 0)
-					<< " from address " << (addr-1)
+					<< " from address " << (addr - 1)
 					<< "." << std::endl;
 			}
 			break;
@@ -764,7 +764,7 @@ std::tuple<VMType, VM::t_data> VM::ReadMemData(VM::t_addr addr)
 			if(m_debug)
 			{
 				std::cout << "read address " << t_int(val)
-					<< " from address " << t_int(addr-1)
+					<< " from address " << t_int(addr - 1)
 					<< "." << std::endl;
 			}
 			break;
@@ -778,7 +778,7 @@ std::tuple<VMType, VM::t_data> VM::ReadMemData(VM::t_addr addr)
 			if(m_debug)
 			{
 				std::cout << "read string \"" << str
-					<< "\" from address " << (addr-1)
+					<< "\" from address " << (addr - 1)
 					<< "." << std::endl;
 			}
 			break;
@@ -794,7 +794,7 @@ std::tuple<VMType, VM::t_data> VM::ReadMemData(VM::t_addr addr)
 				using namespace m_ops;
 
 				std::cout << "read vector \"" << vec
-					<< "\" from address " << (addr-1)
+					<< "\" from address " << (addr - 1)
 					<< "." << std::endl;
 			}
 			break;
@@ -803,7 +803,8 @@ std::tuple<VMType, VM::t_data> VM::ReadMemData(VM::t_addr addr)
 		default:
 		{
 			std::ostringstream msg;
-			msg << "ReadMem: Data type " << (int)ty
+			msg << "ReadMem at address " << (addr - 1)
+				<< ": Data type " << (int)ty
 				<< " (" << get_vm_type_name(ty) << ")"
 				<< " not yet implemented.";
 			throw std::runtime_error(msg.str());
@@ -863,9 +864,9 @@ void VM::WriteMemData(VM::t_addr addr, const VM::t_data& data)
 	{
 		if(m_debug)
 		{
-			std::cout << "writing complex \""
+			std::cout << "writing complex "
 				<< std::get<m_cplxidx>(data)
-				<< "\" to address " << addr
+				<< " to address " << addr
 				<< "." << std::endl;
 		}
 

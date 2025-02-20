@@ -73,6 +73,22 @@ ZeroACAsm::~ZeroACAsm()
  */
 void ZeroACAsm::Start()
 {
+	// create global stack frame
+	t_vm_int global_framesize = static_cast<t_vm_int>(GetStackFrameSize(nullptr));
+	if(global_framesize > 0)
+	{
+		if(m_debug)
+		{
+			std::cout << "Global stack frame size: "
+				<< global_framesize << " bytes."
+				<< std::endl;
+		}
+		m_ostr->put(static_cast<t_vm_byte>(OpCode::PUSH));
+		m_ostr->put(static_cast<t_vm_byte>(VMType::INT));
+		m_ostr->write(reinterpret_cast<const char*>(&global_framesize), vm_type_size<VMType::INT, false>);
+		m_ostr->put(static_cast<t_vm_byte>(OpCode::ADDFRAME));
+	}
+
 	const t_str funcname = START_FUNC;
 
 	// no start function given
@@ -84,11 +100,12 @@ void ZeroACAsm::Start()
 	if(!func)
 		throw std::runtime_error("Start function is not in symbol table.");
 
-	// push stack frame size
+	// create stack frame
 	t_vm_int framesize = static_cast<t_vm_int>(GetStackFrameSize(func));
 	m_ostr->put(static_cast<t_vm_byte>(OpCode::PUSH));
 	m_ostr->put(static_cast<t_vm_byte>(VMType::INT));
 	m_ostr->write(reinterpret_cast<const char*>(&framesize), vm_type_size<VMType::INT, false>);
+	m_ostr->put(static_cast<t_vm_byte>(OpCode::ADDFRAME));
 
 	// push relative function address
 	t_vm_addr func_addr = 0;  // to be filled in later
@@ -117,6 +134,16 @@ void ZeroACAsm::Start()
  */
 void ZeroACAsm::Finish()
 {
+	// remove global stack frame
+	t_vm_int global_framesize = static_cast<t_vm_int>(GetStackFrameSize(nullptr));
+	if(global_framesize > 0)
+	{
+		m_ostr->put(static_cast<t_vm_byte>(OpCode::PUSH));
+		m_ostr->put(static_cast<t_vm_byte>(VMType::INT));
+		m_ostr->write(reinterpret_cast<const char*>(&global_framesize), vm_type_size<VMType::INT, false>);
+		m_ostr->put(static_cast<t_vm_byte>(OpCode::REMFRAME));
+	}
+
 	// add a final halt instruction
 	m_ostr->put(static_cast<t_vm_byte>(OpCode::HALT));
 

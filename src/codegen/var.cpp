@@ -44,33 +44,19 @@ t_astret ZeroACAsm::GetSym(const t_str& name) const
 std::size_t ZeroACAsm::GetSymSize(const Symbol* sym) const
 {
 	if(sym->ty == SymbolType::REAL)
-	{
 		return vm_type_size<VMType::REAL, true>;
-	}
 	else if(sym->ty == SymbolType::INT)
-	{
 		return vm_type_size<VMType::INT, true>;
-	}
 	else if(sym->ty == SymbolType::CPLX)
-	{
 		return vm_type_size<VMType::CPLX, true>;
-	}
 	else if(sym->ty == SymbolType::BOOL)
-	{
 		return vm_type_size<VMType::BOOL, true>;
-	}
 	else if(sym->ty == SymbolType::STRING)
-	{
 		return get_vm_str_size(sym->dims[0], true, true);
-	}
 	else if(sym->ty == SymbolType::VECTOR)
-	{
 		return get_vm_vec_size(sym->dims[0], true, true);
-	}
 	else
-	{
 		throw std::runtime_error("Invalid symbol type for \"" + sym->name + "\".");
-	}
 
 	return 0;
 }
