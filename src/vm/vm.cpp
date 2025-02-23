@@ -207,101 +207,19 @@ void VM::PushString(const VM::t_str& str)
 
 
 /**
- * pop a vector from the stack
- * a vector consists of an t_addr giving the length
- * following by the vector elements
- */
-VM::t_vec_real VM::PopVector(bool raw_elems)
-{
-	// raw real array and vector size follow without descriptors
-	if(raw_elems)
-	{
-		t_addr num_elems = PopRaw<t_addr, m_addrsize>();
-		CheckMemoryBounds(m_sp, num_elems*m_realsize);
-
-		t_real* begin = reinterpret_cast<t_real*>(m_mem.get() + m_sp);
-		t_vec_real vec(begin, num_elems);
-		m_sp += num_elems*m_realsize;
-
-		if(m_zeropoppedvals)
-			std::memset(begin, 0, num_elems*m_realsize);
-
-		return vec;
-	}
-
-	// individual elements and vector size with descriptor are on the stack
-	else
-	{
-		t_addr num_elems = PopAddress();
-		t_vec_real vec(num_elems);
-
-		for(t_addr i = 0; i < num_elems; ++i)
-		{
-			t_data val = PopData();
-			if(val.index() != m_realidx)
-				throw std::runtime_error("Vector expects real elements.");
-
-			t_real elem = std::get<m_realidx>(val);
-			vec[num_elems - i - 1] = elem;
-		}
-
-		if(m_debug)
-		{
-			using namespace m_ops;
-			std::cout << "popped non-raw vector " << vec << "." << std::endl;
-		}
-
-		return vec;
-	}
-}
-
-
-/**
- * get a vector from the top of the stack
- */
-VM::t_vec_real VM::TopVector(t_addr sp_offs) const
-{
-	t_addr num_elems = TopRaw<t_addr, m_addrsize>(sp_offs);
-	t_addr addr = m_sp + sp_offs + m_addrsize;
-
-	CheckMemoryBounds(addr, num_elems*m_realsize);
-	const t_real* begin = reinterpret_cast<t_real*>(m_mem.get() + addr);
-	t_vec_real vec(begin, num_elems);
-
-	return vec;
-}
-
-
-/**
- * push a vector to the stack
- */
-void VM::PushVector(const VM::t_vec_real& vec)
-{
-	t_addr num_elems = static_cast<t_addr>(vec.size());
-	CheckMemoryBounds(m_sp, -num_elems*m_realsize);
-
-	m_sp -= num_elems*m_realsize;
-	t_real* begin = reinterpret_cast<t_real*>(m_mem.get() + m_sp);
-	std::memcpy(begin, vec.data(), num_elems*m_realsize);
-
-	PushRaw<t_addr, m_addrsize>(num_elems);
-}
-
-
-/**
  * pop a complex number from the stack
  */
 VM::t_cplx VM::PopComplex()
 {
-	CheckMemoryBounds(m_sp, m_cplxsize);
+	CheckMemoryBounds(m_sp, GetDataTypeSize<t_cplx>());
 
 	t_real* begin = reinterpret_cast<t_real*>(m_mem.get() + m_sp);
 	t_cplx cplx{*begin, *(begin + 1)};
 
-	m_sp += m_cplxsize;
+	m_sp += GetDataTypeSize<t_cplx>();
 
 	if(m_zeropoppedvals)
-		std::memset(begin, 0, m_cplxsize);
+		std::memset(begin, 0, GetDataTypeSize<t_cplx>());
 
 	return cplx;
 }
@@ -314,7 +232,7 @@ VM::t_cplx VM::TopComplex(t_addr sp_offs) const
 {
 	t_addr addr = m_sp + sp_offs;
 
-	CheckMemoryBounds(addr, m_cplxsize);
+	CheckMemoryBounds(addr, GetDataTypeSize<t_cplx>());
 	const t_real* begin = reinterpret_cast<t_real*>(m_mem.get() + addr);
 
 	return t_cplx{*begin, *(begin + 1)};
@@ -326,9 +244,9 @@ VM::t_cplx VM::TopComplex(t_addr sp_offs) const
  */
 void VM::PushComplex(const VM::t_cplx& cplx)
 {
-	CheckMemoryBounds(m_sp, -m_cplxsize);
+	CheckMemoryBounds(m_sp, -GetDataTypeSize<t_cplx>());
 
-	m_sp -= m_cplxsize;
+	m_sp -= GetDataTypeSize<t_cplx>();
 	t_real* begin = reinterpret_cast<t_real*>(m_mem.get() + m_sp);
 
 	*(begin + 0) = cplx.real();
@@ -353,14 +271,14 @@ VM::t_data VM::TopData() const
 		case VMType::REAL:
 		{
 			dat = t_data{std::in_place_index<m_realidx>,
-				TopRaw<t_real, m_realsize>(m_bytesize)};
+				TopRaw<t_real, GetDataTypeSize<t_real>()>(m_bytesize)};
 			break;
 		}
 
 		case VMType::INT:
 		{
 			dat = t_data{std::in_place_index<m_intidx>,
-				TopRaw<t_int, m_intsize>(m_bytesize)};
+				TopRaw<t_int, GetDataTypeSize<t_real>()>(m_bytesize)};
 			break;
 		}
 
@@ -374,7 +292,7 @@ VM::t_data VM::TopData() const
 		case VMType::BOOL:
 		{
 			dat = t_data{std::in_place_index<m_boolidx>,
-				TopRaw<t_bool, m_boolsize>(m_bytesize)};
+				TopRaw<t_bool, GetDataTypeSize<t_bool>()>(m_bytesize)};
 			break;
 		}
 
@@ -435,7 +353,7 @@ VM::t_data VM::PopData()
 		case VMType::REAL:
 		{
 			dat = t_data{std::in_place_index<m_realidx>,
-				PopRaw<t_real, m_realsize>()};
+				PopRaw<t_real, GetDataTypeSize<t_real>()>()};
 			if(m_debug)
 			{
 				std::cout << "popped real " << std::get<m_realidx>(dat)
@@ -447,7 +365,7 @@ VM::t_data VM::PopData()
 		case VMType::INT:
 		{
 			dat = t_data{std::in_place_index<m_intidx>,
-				PopRaw<t_int, m_intsize>()};
+				PopRaw<t_int, GetDataTypeSize<t_int>()>()};
 			if(m_debug)
 			{
 				std::cout << "popped integer " << std::get<m_intidx>(dat)
@@ -471,7 +389,7 @@ VM::t_data VM::PopData()
 		case VMType::BOOL:
 		{
 			dat = t_data{std::in_place_index<m_boolidx>,
-				PopRaw<t_bool, m_boolsize>()};
+				PopRaw<t_bool, GetDataTypeSize<t_bool>()>()};
 			if(m_debug)
 			{
 				std::cout << "popped bool " << std::boolalpha
@@ -510,7 +428,7 @@ VM::t_data VM::PopData()
 
 		case VMType::REALARR:
 		{
-			dat = t_data{std::in_place_index<m_realarridx>, PopVector()};
+			dat = t_data{std::in_place_index<m_realarridx>, PopVector<t_vec_real>()};
 			if(m_debug)
 			{
 				using namespace m_ops;
@@ -544,7 +462,7 @@ void VM::PushData(const VM::t_data& data, VMType ty, bool err_on_unknown)
 	if(data.index() == m_realidx)
 	{
 		// push the actual data
-		PushRaw<t_real, m_realsize>(std::get<m_realidx>(data));
+		PushRaw<t_real, GetDataTypeSize<t_real>()>(std::get<m_realidx>(data));
 
 		// push descriptor
 		PushRaw<t_byte, m_bytesize>(static_cast<t_byte>(VMType::REAL));
@@ -561,7 +479,7 @@ void VM::PushData(const VM::t_data& data, VMType ty, bool err_on_unknown)
 	else if(data.index() == m_intidx)
 	{
 		// push the actual data
-		PushRaw<t_int, m_intsize>(std::get<m_intidx>(data));
+		PushRaw<t_int, GetDataTypeSize<t_int>()>(std::get<m_intidx>(data));
 
 		// push descriptor
 		PushRaw<t_byte, m_bytesize>(static_cast<t_byte>(VMType::INT));
@@ -595,7 +513,7 @@ void VM::PushData(const VM::t_data& data, VMType ty, bool err_on_unknown)
 	else if(data.index() == m_boolidx)
 	{
 		// push the actual data
-		PushRaw<t_bool, m_boolsize>(std::get<m_boolidx>(data));
+		PushRaw<t_bool, GetDataTypeSize<t_bool>()>(std::get<m_boolidx>(data));
 
 		// push descriptor
 		PushRaw<t_byte, m_bytesize>(static_cast<t_byte>(VMType::BOOL));
@@ -962,20 +880,23 @@ void VM::WriteMemData(VM::t_addr addr, const VM::t_data& data)
 }
 
 
+/**
+ * helper function to get (possibly dynamic) data type sizes
+ */
 VM::t_addr VM::GetDataSize(const t_data& data) const
 {
 	if(data.index() == m_realidx)
-		return m_realsize;
+		return GetDataTypeSize<t_real>();
 	else if(data.index() == m_intidx)
-		return m_intsize;
+		return GetDataTypeSize<t_int>();
 	else if(data.index() == m_cplxidx)
-		return m_cplxsize;
+		return GetDataTypeSize<t_cplx>();
 	else if(data.index() == m_boolidx)
-		return m_boolsize;
+		return GetDataTypeSize<t_bool>();
 	else if(data.index() == m_addridx)
 		return m_addrsize;
 	else if(data.index() == m_stridx)
-		return m_addrsize /*len*/ + std::get<m_stridx>(data).length();
+		return m_addrsize + std::get<m_stridx>(data).length();
 
 	throw std::runtime_error("GetDataSize: Data type not yet implemented.");
 	return 0;

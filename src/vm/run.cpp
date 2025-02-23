@@ -112,11 +112,7 @@ bool VM::Run()
 
 				if(arr.index() == m_realarridx)
 				{
-					// gets vector element
-					const t_vec_real& vec = std::get<m_realarridx>(arr);
-					idx = safe_array_index<t_int>(idx, vec.size());
-
-					PushData(t_data{std::in_place_index<m_realidx>, vec[idx]});
+					ReadVectorElem<t_vec_real>(arr, idx);
 				}
 				else if(arr.index() == m_stridx)
 				{
@@ -144,19 +140,7 @@ bool VM::Run()
 
 				if(arr.index() == m_realarridx)
 				{
-					// gets vector range
-					const t_vec_real& vec = std::get<m_realarridx>(arr);
-					idx1 = safe_array_index<t_int>(idx1, vec.size());
-					idx2 = safe_array_index<t_int>(idx2, vec.size());
-
-					t_int delta = (idx2 >= idx1 ? 1 : -1);
-					idx2 += delta;
-
-					t_vec_real newvec = m::zero<t_vec_real>(std::abs(idx2 - idx1));
-					t_int new_idx = 0;
-					for(t_int idx=idx1; idx!=idx2; idx+=delta)
-						newvec[new_idx++] = vec[idx];
-					PushData(t_data{std::in_place_index<m_realarridx>, newvec});
+					ReadVectorElemRange<t_vec_real>(arr, idx1, idx2);
 				}
 				else if(arr.index() == m_stridx)
 				{
@@ -194,27 +178,9 @@ bool VM::Run()
 				addr += m_bytesize;
 
 				if(ty == VMType::REALARR)
-				{
-					if(data.index() != m_realidx)
-					{
-						throw std::runtime_error(
-							"Vector element has to be of scalar type.");
-					}
-
-					// get vector length indicator
-					t_addr veclen = ReadMemRaw<t_addr>(addr);
-					addr += m_addrsize;
-
-					idx = safe_array_index<t_addr>(idx, veclen);
-
-					// skip to element and overwrite it
-					addr += idx * m_realsize;
-					WriteMemRaw(addr, std::get<m_realidx>(data));
-				}
+					WriteVectorElem<t_vec_real>(addr, data, idx);
 				else
-				{
 					throw std::runtime_error("Cannot index non-array type.");
-				}
 
 				break;
 			}
@@ -235,59 +201,7 @@ bool VM::Run()
 				// lhs variable is a vector
 				if(ty == VMType::REALARR)
 				{
-					const t_vec_real* rhsvec = nullptr;
-					const t_real* rhsreal = nullptr;
-
-					// rhs is a vector
-					if(data.index() == m_realarridx)
-					{
-						rhsvec = &std::get<m_realarridx>(data);
-					}
-					// rhs is a scalar
-					else if(data.index() == m_realidx)
-					{
-						rhsreal = &std::get<m_realidx>(data);
-					}
-					else
-					{
-						throw std::runtime_error(
-							"Vector range has to be of vector or scalar type.");
-					}
-
-					// get vector length indicator
-					t_addr veclen = ReadMemRaw<t_addr>(addr);
-					addr += m_addrsize;
-
-					idx1 = safe_array_index<t_addr>(idx1, veclen);
-					idx2 = safe_array_index<t_addr>(idx2, veclen);
-					t_int delta = (idx2 >= idx1 ? 1 : -1);
-					idx2 += delta;
-
-					// skip to element range and overwrite it
-					addr += idx1 * m_realsize;
-					t_int cur_idx = 0;
-					for(t_int idx=idx1; idx!=idx2; idx+=delta)
-					{
-						t_real elem{};
-
-						if(rhsvec)
-						{
-							if(std::size_t(cur_idx) >= rhsvec->size())
-							{
-								throw std::runtime_error(
-									"Vector index out of bounds.");
-							}
-
-							elem = (*rhsvec)[cur_idx++];
-						}
-						else if(rhsreal)
-						{
-							elem = *rhsreal;
-						}
-
-						WriteMemRaw(addr, elem);
-						addr += m_realsize * delta;
-					}
+					WriteVectorElemRange<t_vec_real>(addr, data, idx1, idx2);
 				}
 
 				// lhs variable is a string
@@ -313,7 +227,7 @@ bool VM::Run()
 					// skip to element range and overwrite it
 					addr += idx1 * m_charsize;
 					t_int cur_idx = 0;
-					for(t_int idx=idx1; idx!=idx2; idx+=delta)
+					for(t_int idx = idx1; idx != idx2; idx += delta)
 					{
 						t_char elem{};
 
@@ -730,9 +644,9 @@ bool VM::Run()
 				break;
 			}
 
-			case OpCode::MAKEARR:
+			case OpCode::MAKEARR:  // create a vector out of the elements on the stack
 			{
-				t_vec_real vec = PopVector(false);
+				t_vec_real vec = PopVector<t_vec_real>(false);
 				PushData(t_data{std::in_place_index<m_realarridx>, vec});
 				break;
 			}
