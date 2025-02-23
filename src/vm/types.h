@@ -2,7 +2,7 @@
  * asm generator and vm opcodes
  * @author Tobias Weber (orcid: 0000-0002-7230-1932)
  * @date 14-jun-2022
- * @license see 'LICENSE.GPL' file
+ * @license see 'LICENSE' file
  */
 
 #ifndef __0ACVM_TYPES_H__
@@ -11,8 +11,8 @@
 #include <vector>
 
 #include "common/types.h"
-#include "mathlibs/libs/matrix_algos.h"
-#include "mathlibs/libs/matrix_conts.h"
+#include "mathlibs/matrix_algos.h"
+#include "mathlibs/matrix_conts.h"
 
 
 using t_vm_int = ::t_int;
@@ -22,9 +22,9 @@ using t_vm_addr = std::int32_t;
 using t_vm_byte = std::uint8_t;
 using t_vm_bool = t_vm_byte;
 
+using t_vm_vec_real = m::vec<::t_vm_real, std::vector>;
+
 using t_vm_str = std::string;
-using t_vm_vec = m::vec<::t_vm_real, std::vector>;
-using t_vm_mat = m::mat<::t_vm_real, std::vector>;
 
 
 enum class VMType : t_vm_byte
@@ -36,9 +36,9 @@ enum class VMType : t_vm_byte
 	BOOL        = 0x03,
 	CPLX        = 0x04,
 
-	STR         = 0x10,
-	VEC         = 0x11,
-	MAT         = 0x12,
+	REALARR     = 0x10,
+
+	STR         = 0x15,
 
 	ADDR_MEM    = 0x20,   // address refering to absolute memory locations
 	ADDR_IP     = 0x21,   // address relative to the instruction pointer
@@ -87,9 +87,9 @@ constexpr t_str get_vm_type_name(VMType ty)
 		case VMType::INT:         return "integer";
 		case VMType::BOOL:        return "bool";
 
+		case VMType::REALARR:     return "real_array";
+
 		case VMType::STR:         return "string";
-		case VMType::VEC:         return "vector";
-		case VMType::MAT:         return "matrix";
 
 		case VMType::ADDR_MEM:    return "absolute address";
 		case VMType::ADDR_IP:     return "address relative to ip";
@@ -145,7 +145,7 @@ static inline t_vm_addr get_vm_str_size(t_vm_addr raw_len,
 }
 
 
-static inline t_vm_addr get_vm_vec_size(t_vm_addr raw_len,
+static inline t_vm_addr get_vm_vec_real_size(t_vm_addr raw_len,
 	bool with_descr = false, bool with_len = false)
 {
 	return raw_len*sizeof(t_vm_real)

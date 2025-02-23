@@ -33,15 +33,17 @@ enum class Token : lalr1::t_symbol_id
 	INT         = 1001,
 	BOOL        = 1002,
 	STR         = 1003,
-	IDENT       = 1004,
+
+	IDENT       = 1010,
+	DIM         = 1020,
 
 	// type declarations
 	TYPESEP     = 2000,
 	REALDECL    = 2010,
 	CPLXDECL    = 2011,
 	INTDECL     = 2012,
-	ARRDECL     = 2020,
-	STRINGDECL  = 2030,
+	BOOLDECL    = 2013,
+	STRINGDECL  = 2014,
 
 	// logical operators
 	EQU         = 3000,

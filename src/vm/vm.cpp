@@ -2,7 +2,7 @@
  * zero-address code vm
  * @author Tobias Weber (orcid: 0000-0002-7230-1932)
  * @date 8-jun-2022
- * @license see 'LICENSE.GPL' file
+ * @license see 'LICENSE' file
  */
 
 #include "vm.h"
@@ -211,7 +211,7 @@ void VM::PushString(const VM::t_str& str)
  * a vector consists of an t_addr giving the length
  * following by the vector elements
  */
-VM::t_vec VM::PopVector(bool raw_elems)
+VM::t_vec_real VM::PopVector(bool raw_elems)
 {
 	// raw real array and vector size follow without descriptors
 	if(raw_elems)
@@ -220,7 +220,7 @@ VM::t_vec VM::PopVector(bool raw_elems)
 		CheckMemoryBounds(m_sp, num_elems*m_realsize);
 
 		t_real* begin = reinterpret_cast<t_real*>(m_mem.get() + m_sp);
-		t_vec vec(begin, num_elems);
+		t_vec_real vec(begin, num_elems);
 		m_sp += num_elems*m_realsize;
 
 		if(m_zeropoppedvals)
@@ -233,7 +233,7 @@ VM::t_vec VM::PopVector(bool raw_elems)
 	else
 	{
 		t_addr num_elems = PopAddress();
-		t_vec vec(num_elems);
+		t_vec_real vec(num_elems);
 
 		for(t_addr i = 0; i < num_elems; ++i)
 		{
@@ -259,14 +259,14 @@ VM::t_vec VM::PopVector(bool raw_elems)
 /**
  * get a vector from the top of the stack
  */
-VM::t_vec VM::TopVector(t_addr sp_offs) const
+VM::t_vec_real VM::TopVector(t_addr sp_offs) const
 {
 	t_addr num_elems = TopRaw<t_addr, m_addrsize>(sp_offs);
 	t_addr addr = m_sp + sp_offs + m_addrsize;
 
 	CheckMemoryBounds(addr, num_elems*m_realsize);
 	const t_real* begin = reinterpret_cast<t_real*>(m_mem.get() + addr);
-	t_vec vec(begin, num_elems);
+	t_vec_real vec(begin, num_elems);
 
 	return vec;
 }
@@ -275,7 +275,7 @@ VM::t_vec VM::TopVector(t_addr sp_offs) const
 /**
  * push a vector to the stack
  */
-void VM::PushVector(const VM::t_vec& vec)
+void VM::PushVector(const VM::t_vec_real& vec)
 {
 	t_addr num_elems = static_cast<t_addr>(vec.size());
 	CheckMemoryBounds(m_sp, -num_elems*m_realsize);
@@ -396,9 +396,9 @@ VM::t_data VM::TopData() const
 			break;
 		}
 
-		case VMType::VEC:
+		case VMType::REALARR:
 		{
-			dat = t_data{std::in_place_index<m_vecidx>,
+			dat = t_data{std::in_place_index<m_realarridx>,
 				TopVector(m_bytesize)};
 				break;
 		}
@@ -508,13 +508,13 @@ VM::t_data VM::PopData()
 			break;
 		}
 
-		case VMType::VEC:
+		case VMType::REALARR:
 		{
-			dat = t_data{std::in_place_index<m_vecidx>, PopVector()};
+			dat = t_data{std::in_place_index<m_realarridx>, PopVector()};
 			if(m_debug)
 			{
 				using namespace m_ops;
-				std::cout << "popped vector " << std::get<m_vecidx>(dat)
+				std::cout << "popped vector " << std::get<m_realarridx>(dat)
 					<< "." << std::endl;
 			}
 			break;
@@ -643,19 +643,19 @@ void VM::PushData(const VM::t_data& data, VMType ty, bool err_on_unknown)
 	}
 
 	// vector data
-	else if(data.index() == m_vecidx)
+	else if(data.index() == m_realarridx)
 	{
 		// push the actual vector
-		PushVector(std::get<m_vecidx>(data));
+		PushVector(std::get<m_realarridx>(data));
 
 		// push descriptor
-		PushRaw<t_byte, m_bytesize>(static_cast<t_byte>(VMType::VEC));
+		PushRaw<t_byte, m_bytesize>(static_cast<t_byte>(VMType::REALARR));
 
 		if(m_debug)
 		{
 			using namespace m_ops;
 			std::cout << "pushed vector "
-				<< std::get<m_vecidx>(data) << "."
+				<< std::get<m_realarridx>(data) << "."
 				<< std::endl;
 		}
 	}
@@ -784,15 +784,14 @@ std::tuple<VMType, VM::t_data> VM::ReadMemData(VM::t_addr addr)
 			break;
 		}
 
-		case VMType::VEC:
+		case VMType::REALARR:
 		{
-			t_vec vec = ReadMemRaw<t_vec>(addr);
-			dat = t_data{std::in_place_index<m_vecidx>, vec};
+			t_vec_real vec = ReadMemRaw<t_vec_real>(addr);
+			dat = t_data{std::in_place_index<m_realarridx>, vec};
 
 			if(m_debug)
 			{
 				using namespace m_ops;
-
 				std::cout << "read vector \"" << vec
 					<< "\" from address " << (addr - 1)
 					<< "." << std::endl;
@@ -894,7 +893,7 @@ void VM::WriteMemData(VM::t_addr addr, const VM::t_data& data)
 		addr += m_bytesize;
 
 		// write the actual data
-		WriteMemRaw<t_int>(addr, std::get<m_boolidx>(data));
+		WriteMemRaw<t_bool>(addr, std::get<m_boolidx>(data));
 	}
 
 	// address type
@@ -936,24 +935,23 @@ void VM::WriteMemData(VM::t_addr addr, const VM::t_data& data)
 	}
 
 	// vector type
-	else if(data.index() == m_vecidx)
+	else if(data.index() == m_realarridx)
 	{
 		if(m_debug)
 		{
 			using namespace m_ops;
-
 			std::cout << "writing vector \""
-				<< std::get<m_vecidx>(data)
+				<< std::get<m_realarridx>(data)
 				<< "\" to address " << addr
 				<< "." << std::endl;
 		}
 
 		// write descriptor prefix
-		WriteMemRaw<t_byte>(addr, static_cast<t_byte>(VMType::VEC));
+		WriteMemRaw<t_byte>(addr, static_cast<t_byte>(VMType::REALARR));
 		addr += m_bytesize;
 
 		// write the actual data
-		WriteMemRaw<t_vec>(addr, std::get<m_vecidx>(data));
+		WriteMemRaw<t_vec_real>(addr, std::get<m_realarridx>(data));
 	}
 
 	// unknown type
@@ -1054,10 +1052,12 @@ const char* VM::GetDataTypeName(std::size_t type_idx)
 		case m_intidx: return "integer";
 		case m_cplxidx: return "complex";
 		case m_boolidx: return "bool";
+
 		case m_addridx: return "address";
 
+		case m_realarridx: return "array_real";
+
 		case m_stridx: return "string";
-		case m_vecidx: return "vector";
 
 		default: return "unknown";
 	}
@@ -1077,7 +1077,13 @@ void VM::CheckMemoryBounds(t_addr addr, t_addr size) const
 
 	t_addr new_addr = addr + size;
 	if(new_addr > m_memsize || new_addr < 0 || addr < 0)
-		throw std::runtime_error("Tried to access out of memory bounds.");
+	{
+		std::ostringstream msg;
+		msg << "Attempted memory access out of bounds: "
+			<< addr << " + " << size << " = " << new_addr
+			<< " > " << m_memsize << ".";
+		throw std::runtime_error(msg.str());
+	}
 }
 
 

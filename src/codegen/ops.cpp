@@ -2,7 +2,7 @@
  * zero-address code generator
  * @author Tobias Weber (orcid: 0000-0002-7230-1932)
  * @date 10-july-2022
- * @license: see 'LICENSE.GPL' file
+ * @license see 'LICENSE' file
  */
 
 #include "asm.h"
@@ -23,8 +23,8 @@ Symbol* ZeroACAsm::GetTypeConst(SymbolType ty) const
 			return m_bool_const;
 		case SymbolType::STRING:
 			return m_str_const;
-		case SymbolType::VECTOR:
-			return m_vec_const;
+		case SymbolType::REAL_ARRAY:
+			return m_real_array_const;
 		default:
 			return nullptr;
 	}
@@ -70,13 +70,13 @@ ZeroACAsm::GetCastSymType(t_astret term1, t_astret term2)
 		return std::make_tuple(term2, nullptr, term2);
 
 	// no casts between vector/real operations
-	else if(ty1 == SymbolType::VECTOR && ty2 == SymbolType::REAL)
+	else if(ty1 == SymbolType::REAL_ARRAY && ty2 == SymbolType::REAL)
 		return std::make_tuple(nullptr, nullptr, term1);
-	else if(ty1 == SymbolType::VECTOR && ty2 == SymbolType::INT)
+	else if(ty1 == SymbolType::REAL_ARRAY && ty2 == SymbolType::INT)
 		return std::make_tuple(nullptr, m_scalar_const, term1);
-	else if(ty1 == SymbolType::REAL && ty2 == SymbolType::VECTOR)
+	else if(ty1 == SymbolType::REAL && ty2 == SymbolType::REAL_ARRAY)
 		return std::make_tuple(nullptr, nullptr, term2);
-	else if(ty1 == SymbolType::INT && ty2 == SymbolType::VECTOR)
+	else if(ty1 == SymbolType::INT && ty2 == SymbolType::REAL_ARRAY)
 		return std::make_tuple(m_scalar_const, nullptr, term2);
 
 	return std::make_tuple(nullptr, term1, term1);
@@ -103,11 +103,15 @@ void ZeroACAsm::CastTo(t_astret ty_to,
 	{
 		op = static_cast<t_vm_byte>(OpCode::TOI);
 	}
+	else if(ty_to->ty == SymbolType::BOOL)
+	{
+		op = static_cast<t_vm_byte>(OpCode::TOB);
+	}
 	else if(ty_to->ty == SymbolType::REAL)
 	{
-		op = static_cast<t_vm_byte>(OpCode::TOF);
+		op = static_cast<t_vm_byte>(OpCode::TOR);
 	}
-	else if(ty_to->ty == SymbolType::VECTOR && allow_array_cast)
+	else if(ty_to->ty == SymbolType::REAL_ARRAY && allow_array_cast)
 	{
 		op = static_cast<t_vm_byte>(OpCode::TOA);
 

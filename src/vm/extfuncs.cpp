@@ -2,7 +2,7 @@
  * external functions
  * @author Tobias Weber (orcid: 0000-0002-7230-1932)
  * @date 3-july-2022
- * @license see 'LICENSE.GPL' file
+ * @license see 'LICENSE' file
  */
 
 #include "vm.h"
@@ -40,10 +40,10 @@ VM::t_data VM::CallExternal(const t_str& func_name)
 				arg = -arg;
 			retval = t_data{std::in_place_index<m_intidx>, arg};
 		}
-		else if(dat.index() == m_vecidx)
+		else if(dat.index() == m_realarridx)
 		{	// 2-norm for vectors
-			t_vec arg = std::get<m_vecidx>(dat);
-			t_real len = m::norm<t_vec>(arg);
+			t_vec_real arg = std::get<m_realarridx>(dat);
+			t_real len = m::norm<t_vec_real>(arg);
 			retval = t_data{std::in_place_index<m_realidx>, len};
 		}
 		else

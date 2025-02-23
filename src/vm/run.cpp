@@ -2,7 +2,7 @@
  * zero-address code vm, main execution loop
  * @author Tobias Weber (orcid: 0000-0002-7230-1932)
  * @date 8-jun-2022
- * @license see 'LICENSE.GPL' file
+ * @license see 'LICENSE' file
  */
 
 #include "vm.h"
@@ -110,10 +110,10 @@ bool VM::Run()
 				t_int idx = std::get<m_intidx>(PopData());
 				t_data arr = PopData();
 
-				if(arr.index() == m_vecidx)
+				if(arr.index() == m_realarridx)
 				{
 					// gets vector element
-					const t_vec& vec = std::get<m_vecidx>(arr);
+					const t_vec_real& vec = std::get<m_realarridx>(arr);
 					idx = safe_array_index<t_int>(idx, vec.size());
 
 					PushData(t_data{std::in_place_index<m_realidx>, vec[idx]});
@@ -142,21 +142,21 @@ bool VM::Run()
 				t_int idx1 = std::get<m_intidx>(PopData());
 				t_data arr = PopData();
 
-				if(arr.index() == m_vecidx)
+				if(arr.index() == m_realarridx)
 				{
 					// gets vector range
-					const t_vec& vec = std::get<m_vecidx>(arr);
+					const t_vec_real& vec = std::get<m_realarridx>(arr);
 					idx1 = safe_array_index<t_int>(idx1, vec.size());
 					idx2 = safe_array_index<t_int>(idx2, vec.size());
 
 					t_int delta = (idx2 >= idx1 ? 1 : -1);
 					idx2 += delta;
 
-					t_vec newvec = m::zero<t_vec>(std::abs(idx2 - idx1));
+					t_vec_real newvec = m::zero<t_vec_real>(std::abs(idx2 - idx1));
 					t_int new_idx = 0;
 					for(t_int idx=idx1; idx!=idx2; idx+=delta)
 						newvec[new_idx++] = vec[idx];
-					PushData(t_data{std::in_place_index<m_vecidx>, newvec});
+					PushData(t_data{std::in_place_index<m_realarridx>, newvec});
 				}
 				else if(arr.index() == m_stridx)
 				{
@@ -193,7 +193,7 @@ bool VM::Run()
 				// skip type descriptor byte
 				addr += m_bytesize;
 
-				if(ty == VMType::VEC)
+				if(ty == VMType::REALARR)
 				{
 					if(data.index() != m_realidx)
 					{
@@ -233,15 +233,15 @@ bool VM::Run()
 				addr += m_bytesize;
 
 				// lhs variable is a vector
-				if(ty == VMType::VEC)
+				if(ty == VMType::REALARR)
 				{
-					const t_vec* rhsvec = nullptr;
+					const t_vec_real* rhsvec = nullptr;
 					const t_real* rhsreal = nullptr;
 
 					// rhs is a vector
-					if(data.index() == m_vecidx)
+					if(data.index() == m_realarridx)
 					{
-						rhsvec = &std::get<m_vecidx>(data);
+						rhsvec = &std::get<m_realarridx>(data);
 					}
 					// rhs is a scalar
 					else if(data.index() == m_realidx)
@@ -352,11 +352,11 @@ bool VM::Run()
 					result = t_data{std::in_place_index<m_intidx>,
 						-std::get<m_intidx>(val)};
 				}
-				else if(val.index() == m_vecidx)
+				else if(val.index() == m_realarridx)
 				{
 					using namespace m_ops;
-					result = t_data{std::in_place_index<m_vecidx>,
-						-std::get<m_vecidx>(val)};
+					result = t_data{std::in_place_index<m_realarridx>,
+						-std::get<m_realarridx>(val)};
 				}
 				else
 				{
@@ -539,7 +539,13 @@ bool VM::Run()
 				break;
 			}
 
-			case OpCode::TOF: // converts value to t_real
+			case OpCode::TOB: // converts value to t_bool
+			{
+				OpCast<m_boolidx>();
+				break;
+			}
+
+			case OpCode::TOR: // converts value to t_real
 			{
 				OpCast<m_realidx>();
 				break;
@@ -551,10 +557,10 @@ bool VM::Run()
 				break;
 			}
 
-			case OpCode::TOA: // converts value to t_vec
+			case OpCode::TOA: // converts value to t_vec_real
 			{
 				t_addr vec_size = PopAddress();
-				OpArrayCast<m_vecidx>(vec_size);
+				OpArrayCast<m_realarridx>(vec_size);
 				break;
 			}
 
@@ -726,8 +732,8 @@ bool VM::Run()
 
 			case OpCode::MAKEARR:
 			{
-				t_vec vec = PopVector(false);
-				PushData(t_data{std::in_place_index<m_vecidx>, vec});
+				t_vec_real vec = PopVector(false);
+				PushData(t_data{std::in_place_index<m_realarridx>, vec});
 				break;
 			}
 

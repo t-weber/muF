@@ -2,7 +2,7 @@
  * parser
  * @author Tobias Weber (orcid: 0000-0002-7230-1932)
  * @date 27-may-18
- * @license: see 'LICENSE.GPL' file
+ * @license see 'LICENSE' file
  */
 
 #ifndef __PARSER_CONTEXT_H__

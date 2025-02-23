@@ -2,7 +2,7 @@
  * zero-address code generator
  * @author Tobias Weber (orcid: 0000-0002-7230-1932)
  * @date 10-july-2022
- * @license: see 'LICENSE.GPL' file
+ * @license see 'LICENSE' file
  */
 
 #include "asm.h"
@@ -53,7 +53,7 @@ t_astret ZeroACAsm::visit(const ASTArrayAccess* ast)
 		if(term->ty == SymbolType::STRING)
 			return m_str_const;
 		else
-			return m_vec_const;
+			return m_real_array_const;
 	}
 
 	throw std::runtime_error("ASTArrayAccess: Invalid array access to \"" + term->name + "\".");
@@ -148,7 +148,7 @@ t_astret ZeroACAsm::visit(const ASTExprList* ast)
 			vm_type_size<VMType::ADDR_MEM, false>);
 
 		m_ostr->put(static_cast<t_vm_byte>(OpCode::MAKEARR));
-		sym_ret = m_vec_const;
+		sym_ret = m_real_array_const;
 	}
 
 	return sym_ret;

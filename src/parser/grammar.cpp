@@ -71,7 +71,7 @@ void Grammar::CreateGrammar()
 	real_decl = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::REALDECL), "real_decl");
 	cplx_decl = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::CPLXDECL), "cplx_decl");
 	int_decl = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::INTDECL), "integer_decl");
-	arr_decl = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::ARRDECL), "array_decl");
+	bool_decl = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::BOOLDECL), "bool_decl");
 	str_decl = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::STRINGDECL), "string_decl");
 
 	keyword_if = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::IF), "if");
@@ -91,6 +91,7 @@ void Grammar::CreateGrammar()
 	keyword_assign = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::ASSIGN), "assign");
 	keyword_goto = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::GOTO), "goto");
 	keyword_comefrom = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::COMEFROM), "comefrom");
+	keyword_dim = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::DIM), "dimension");
 
 	// for the if/else s/r conflict shift "else"
 	// see: https://www.gnu.org/software/bison/manual/html_node/Non-Operators.html
@@ -398,6 +399,24 @@ void Grammar::CreateGrammar()
 #endif
 	++semanticindex;
 
+	// int declaration
+#ifdef CREATE_PRODUCTION_RULES
+	statement->AddRule({ int_decl, type_sep, variables/*, stmt_end*/ }, semanticindex);
+#endif
+#ifdef CREATE_SEMANTIC_RULES
+	rules.emplace(std::make_pair(semanticindex,
+	[this](bool full_match, const lalr1::t_semanticargs& args, [[maybe_unused]] lalr1::t_astbaseptr retval) -> lalr1::t_astbaseptr
+	{
+		if(args.size() == 1)
+			m_context.SetSymType(SymbolType::INT);
+
+		if(!full_match)
+			return nullptr;
+		return args[2];
+	}));
+#endif
+	++semanticindex;
+
 	// real declaration
 #ifdef CREATE_PRODUCTION_RULES
 	statement->AddRule({ real_decl, type_sep, variables/*, stmt_end*/ }, semanticindex);
@@ -434,26 +453,92 @@ void Grammar::CreateGrammar()
 #endif
 	++semanticindex;
 
-	// array declaration
+	// bool declaration
 #ifdef CREATE_PRODUCTION_RULES
-	statement->AddRule({ arr_decl, type_sep, sym_int, variables/*, stmt_end*/ }, semanticindex);
+	statement->AddRule({ bool_decl, type_sep, variables/*, stmt_end*/ }, semanticindex);
 #endif
 #ifdef CREATE_SEMANTIC_RULES
 	rules.emplace(std::make_pair(semanticindex,
 	[this](bool full_match, const lalr1::t_semanticargs& args, [[maybe_unused]] lalr1::t_astbaseptr retval) -> lalr1::t_astbaseptr
 	{
-		if(args.size() == 3)
+		if(args.size() == 1)
+			m_context.SetSymType(SymbolType::BOOL);
+
+		if(!full_match)
+			return nullptr;
+		return args[2];
+	}));
+#endif
+	++semanticindex;
+
+	// int array declaration
+#ifdef CREATE_PRODUCTION_RULES
+	statement->AddRule({ int_decl, comma, keyword_dim, bracket_open, sym_int, bracket_close, type_sep, variables/*, stmt_end*/ }, semanticindex);
+#endif
+#ifdef CREATE_SEMANTIC_RULES
+	rules.emplace(std::make_pair(semanticindex,
+	[this](bool full_match, const lalr1::t_semanticargs& args, [[maybe_unused]] lalr1::t_astbaseptr retval) -> lalr1::t_astbaseptr
+	{
+		if(args.size() == 6)
 		{
-			auto dim_node = std::dynamic_pointer_cast<ASTNumConst<t_int>>(args[2]);
+			auto dim_node = std::dynamic_pointer_cast<ASTNumConst<t_int>>(args[4]);
 			const t_int dim = dim_node->GetVal();
 
-			m_context.SetSymType(SymbolType::VECTOR);
+			m_context.SetSymType(SymbolType::INT_ARRAY);
 			m_context.SetSymDims(std::size_t(dim));
 		}
 
 		if(!full_match)
 			return nullptr;
-		return args[3];
+		return args[7];
+	}));
+#endif
+	++semanticindex;
+
+	// real array declaration
+#ifdef CREATE_PRODUCTION_RULES
+	statement->AddRule({ real_decl, comma, keyword_dim, bracket_open, sym_int, bracket_close, type_sep, variables/*, stmt_end*/ }, semanticindex);
+#endif
+#ifdef CREATE_SEMANTIC_RULES
+	rules.emplace(std::make_pair(semanticindex,
+	[this](bool full_match, const lalr1::t_semanticargs& args, [[maybe_unused]] lalr1::t_astbaseptr retval) -> lalr1::t_astbaseptr
+	{
+		if(args.size() == 6)
+		{
+			auto dim_node = std::dynamic_pointer_cast<ASTNumConst<t_int>>(args[4]);
+			const t_int dim = dim_node->GetVal();
+
+			m_context.SetSymType(SymbolType::REAL_ARRAY);
+			m_context.SetSymDims(std::size_t(dim));
+		}
+
+		if(!full_match)
+			return nullptr;
+		return args[7];
+	}));
+#endif
+	++semanticindex;
+
+	// complex array declaration
+#ifdef CREATE_PRODUCTION_RULES
+	statement->AddRule({ cplx_decl, comma, keyword_dim, bracket_open, sym_int, bracket_close, type_sep, variables/*, stmt_end*/ }, semanticindex);
+#endif
+#ifdef CREATE_SEMANTIC_RULES
+	rules.emplace(std::make_pair(semanticindex,
+	[this](bool full_match, const lalr1::t_semanticargs& args, [[maybe_unused]] lalr1::t_astbaseptr retval) -> lalr1::t_astbaseptr
+	{
+		if(args.size() == 6)
+		{
+			auto dim_node = std::dynamic_pointer_cast<ASTNumConst<t_int>>(args[4]);
+			const t_int dim = dim_node->GetVal();
+
+			m_context.SetSymType(SymbolType::CPLX_ARRAY);
+			m_context.SetSymDims(std::size_t(dim));
+		}
+
+		if(!full_match)
+			return nullptr;
+		return args[7];
 	}));
 #endif
 	++semanticindex;
@@ -499,24 +584,6 @@ void Grammar::CreateGrammar()
 		if(!full_match)
 			return nullptr;
 		return args[3];
-	}));
-#endif
-	++semanticindex;
-
-	// int declaration
-#ifdef CREATE_PRODUCTION_RULES
-	statement->AddRule({ int_decl, type_sep, variables/*, stmt_end*/ }, semanticindex);
-#endif
-#ifdef CREATE_SEMANTIC_RULES
-	rules.emplace(std::make_pair(semanticindex,
-	[this](bool full_match, const lalr1::t_semanticargs& args, [[maybe_unused]] lalr1::t_astbaseptr retval) -> lalr1::t_astbaseptr
-	{
-		if(args.size() == /*1*/ 0)  // check
-			m_context.SetSymType(SymbolType::INT);
-
-		if(!full_match)
-			return nullptr;
-		return args[2];
 	}));
 #endif
 	++semanticindex;
@@ -705,6 +772,21 @@ void Grammar::CreateGrammar()
 	// --------------------------------------------------------------------------------
 	// typedecl
 	// --------------------------------------------------------------------------------
+	// int declaration
+#ifdef CREATE_PRODUCTION_RULES
+	typedecl->AddRule({ int_decl }, semanticindex);
+#endif
+#ifdef CREATE_SEMANTIC_RULES
+	rules.emplace(std::make_pair(semanticindex,
+	[](bool full_match, [[maybe_unused]] const lalr1::t_semanticargs& args, [[maybe_unused]] lalr1::t_astbaseptr retval) -> lalr1::t_astbaseptr
+	{
+		if(!full_match)
+			return nullptr;
+		return std::make_shared<ASTTypeDecl>(SymbolType::INT);
+	}));
+#endif
+	++semanticindex;
+
 	// real declaration
 #ifdef CREATE_PRODUCTION_RULES
 	typedecl->AddRule({ real_decl }, semanticindex);
@@ -735,9 +817,24 @@ void Grammar::CreateGrammar()
 #endif
 	++semanticindex;
 
-	// array declaration
+	// bool declaration
 #ifdef CREATE_PRODUCTION_RULES
-	typedecl->AddRule({ arr_decl, sym_int }, semanticindex);
+	typedecl->AddRule({ bool_decl }, semanticindex);
+#endif
+#ifdef CREATE_SEMANTIC_RULES
+	rules.emplace(std::make_pair(semanticindex,
+	[](bool full_match, [[maybe_unused]] const lalr1::t_semanticargs& args, [[maybe_unused]] lalr1::t_astbaseptr retval) -> lalr1::t_astbaseptr
+	{
+		if(!full_match)
+			return nullptr;
+		return std::make_shared<ASTTypeDecl>(SymbolType::BOOL);
+	}));
+#endif
+	++semanticindex;
+
+	// int array declaration
+#ifdef CREATE_PRODUCTION_RULES
+	typedecl->AddRule({ int_decl, /*comma,*/ keyword_dim, bracket_open, sym_int, bracket_close }, semanticindex);
 #endif
 #ifdef CREATE_SEMANTIC_RULES
 	rules.emplace(std::make_pair(semanticindex,
@@ -746,9 +843,47 @@ void Grammar::CreateGrammar()
 		if(!full_match)
 			return nullptr;
 
-		auto dim_node = std::dynamic_pointer_cast<ASTNumConst<t_int>>(args[1]);
+		auto dim_node = std::dynamic_pointer_cast<ASTNumConst<t_int>>(args[3]);
 		const t_int dim = dim_node->GetVal();
-		return std::make_shared<ASTTypeDecl>(SymbolType::VECTOR,
+		return std::make_shared<ASTTypeDecl>(SymbolType::INT_ARRAY,
+			std::vector<std::size_t>{ std::size_t(dim) });
+	}));
+#endif
+	++semanticindex;
+
+	// real array declaration
+#ifdef CREATE_PRODUCTION_RULES
+	typedecl->AddRule({ real_decl, /*comma,*/ keyword_dim, bracket_open, sym_int, bracket_close }, semanticindex);
+#endif
+#ifdef CREATE_SEMANTIC_RULES
+	rules.emplace(std::make_pair(semanticindex,
+	[](bool full_match, const lalr1::t_semanticargs& args, [[maybe_unused]] lalr1::t_astbaseptr retval) -> lalr1::t_astbaseptr
+	{
+		if(!full_match)
+			return nullptr;
+
+		auto dim_node = std::dynamic_pointer_cast<ASTNumConst<t_int>>(args[3]);
+		const t_int dim = dim_node->GetVal();
+		return std::make_shared<ASTTypeDecl>(SymbolType::REAL_ARRAY,
+			std::vector<std::size_t>{ std::size_t(dim) });
+	}));
+#endif
+	++semanticindex;
+
+	// complex array declaration
+#ifdef CREATE_PRODUCTION_RULES
+	typedecl->AddRule({ cplx_decl, /*comma,*/ keyword_dim, bracket_open, sym_int, bracket_close }, semanticindex);
+#endif
+#ifdef CREATE_SEMANTIC_RULES
+	rules.emplace(std::make_pair(semanticindex,
+	[](bool full_match, const lalr1::t_semanticargs& args, [[maybe_unused]] lalr1::t_astbaseptr retval) -> lalr1::t_astbaseptr
+	{
+		if(!full_match)
+			return nullptr;
+
+		auto dim_node = std::dynamic_pointer_cast<ASTNumConst<t_int>>(args[3]);
+		const t_int dim = dim_node->GetVal();
+		return std::make_shared<ASTTypeDecl>(SymbolType::CPLX_ARRAY,
 			std::vector<std::size_t>{ std::size_t(dim) });
 	}));
 #endif
@@ -785,21 +920,6 @@ void Grammar::CreateGrammar()
 		const t_int dim = dim_node->GetVal();
 		return std::make_shared<ASTTypeDecl>(SymbolType::STRING,
 			std::vector<std::size_t>{ std::size_t(dim) });
-	}));
-#endif
-	++semanticindex;
-
-	// int declaration
-#ifdef CREATE_PRODUCTION_RULES
-	typedecl->AddRule({ int_decl }, semanticindex);
-#endif
-#ifdef CREATE_SEMANTIC_RULES
-	rules.emplace(std::make_pair(semanticindex,
-	[](bool full_match, [[maybe_unused]] const lalr1::t_semanticargs& args, [[maybe_unused]] lalr1::t_astbaseptr retval) -> lalr1::t_astbaseptr
-	{
-		if(!full_match)
-			return nullptr;
-		return std::make_shared<ASTTypeDecl>(SymbolType::INT);
 	}));
 #endif
 	++semanticindex;

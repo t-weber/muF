@@ -2,7 +2,7 @@
  * zero-address code generator
  * @author Tobias Weber (orcid: 0000-0002-7230-1932)
  * @date 10-july-2022
- * @license: see 'LICENSE.GPL' file
+ * @license see 'LICENSE' file
  */
 
 #include "asm.h"
@@ -53,8 +53,8 @@ std::size_t ZeroACAsm::GetSymSize(const Symbol* sym) const
 		return vm_type_size<VMType::BOOL, true>;
 	else if(sym->ty == SymbolType::STRING)
 		return get_vm_str_size(sym->dims[0], true, true);
-	else if(sym->ty == SymbolType::VECTOR)
-		return get_vm_vec_size(sym->dims[0], true, true);
+	else if(sym->ty == SymbolType::REAL_ARRAY)
+		return get_vm_vec_real_size(sym->dims[0], true, true);
 	else
 		throw std::runtime_error("Invalid symbol type for \"" + sym->name + "\".");
 
@@ -131,7 +131,7 @@ t_astret ZeroACAsm::visit(const ASTVarDecl* ast)
 				PushStrConst(t_vm_str(""));
 				AssignVar(sym);
 			}
-			else if(sym->ty == SymbolType::VECTOR)
+			else if(sym->ty == SymbolType::REAL_ARRAY)
 			{
 				std::vector<t_vm_real> vec(sym->dims[0]);
 				PushVecConst(vec);

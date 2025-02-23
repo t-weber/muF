@@ -34,101 +34,100 @@ if(USE_BOOST_GIL)
 endif()
 
 
+find_package(LibLalr1 REQUIRED)
+find_package(Mathlibs REQUIRED)
+
+
 include_directories(
 	"${PROJECT_SOURCE_DIR}"
 	"${PROJECT_SOURCE_DIR}/src"
+	"${Mathlibs_INCLUDE_DIRS}"
 	"${Boost_INCLUDE_DIRS}" "${Boost_INCLUDE_DIRS}/.."
 	"${CMAKE_CURRENT_BINARY_DIR}"
 	"${CMAKE_BINARY_DIR}"
 )
 
 
-find_package(LibLalr1)
+add_executable(parsergen
+	src/parser/parsergen.cpp
+	src/parser/grammar.cpp
+)
 
-if(LibLalr1_FOUND)
-	message("Building LibLalr1-based parser generator.")
+target_compile_definitions(parsergen
+	PUBLIC -DCREATE_PRODUCTION_RULES
+)
 
-	add_executable(parsergen
-		src/parser/parsergen.cpp
-		src/parser/grammar.cpp
+target_include_directories(parsergen
+	PUBLIC ${LibLalr1_INCLUDE_DIRECTORIES}
+)
+
+target_link_libraries(parsergen
+	${LibLalr1_LIBRARIES}
+	${Boost_LIBRARIES}
+)
+
+
+if(EXISTS "${CMAKE_BINARY_DIR}/parser.cpp")
+	message("Building recursive-ascent compiler.")
+
+	add_executable(compile
+		src/codegen/main.cpp
+		${CMAKE_BINARY_DIR}/parser.cpp ${CMAKE_BINARY_DIR}/parser.h
+		src/parser/grammar.cpp src/parser/grammar.h
+		src/parser/lexer.cpp src/parser/lexer.h
+		src/codegen/asm.cpp src/codegen/asm.h
+		src/codegen/arr.cpp
+		src/codegen/func.cpp
+		src/codegen/ops.cpp
+		src/codegen/var.cpp
+		src/codegen/consttab.cpp src/codegen/consttab.h
+		src/common/sym.cpp src/common/sym.h
+		src/ast/ast.h
+		src/ast/printast.cpp src/ast/printast.h
 	)
 
-	target_compile_definitions(parsergen
-		PUBLIC -DCREATE_PRODUCTION_RULES
+	target_compile_definitions(compile
+		PUBLIC -DCREATE_SEMANTIC_RULES -DUSE_RECASC=1
 	)
 
-	target_include_directories(parsergen
+	target_include_directories(compile
 		PUBLIC ${LibLalr1_INCLUDE_DIRECTORIES}
 	)
 
-	target_link_libraries(parsergen
-		${LibLalr1_LIBRARIES}
+	target_link_libraries(compile
+		#${LibLalr1_LIBRARIES}
 		${Boost_LIBRARIES}
 	)
+elseif(EXISTS "${CMAKE_BINARY_DIR}/parser.tab")
+	message("Building table-based compiler.")
 
+	add_executable(compile
+		src/codegen/main.cpp
+		src/parser/grammar.cpp src/parser/grammar.h
+		src/parser/lexer.cpp src/parser/lexer.h
+		src/codegen/asm.cpp src/codegen/asm.h
+		src/codegen/arr.cpp
+		src/codegen/func.cpp
+		src/codegen/ops.cpp
+		src/codegen/var.cpp
+		src/codegen/consttab.cpp src/codegen/consttab.h
+		src/common/sym.cpp src/common/sym.h
+		src/ast/ast.h
+		src/ast/printast.cpp src/ast/printast.h
+	)
 
-	if(EXISTS "${CMAKE_BINARY_DIR}/parser.cpp")
-		message("Building LibLalr1-based recursive-ascent compiler.")
+	target_compile_definitions(compile
+		PUBLIC -DCREATE_SEMANTIC_RULES -DUSE_RECASC=0
+	)
 
-		add_executable(compile
-			src/codegen/main.cpp
-			${CMAKE_BINARY_DIR}/parser.cpp ${CMAKE_BINARY_DIR}/parser.h
-			src/parser/grammar.cpp src/parser/grammar.h
-			src/parser/lexer.cpp src/parser/lexer.h
-			src/codegen/asm.cpp src/codegen/asm.h
-			src/codegen/arr.cpp
-			src/codegen/func.cpp
-			src/codegen/ops.cpp
-			src/codegen/var.cpp
-			src/codegen/consttab.cpp src/codegen/consttab.h
-			src/common/sym.cpp src/common/sym.h
-			src/ast/ast.h
-			src/ast/printast.cpp src/ast/printast.h
-		)
+	target_include_directories(compile
+		PUBLIC ${LibLalr1_INCLUDE_DIRECTORIES}
+	)
 
-		target_compile_definitions(compile
-			PUBLIC -DCREATE_SEMANTIC_RULES -DUSE_RECASC=1
-		)
-
-		target_include_directories(compile
-			PUBLIC ${LibLalr1_INCLUDE_DIRECTORIES}
-		)
-
-		target_link_libraries(compile
-			#${LibLalr1_LIBRARIES}
-			${Boost_LIBRARIES}
-		)
-	elseif(EXISTS "${CMAKE_BINARY_DIR}/parser.tab")
-		message("Building LibLalr1-based table-driven compiler.")
-
-		add_executable(compile
-			src/codegen/main.cpp
-			src/parser/grammar.cpp src/parser/grammar.h
-			src/parser/lexer.cpp src/parser/lexer.h
-			src/codegen/asm.cpp src/codegen/asm.h
-			src/codegen/arr.cpp
-			src/codegen/func.cpp
-			src/codegen/ops.cpp
-			src/codegen/var.cpp
-			src/codegen/consttab.cpp src/codegen/consttab.h
-			src/common/sym.cpp src/common/sym.h
-			src/ast/ast.h
-			src/ast/printast.cpp src/ast/printast.h
-		)
-
-		target_compile_definitions(compile
-			PUBLIC -DCREATE_SEMANTIC_RULES -DUSE_RECASC=0
-		)
-
-		target_include_directories(compile
-			PUBLIC ${LibLalr1_INCLUDE_DIRECTORIES}
-		)
-
-		target_link_libraries(compile
-			${LibLalr1Parser_LIBRARIES} #${LibLalr1_LIBRARIES}
-			${Boost_LIBRARIES}
-		)
-	endif()
+	target_link_libraries(compile
+		${LibLalr1Parser_LIBRARIES} #${LibLalr1_LIBRARIES}
+		${Boost_LIBRARIES}
+	)
 endif()
 
 

@@ -2,7 +2,7 @@
  * helper functions
  * @author Tobias Weber (orcid: 0000-0002-7230-1932)
  * @date july-2022
- * @license: see 'LICENSE.GPL' file
+ * @license see 'LICENSE' file
  */
 
 #ifndef __MUF_HELPERS__

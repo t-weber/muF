@@ -2,7 +2,7 @@
  * symbol table
  * @author Tobias Weber (orcid: 0000-0002-7230-1932)
  * @date 13-apr-20
- * @license: see 'LICENSE.GPL' file
+ * @license see 'LICENSE' file
  */
 
 #include "sym.h"
@@ -22,8 +22,13 @@ t_str Symbol::get_type_name(SymbolType ty)
 		case SymbolType::INT: return "integer";
 		case SymbolType::CPLX: return "complex";
 		case SymbolType::BOOL: return "bool";
-		case SymbolType::VECTOR: return "vec";
-		case SymbolType::STRING: return "str";
+
+		case SymbolType::REAL_ARRAY: return "real_array";
+		case SymbolType::INT_ARRAY: return "integer_array";
+		case SymbolType::CPLX_ARRAY: return "complex_array";
+
+		case SymbolType::STRING: return "string";
+
 		case SymbolType::VOID: return "void";
 		case SymbolType::COMP: return "comp";
 		case SymbolType::FUNC: return "func";

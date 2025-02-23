@@ -103,13 +103,14 @@ private:
 	lalr1::TerminalPtr keyword_func{}, keyword_procedure{}, keyword_ret{};
 	lalr1::TerminalPtr keyword_result{}, keyword_results{};
 	lalr1::TerminalPtr keyword_program{};
-	lalr1::TerminalPtr keyword_assign{};
+	lalr1::TerminalPtr keyword_assign{}, keyword_dim{};
 	lalr1::TerminalPtr comma{}/*, stmt_end{}*/;
 	lalr1::TerminalPtr sym_real{}, sym_int{}, sym_bool{}, sym_str{};
 	lalr1::TerminalPtr ident{}, label{};
 	lalr1::TerminalPtr keyword_goto{}, keyword_comefrom{};
-	lalr1::TerminalPtr type_sep{}, real_decl{}, cplx_decl{}, int_decl{};
-	lalr1::TerminalPtr arr_decl{}, str_decl{};
+	lalr1::TerminalPtr type_sep{};
+	lalr1::TerminalPtr real_decl{}, cplx_decl{}, int_decl{}, bool_decl{};
+	lalr1::TerminalPtr str_decl{};
 #endif
 
 	ParserContext m_context{};

@@ -2,7 +2,7 @@
  * llvm zero-address code generator
  * @author Tobias Weber (orcid: 0000-0002-7230-1932)
  * @date 10-july-2022
- * @license: see 'LICENSE.GPL' file
+ * @license see 'LICENSE' file
  */
 
 #ifndef __ZEROACASM_H__
@@ -149,7 +149,7 @@ private:
 
 	// dummy symbols for constants
 	Symbol *m_scalar_const{}, *m_int_const{}, *m_cplx_const{}, *m_bool_const{};
-	Symbol *m_vec_const{}, *m_str_const{};
+	Symbol *m_real_array_const{}, *m_str_const{};
 
 	bool m_debug{false};
 };

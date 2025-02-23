@@ -2,7 +2,7 @@
  * zero-address code vm
  * @author Tobias Weber (orcid: 0000-0002-7230-1932)
  * @date 8-jun-2022
- * @license see 'LICENSE.GPL' file
+ * @license see 'LICENSE' file
  */
 
 #ifndef __0ACVM_H__
@@ -41,8 +41,9 @@ public:
 	using t_byte = ::t_vm_byte;
 	using t_bool = ::t_vm_byte;
 
+	using t_vec_real = ::t_vm_vec_real;
+
 	using t_str = ::t_vm_str;
-	using t_vec = ::t_vm_vec;
 
 	using t_uint = typename std::make_unsigned<t_int>::type;
 	using t_char = typename t_str::value_type;
@@ -50,7 +51,7 @@ public:
 	// variant of all data types
 	using t_data = std::variant<
 		std::monostate /*prevents default-construction of first type (t_real)*/,
-		t_real, t_int, t_cplx, t_bool, t_addr, t_str, t_vec>;
+		t_real, t_int, t_cplx, t_bool, t_addr, t_vec_real, t_str>;
 
 	// use variant type indices and std::in_place_index instead of direct types
 	// because two types might be identical (e.g. t_int and t_addr)
@@ -59,8 +60,8 @@ public:
 	static constexpr const std::size_t m_cplxidx = 3;
 	static constexpr const std::size_t m_boolidx = 4;
 	static constexpr const std::size_t m_addridx = 5;
-	static constexpr const std::size_t m_stridx  = 6;
-	static constexpr const std::size_t m_vecidx  = 7;
+	static constexpr const std::size_t m_realarridx  = 6;
+	static constexpr const std::size_t m_stridx  = 7;
 
 	// data type sizes
 	static constexpr const t_addr m_bytesize = sizeof(t_byte);
@@ -155,13 +156,13 @@ protected:
 	void PushString(const t_str& str);
 
 	// pop a vector from the stack
-	t_vec PopVector(bool raw_elems = true);
+	t_vec_real PopVector(bool raw_elems = true);
 
 	// get the vector on top of the stack
-	t_vec TopVector(t_addr sp_offs = 0) const;
+	t_vec_real TopVector(t_addr sp_offs = 0) const;
 
 	// push a vector to the stack
-	void PushVector(const t_vec& vec);
+	void PushVector(const t_vec_real& vec);
 
 	// push data onto the stack
 	void PushData(const t_data& data, VMType ty = VMType::UNKNOWN, bool err_on_unknown = true);
@@ -195,7 +196,7 @@ protected:
 		}
 
 		// vector type
-		else if constexpr(std::is_same_v<std::decay_t<t_val>, t_vec>)
+		else if constexpr(std::is_same_v<std::decay_t<t_val>, t_vec_real>)
 		{
 			t_addr num_elems = ReadMemRaw<t_addr>(addr);
 			addr += m_addrsize;
@@ -203,7 +204,7 @@ protected:
 			CheckMemoryBounds(addr, num_elems*m_realsize);
 			const t_real* begin = reinterpret_cast<t_real*>(&m_mem[addr]);
 
-			return t_vec(begin, num_elems);
+			return t_vec_real(begin, num_elems);
 		}
 
 		// complex type
@@ -249,7 +250,7 @@ protected:
 		}
 
 		// vector type
-		else if constexpr(std::is_same_v<std::decay_t<t_val>, t_vec>)
+		else if constexpr(std::is_same_v<std::decay_t<t_val>, t_vec_real>)
 		{
 			t_addr num_elems = static_cast<t_addr>(val.size());
 			CheckMemoryBounds(addr, m_addrsize + num_elems*m_realsize);
@@ -394,6 +395,33 @@ protected:
 			}
 		}
 
+		// casting from bool
+		else if(data.index() == m_boolidx)
+		{
+			if constexpr(std::is_same_v<std::decay_t<t_to>, t_bool>)
+				return;  // don't need to cast to the same type
+
+			bool val = std::get<m_boolidx>(data) != 0;
+
+			// convert to string
+			if constexpr(std::is_same_v<std::decay_t<t_to>, t_str>)
+			{
+				std::ostringstream ostr;
+				ostr.precision(m_prec);
+				ostr << std::boolalpha << val;
+				PopData();
+				PushData(t_data{std::in_place_index<m_stridx>, ostr.str()});
+			}
+
+			// convert to primitive type
+			else
+			{
+				PopData();
+				PushData(t_data{std::in_place_index<toidx>,
+					static_cast<t_to>(val)});
+			}
+		}
+
 		// casting from complex
 		if(data.index() == m_cplxidx)
 		{
@@ -445,12 +473,12 @@ protected:
 		}
 
 		// casting from vector
-		else if(data.index() == m_vecidx)
+		else if(data.index() == m_realarridx)
 		{
-			if constexpr(std::is_same_v<std::decay_t<t_to>, t_vec>)
+			if constexpr(std::is_same_v<std::decay_t<t_to>, t_vec_real>)
 				return;  // don't need to cast to the same type
 
-			const t_vec& val = std::get<m_vecidx>(data);
+			const t_vec_real& val = std::get<m_realarridx>(data);
 
 			// convert to string
 			if constexpr(std::is_same_v<std::decay_t<t_to>, t_str>)
@@ -494,10 +522,10 @@ protected:
 		t_data data = TopData();
 
 		// casting to vector
-		if constexpr(toidx == m_vecidx)
+		if constexpr(toidx == m_realarridx)
 		{
 			// casting from vector
-			if(data.index() == m_vecidx)
+			if(data.index() == m_realarridx)
 				return;  // no action needed, TODO: check sizes
 
 			// casting from real
@@ -507,10 +535,10 @@ protected:
 				PopData();
 
 				// set every element of the vector to the real value
-				t_vec vec = m::create<t_vec>(size);
+				t_vec_real vec = m::create<t_vec_real>(size);
 				for(t_addr i = 0; i < size; ++i)
 					vec[i] = val;
-				PushData(t_data{std::in_place_index<m_vecidx>, vec});
+				PushData(t_data{std::in_place_index<m_realarridx>, vec});
 			}
 
 			// casting from int
@@ -520,10 +548,10 @@ protected:
 				PopData();
 
 				// set every element of the vector to the int value
-				t_vec vec = m::create<t_vec>(size);
+				t_vec_real vec = m::create<t_vec_real>(size);
 				for(t_addr i = 0; i < size; ++i)
 					vec[i] = t_real(val);
-				PushData(t_data{std::in_place_index<m_vecidx>, vec});
+				PushData(t_data{std::in_place_index<m_realarridx>, vec});
 			}
 		}
 	}
@@ -545,7 +573,7 @@ protected:
 		}
 
 		// vector operators
-		else if constexpr(std::is_same_v<std::decay_t<t_val>, t_vec>)
+		else if constexpr(std::is_same_v<std::decay_t<t_val>, t_vec_real>)
 		{
 			if constexpr(op == '+')
 				result = val1 + val2;
@@ -603,39 +631,39 @@ protected:
 		t_data result;
 
 		// dot product
-		if(val1.index() == m_vecidx && val2.index() == m_vecidx && op == '*')
+		if(val1.index() == m_realarridx && val2.index() == m_realarridx && op == '*')
 		{
-			const t_vec& vec1 = std::get<m_vecidx>(val1);
-			const t_vec& vec2 = std::get<m_vecidx>(val2);
-			t_real dot = m::inner<t_vec>(vec1, vec2);
+			const t_vec_real& vec1 = std::get<m_realarridx>(val1);
+			const t_vec_real& vec2 = std::get<m_realarridx>(val2);
+			t_real dot = m::inner<t_vec_real>(vec1, vec2);
 			result = t_data{std::in_place_index<m_realidx>, dot};
 		}
 
 		// scale vector
-		else if(val1.index() == m_vecidx && val2.index() == m_realidx && op == '*')
+		else if(val1.index() == m_realarridx && val2.index() == m_realidx && op == '*')
 		{
 			using namespace m_ops;
-			const t_vec& vec = std::get<m_vecidx>(val1);
+			const t_vec_real& vec = std::get<m_realarridx>(val1);
 			const t_real s = std::get<m_realidx>(val2);
-			result = t_data{std::in_place_index<m_vecidx>, s * vec};
+			result = t_data{std::in_place_index<m_realarridx>, s * vec};
 		}
 
 		// scale vector
-		else if(val1.index() == m_vecidx && val2.index() == m_realidx && op == '/')
+		else if(val1.index() == m_realarridx && val2.index() == m_realidx && op == '/')
 		{
 			using namespace m_ops;
-			const t_vec& vec = std::get<m_vecidx>(val1);
+			const t_vec_real& vec = std::get<m_realarridx>(val1);
 			const t_real s = std::get<m_realidx>(val2);
-			result = t_data{std::in_place_index<m_vecidx>, vec / s};
+			result = t_data{std::in_place_index<m_realarridx>, vec / s};
 		}
 
 		// scale vector
-		else if(val2.index() == m_vecidx && val1.index() == m_realidx && op == '*')
+		else if(val2.index() == m_realarridx && val1.index() == m_realidx && op == '*')
 		{
 			using namespace m_ops;
-			const t_vec& vec = std::get<m_vecidx>(val2);
+			const t_vec_real& vec = std::get<m_realarridx>(val2);
 			const t_real s = std::get<m_realidx>(val1);
-			result = t_data{std::in_place_index<m_vecidx>, s * vec};
+			result = t_data{std::in_place_index<m_realarridx>, s * vec};
 		}
 
 		// same-type operations
@@ -661,10 +689,10 @@ protected:
 				result = t_data{std::in_place_index<m_stridx>, OpArithmetic<t_str, op>(
 					std::get<m_stridx>(val1), std::get<m_stridx>(val2))};
 			}
-			else if(val1.index() == m_vecidx)
+			else if(val1.index() == m_realarridx)
 			{
-				result = t_data{std::in_place_index<m_vecidx>, OpArithmetic<t_vec, op>(
-					std::get<m_vecidx>(val1), std::get<m_vecidx>(val2))};
+				result = t_data{std::in_place_index<m_realarridx>, OpArithmetic<t_vec_real, op>(
+					std::get<m_realarridx>(val1), std::get<m_realarridx>(val2))};
 			}
 		}
 		else
@@ -784,7 +812,7 @@ protected:
 		}
 
 		// vector comparison
-		else if constexpr(std::is_same_v<std::decay_t<t_val>, t_vec>)
+		else if constexpr(std::is_same_v<std::decay_t<t_val>, t_vec_real>)
 		{
 			if constexpr(op == OpCode::EQU)
 				result = m::equals(val1, val2, m_eps);
@@ -858,10 +886,10 @@ protected:
 			result = OpComparison<t_str, op>(
 				std::get<m_stridx>(val1), std::get<m_stridx>(val2));
 		}
-		else if(val1.index() == m_vecidx)
+		else if(val1.index() == m_realarridx)
 		{
-			result = OpComparison<t_vec, op>(
-				std::get<m_vecidx>(val1), std::get<m_vecidx>(val2));
+			result = OpComparison<t_vec_real, op>(
+				std::get<m_realarridx>(val1), std::get<m_realarridx>(val2));
 		}
 		else
 		{

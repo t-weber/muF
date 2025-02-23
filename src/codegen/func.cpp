@@ -2,7 +2,7 @@
  * zero-address code generator
  * @author Tobias Weber (orcid: 0000-0002-7230-1932)
  * @date 10-july-2022
- * @license: see 'LICENSE.GPL' file
+ * @license see 'LICENSE' file
  */
 
 #include "asm.h"

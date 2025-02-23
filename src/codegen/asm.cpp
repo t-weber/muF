@@ -2,7 +2,7 @@
  * zero-address code generator
  * @author Tobias Weber (orcid: 0000-0002-7230-1932)
  * @date 10-july-2022
- * @license: see 'LICENSE.GPL' file
+ * @license see 'LICENSE' file
  */
 
 #include "asm.h"
@@ -47,11 +47,11 @@ ZeroACAsm::ZeroACAsm(SymTab* syms, std::ostream* ostr)
 	m_str_const->is_tmp = true;
 	m_str_const->name = "<str>";
 
-	// dummy symbol for vector constants
-	m_vec_const = new Symbol();
-	m_vec_const->ty = SymbolType::VECTOR;
-	m_vec_const->is_tmp = true;
-	m_vec_const->name = "<vec>";
+	// dummy symbol for real array constants
+	m_real_array_const = new Symbol();
+	m_real_array_const->ty = SymbolType::REAL_ARRAY;
+	m_real_array_const->is_tmp = true;
+	m_real_array_const->name = "<vec>";
 }
 
 
@@ -60,7 +60,7 @@ ZeroACAsm::~ZeroACAsm()
 	for(Symbol** sym : {
 		&m_scalar_const, &m_int_const,
 		&m_cplx_const, &m_bool_const,
-		&m_str_const, &m_vec_const, })
+		&m_str_const, &m_real_array_const, })
 	{
 		delete *sym;
 		*sym = nullptr;

@@ -163,30 +163,35 @@ Lexer::GetMatchingTokens(const std::string& str, std::size_t line)
 		matches.emplace_back(std::make_tuple(
 			static_cast<t_symbol_id>(Token::ASSIGN), str, line));
 	}
+	else if(str == "integer")
+	{
+		matches.emplace_back(std::make_tuple(
+			static_cast<t_symbol_id>(Token::INTDECL), str, line));
+	}
 	else if(str == "real")
 	{
 		matches.emplace_back(std::make_tuple(
 			static_cast<t_symbol_id>(Token::REALDECL), str, line));
+	}
+	else if(str == "logical")
+	{
+		matches.emplace_back(std::make_tuple(
+			static_cast<t_symbol_id>(Token::BOOLDECL), str, line));
 	}
 	else if(str == "complex")
 	{
 		matches.emplace_back(std::make_tuple(
 			static_cast<t_symbol_id>(Token::CPLXDECL), str, line));
 	}
-	else if(str == "vec")
-	{
-		matches.emplace_back(std::make_tuple(
-			static_cast<t_symbol_id>(Token::ARRDECL), str, line));
-	}
-	else if(str == "str")
+	else if(str == "string")
 	{
 		matches.emplace_back(std::make_tuple(
 			static_cast<t_symbol_id>(Token::STRINGDECL), str, line));
 	}
-	else if(str == "integer")
+	else if(str == "dimension")
 	{
 		matches.emplace_back(std::make_tuple(
-			static_cast<t_symbol_id>(Token::INTDECL), str, line));
+			static_cast<t_symbol_id>(Token::DIM), str, line));
 	}
 	else if(str == "program")
 	{

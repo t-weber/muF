@@ -2,7 +2,7 @@
  * asm generator and vm opcodes
  * @author Tobias Weber (orcid: 0000-0002-7230-1932)
  * @date 14-jun-2022
- * @license see 'LICENSE.GPL' file
+ * @license see 'LICENSE' file
  */
 
 #ifndef __0ACVM_OPCODES_H__
@@ -34,9 +34,10 @@ enum class OpCode : t_vm_byte
 
 	// conversions
 	TOI      = 0x30,  // cast to int
-	TOF      = 0x31,  // cast to real
-	TOS      = 0x32,  // cast to string
-	TOA      = 0x33,  // cast to array
+	TOR      = 0x31,  // cast to real
+	TOB      = 0x32,  // cast to bool
+	TOS      = 0x33,  // cast to string
+	TOA      = 0x34,  // cast to array
 
 	// jumps
 	JMP      = 0x40,  // unconditional jump
@@ -107,7 +108,8 @@ constexpr t_str get_vm_opcode_name(OpCode op)
 		case OpCode::MOD:       return "mod";
 		case OpCode::POW:       return "pow";
 		case OpCode::TOI:       return "toi";
-		case OpCode::TOF:       return "tof";
+		case OpCode::TOB:       return "tob";
+		case OpCode::TOR:       return "tor";
 		case OpCode::TOS:       return "tos";
 		case OpCode::TOA:       return "toa";
 		case OpCode::JMP:       return "jmp";
