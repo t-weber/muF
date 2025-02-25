@@ -139,6 +139,7 @@ add_executable(vm
 	src/vm/main.cpp src/vm/types.h
 	src/common/types.h
 	src/vm/opcodes.h src/vm/vm.h
+	src/vm/ops.h src/vm/mem.h
 	src/vm/vm.cpp src/vm/run.cpp
 	src/vm/extfuncs.cpp
 	src/vm/memdump.cpp

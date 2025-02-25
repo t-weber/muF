@@ -6,6 +6,9 @@
  */
 
 #include "vm.h"
+#include "ops.h"
+#include "mem.h"
+
 #include <iostream>
 
 
@@ -112,7 +115,15 @@ bool VM::Run()
 
 				if(arr.index() == m_realarridx)
 				{
-					ReadVectorElem<t_vec_real>(arr, idx);
+					ReadArrayElem<t_vec_real>(arr, idx);
+				}
+				else if(arr.index() == m_intarridx)
+				{
+					ReadArrayElem<t_vec_int>(arr, idx);
+				}
+				else if(arr.index() == m_cplxarridx)
+				{
+					ReadArrayElem<t_vec_cplx>(arr, idx);
 				}
 				else if(arr.index() == m_stridx)
 				{
@@ -140,7 +151,15 @@ bool VM::Run()
 
 				if(arr.index() == m_realarridx)
 				{
-					ReadVectorElemRange<t_vec_real>(arr, idx1, idx2);
+					ReadArrayElemRange<t_vec_real>(arr, idx1, idx2);
+				}
+				else if(arr.index() == m_intarridx)
+				{
+					ReadArrayElemRange<t_vec_int>(arr, idx1, idx2);
+				}
+				else if(arr.index() == m_cplxarridx)
+				{
+					ReadArrayElemRange<t_vec_cplx>(arr, idx1, idx2);
 				}
 				else if(arr.index() == m_stridx)
 				{
@@ -178,7 +197,11 @@ bool VM::Run()
 				addr += m_bytesize;
 
 				if(ty == VMType::REALARR)
-					WriteVectorElem<t_vec_real>(addr, data, idx);
+					WriteArrayElem<t_vec_real>(addr, data, idx);
+				else if(ty == VMType::INTARR)
+					WriteArrayElem<t_vec_int>(addr, data, idx);
+				else if(ty == VMType::CPLXARR)
+					WriteArrayElem<t_vec_cplx>(addr, data, idx);
 				else
 					throw std::runtime_error("Cannot index non-array type.");
 
@@ -198,10 +221,22 @@ bool VM::Run()
 				// skip type descriptor byte
 				addr += m_bytesize;
 
-				// lhs variable is a vector
+				// lhs variable is a real array
 				if(ty == VMType::REALARR)
 				{
-					WriteVectorElemRange<t_vec_real>(addr, data, idx1, idx2);
+					WriteArrayElemRange<t_vec_real>(addr, data, idx1, idx2);
+				}
+
+				// lhs variable is an int array
+				else if(ty == VMType::INTARR)
+				{
+					WriteArrayElemRange<t_vec_int>(addr, data, idx1, idx2);
+				}
+
+				// lhs variable is a complex array
+				else if(ty == VMType::CPLXARR)
+				{
+					WriteArrayElemRange<t_vec_cplx>(addr, data, idx1, idx2);
 				}
 
 				// lhs variable is a string
@@ -215,7 +250,7 @@ bool VM::Run()
 
 					const t_str& rhsstr = std::get<m_stridx>(data);;
 
-					// get vector length indicator
+					// get array length indicator
 					t_addr strlen = ReadMemRaw<t_addr>(addr);
 					addr += m_addrsize;
 
@@ -447,9 +482,21 @@ bool VM::Run()
 				break;
 			}
 
+			case OpCode::TOR: // converts value to t_real
+			{
+				OpCast<m_realidx>();
+				break;
+			}
+
 			case OpCode::TOI: // converts value to t_int
 			{
 				OpCast<m_intidx>();
+				break;
+			}
+
+			case OpCode::TOC: // converts value to t_cplx
+			{
+				OpCast<m_cplxidx>();
 				break;
 			}
 
@@ -459,22 +506,30 @@ bool VM::Run()
 				break;
 			}
 
-			case OpCode::TOR: // converts value to t_real
-			{
-				OpCast<m_realidx>();
-				break;
-			}
-
 			case OpCode::TOS: // converts value to t_str
 			{
 				OpCast<m_stridx>();
 				break;
 			}
 
-			case OpCode::TOA: // converts value to t_vec_real
+			case OpCode::TOREALARR: // converts value to t_vec_real
 			{
 				t_addr vec_size = PopAddress();
 				OpArrayCast<m_realarridx>(vec_size);
+				break;
+			}
+
+			case OpCode::TOINTARR: // converts value to t_vec_int
+			{
+				t_addr vec_size = PopAddress();
+				OpArrayCast<m_intarridx>(vec_size);
+				break;
+			}
+
+			case OpCode::TOCPLXARR: // converts value to t_vec_cplx
+			{
+				t_addr vec_size = PopAddress();
+				OpArrayCast<m_cplxarridx>(vec_size);
 				break;
 			}
 
@@ -644,10 +699,24 @@ bool VM::Run()
 				break;
 			}
 
-			case OpCode::MAKEARR:  // create a vector out of the elements on the stack
+			case OpCode::MAKEREALARR:  // create a real array out of the elements on the stack
 			{
-				t_vec_real vec = PopVector<t_vec_real>(false);
+				t_vec_real vec = PopArray<t_vec_real>(false);
 				PushData(t_data{std::in_place_index<m_realarridx>, vec});
+				break;
+			}
+
+			case OpCode::MAKEINTARR:  // create an int array out of the elements on the stack
+			{
+				t_vec_int vec = PopArray<t_vec_int>(false);
+				PushData(t_data{std::in_place_index<m_intarridx>, vec});
+				break;
+			}
+
+			case OpCode::MAKECPLXARR:  // create a complex array out of the elements on the stack
+			{
+				t_vec_cplx vec = PopArray<t_vec_cplx>(false);
+				PushData(t_data{std::in_place_index<m_cplxarridx>, vec});
 				break;
 			}
 

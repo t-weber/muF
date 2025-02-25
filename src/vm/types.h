@@ -15,16 +15,20 @@
 #include "mathlibs/matrix_conts.h"
 
 
+// primitive types
 using t_vm_int = ::t_int;
 using t_vm_real = ::t_real;
 using t_vm_cplx = ::t_cplx;
+
 using t_vm_addr = std::int32_t;
 using t_vm_byte = std::uint8_t;
 using t_vm_bool = t_vm_byte;
-
-using t_vm_vec_real = m::vec<::t_vm_real, std::vector>;
-
 using t_vm_str = std::string;
+
+// array types
+using t_vm_vec_real = m::vec<::t_vm_real, std::vector>;
+using t_vm_vec_int = m::vec<::t_vm_int, std::vector>;
+using t_vm_vec_cplx = m::vec<::t_vm_cplx, std::vector>;
 
 
 enum class VMType : t_vm_byte
@@ -33,12 +37,13 @@ enum class VMType : t_vm_byte
 
 	REAL        = 0x01,
 	INT         = 0x02,
-	BOOL        = 0x03,
-	CPLX        = 0x04,
+	CPLX        = 0x03,
+	BOOL        = 0x04,
+	STR         = 0x05,
 
-	REALARR     = 0x10,
-
-	STR         = 0x15,
+	REALARR     = 0x11,
+	INTARR      = 0x12,
+	CPLXARR     = 0x13,
 
 	ADDR_MEM    = 0x20,   // address refering to absolute memory locations
 	ADDR_IP     = 0x21,   // address relative to the instruction pointer
@@ -83,13 +88,15 @@ constexpr t_str get_vm_type_name(VMType ty)
 		case VMType::UNKNOWN:     return "unknown";
 
 		case VMType::REAL:        return "real";
-		case VMType::CPLX:        return "complex";
 		case VMType::INT:         return "integer";
+		case VMType::CPLX:        return "complex";
+
 		case VMType::BOOL:        return "bool";
-
-		case VMType::REALARR:     return "real_array";
-
 		case VMType::STR:         return "string";
+
+		case VMType::REALARR:     return "array_real";
+		case VMType::INTARR:      return "array_integer";
+		case VMType::CPLXARR:     return "array_complex";
 
 		case VMType::ADDR_MEM:    return "absolute address";
 		case VMType::ADDR_IP:     return "address relative to ip";

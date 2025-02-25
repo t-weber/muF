@@ -317,7 +317,7 @@ void ZeroACAsm::PushVecConst(const std::vector<t_vm_real>& vec)
 	m_ostr->write(reinterpret_cast<const char*>(&num_elems),
 		vm_type_size<VMType::ADDR_MEM, false>);
 
-	m_ostr->put(static_cast<t_vm_byte>(OpCode::MAKEARR));
+	m_ostr->put(static_cast<t_vm_byte>(OpCode::MAKEREALARR));
 }
 
 

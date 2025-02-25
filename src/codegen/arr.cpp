@@ -147,7 +147,7 @@ t_astret ZeroACAsm::visit(const ASTExprList* ast)
 		m_ostr->write(reinterpret_cast<const char*>(&num_elems),
 			vm_type_size<VMType::ADDR_MEM, false>);
 
-		m_ostr->put(static_cast<t_vm_byte>(OpCode::MAKEARR));
+		m_ostr->put(static_cast<t_vm_byte>(OpCode::MAKEREALARR));
 		sym_ret = m_real_array_const;
 	}
 

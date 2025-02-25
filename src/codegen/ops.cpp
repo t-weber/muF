@@ -113,7 +113,7 @@ void ZeroACAsm::CastTo(t_astret ty_to,
 	}
 	else if(ty_to->ty == SymbolType::REAL_ARRAY && allow_array_cast)
 	{
-		op = static_cast<t_vm_byte>(OpCode::TOA);
+		op = static_cast<t_vm_byte>(OpCode::TOREALARR);
 
 		// TODO: this doesn't work if "pos" is also given
 		// push vector length

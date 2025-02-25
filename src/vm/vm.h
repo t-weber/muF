@@ -34,14 +34,17 @@ class VM
 {
 public:
 	// data types
-	using t_addr = ::t_vm_addr;
-	using t_int = ::t_vm_int;
 	using t_real = ::t_vm_real;
+	using t_int = ::t_vm_int;
 	using t_cplx = ::t_vm_cplx;
+
+	using t_addr = ::t_vm_addr;
 	using t_byte = ::t_vm_byte;
 	using t_bool = ::t_vm_byte;
 
 	using t_vec_real = ::t_vm_vec_real;
+	using t_vec_int = ::t_vm_vec_int;
+	using t_vec_cplx = ::t_vm_vec_cplx;
 
 	using t_str = ::t_vm_str;
 
@@ -51,8 +54,8 @@ public:
 	// variant of all data types
 	using t_data = std::variant<
 		std::monostate /*prevents default-construction of first type (t_real)*/,
-		t_real, t_int, t_cplx, t_bool, t_addr,
-		t_vec_real, t_str>;
+		t_real /*1*/, t_int /*2*/, t_cplx /*3*/, t_bool /*4*/, t_addr /*5*/,
+		t_vec_real /*6*/, t_vec_int /*7*/, t_vec_cplx /*8*/, t_str /*9*/>;
 
 	// use variant type indices and std::in_place_index instead of direct types
 	// because two types might be identical (e.g. t_int and t_addr)
@@ -61,8 +64,10 @@ public:
 	static constexpr const std::size_t m_cplxidx = 3;
 	static constexpr const std::size_t m_boolidx = 4;
 	static constexpr const std::size_t m_addridx = 5;
-	static constexpr const std::size_t m_realarridx  = 6;
-	static constexpr const std::size_t m_stridx  = 7;
+	static constexpr const std::size_t m_realarridx = 6;
+	static constexpr const std::size_t m_intarridx = 7;
+	static constexpr const std::size_t m_cplxarridx = 8;
+	static constexpr const std::size_t m_stridx = 9;
 
 	// data type sizes
 	static constexpr const t_addr m_bytesize = sizeof(t_byte);
@@ -80,6 +85,17 @@ public:
 	template<typename t_ty>
 	static constexpr std::size_t GetDataTypeIndex()
 	{
+		static_assert(std::is_same_v<std::decay_t<t_ty>, t_real> ||
+			std::is_same_v<std::decay_t<t_ty>, t_int> ||
+			std::is_same_v<std::decay_t<t_ty>, t_cplx> ||
+			std::is_same_v<std::decay_t<t_ty>, t_bool> ||
+			std::is_same_v<std::decay_t<t_ty>, t_addr> ||
+			std::is_same_v<std::decay_t<t_ty>, t_vec_real> ||
+			std::is_same_v<std::decay_t<t_ty>, t_vec_int> ||
+			std::is_same_v<std::decay_t<t_ty>, t_vec_cplx> ||
+			std::is_same_v<std::decay_t<t_ty>, t_str>,
+			"GetDataTypeIndex: Data type not yet implemented.");
+
 		if constexpr(std::is_same_v<std::decay_t<t_ty>, t_real>)
 			return m_realidx;
 		else if constexpr(std::is_same_v<std::decay_t<t_ty>, t_int>)
@@ -92,10 +108,13 @@ public:
 			return m_addridx;
 		else if constexpr(std::is_same_v<std::decay_t<t_ty>, t_vec_real>)
 			return m_realarridx;
+		else if constexpr(std::is_same_v<std::decay_t<t_ty>, t_vec_int>)
+			return m_intarridx;
+		else if constexpr(std::is_same_v<std::decay_t<t_ty>, t_vec_cplx>)
+			return m_cplxarridx;
 		else if constexpr(std::is_same_v<std::decay_t<t_ty>, t_str>)
 			return m_stridx;
-		else
-			static_assert(false, "GetDataTypeIndex: Data type not yet implemented.");
+
 		return 0;
 	}
 
@@ -106,6 +125,13 @@ public:
 	template<typename t_ty>
 	static constexpr t_addr GetDataTypeSize()
 	{
+		static_assert(std::is_same_v<std::decay_t<t_ty>, t_real> ||
+			std::is_same_v<std::decay_t<t_ty>, t_int> ||
+			std::is_same_v<std::decay_t<t_ty>, t_cplx> ||
+			std::is_same_v<std::decay_t<t_ty>, t_bool> ||
+			std::is_same_v<std::decay_t<t_ty>, t_addr>,
+			"GetDataTypeSize: Data type not yet implemented.");
+
 		if constexpr(std::is_same_v<std::decay_t<t_ty>, t_real>)
 			return sizeof(t_real);
 		else if constexpr(std::is_same_v<std::decay_t<t_ty>, t_int>)
@@ -116,9 +142,57 @@ public:
 			return sizeof(t_bool);
 		else if constexpr(std::is_same_v<std::decay_t<t_ty>, t_addr>)
 			return m_addrsize;
-		else
-			static_assert(false, "GetDataTypeSize: Data type not yet implemented.");
+
 		return 0;
+	}
+
+
+	/**
+	 * get the symbol type of an array
+	 */
+	template<typename t_ty>
+	static constexpr VMType GetArraySymbolType()
+	{
+		static_assert(std::is_same_v<std::decay_t<t_ty>, t_real> ||
+			std::is_same_v<std::decay_t<t_ty>, t_int> ||
+			std::is_same_v<std::decay_t<t_ty>, t_cplx>,
+			"GetArraySymbolType: Data type not yet implemented.");
+
+		if constexpr(std::is_same_v<std::decay_t<t_ty>, t_real>)
+			return VMType::REALARR;
+		else if constexpr(std::is_same_v<std::decay_t<t_ty>, t_int>)
+			return VMType::INTARR;
+		else if constexpr(std::is_same_v<std::decay_t<t_ty>, t_cplx>)
+			return VMType::CPLXARR;
+
+		return VMType::UNKNOWN;
+	}
+
+
+	//template<std::size_t type_idx>
+	static constexpr const char* GetDataTypeName(std::size_t type_idx)
+	{
+		switch(type_idx)
+		{
+			case m_realidx: return get_vm_type_name(VMType::REAL);
+			case m_intidx: return get_vm_type_name(VMType::INT);
+			case m_cplxidx: return get_vm_type_name(VMType::CPLX);
+			case m_boolidx: return get_vm_type_name(VMType::BOOL);
+			case m_stridx: return get_vm_type_name(VMType::STR);
+			case m_addridx: return "address";
+
+			case m_realarridx: return get_vm_type_name(VMType::REALARR);
+			case m_intarridx: return get_vm_type_name(VMType::INTARR);
+			case m_cplxarridx: return get_vm_type_name(VMType::CPLXARR);
+
+			default: return "unknown";
+		}
+	}
+
+
+	static constexpr const char* GetDataTypeName(const t_data& dat)
+	{
+		return GetDataTypeName(dat.index());
 	}
 
 
@@ -130,9 +204,6 @@ public:
 	void SetDrawMemImages(bool b) { m_drawmemimages = b; }
 	void SetChecks(bool b) { m_checks = b; }
 	void SetZeroPoppedVals(bool b) { m_zeropoppedvals = b; }
-
-	static const char* GetDataTypeName(std::size_t type_idx);
-	static const char* GetDataTypeName(const t_data& dat);
 
 	void Reset();
 	bool Run();
@@ -171,6 +242,15 @@ protected:
 	//call external function
 	t_data CallExternal(const t_str& func_name);
 
+	// sets the address of an interrupt service routine
+	void SetISR(t_addr num, t_addr addr);
+
+	void StartTimer();
+	void StopTimer();
+
+	// --------------------------------------------------------------------
+	// memory/stack operations
+	// --------------------------------------------------------------------
 	//pop an address from the stack
 	t_addr PopAddress();
 
@@ -190,7 +270,7 @@ protected:
 	t_cplx TopComplex(t_addr sp_offs = 0) const;
 
 	// push a complex number to the stack
-	void PushComplex(const t_cplx& val);
+	void PushComplex(const t_cplx& val, bool raw = true);
 
 	// pop a string from the stack
 	t_str PopString();
@@ -199,7 +279,7 @@ protected:
 	t_str TopString(t_addr sp_offs = 0) const;
 
 	// push a string to the stack
-	void PushString(const t_str& str);
+	void PushString(const t_str& str, bool raw = true);
 
 	// push data onto the stack
 	void PushData(const t_data& data, VMType ty = VMType::UNKNOWN, bool err_on_unknown = true);
@@ -212,987 +292,108 @@ protected:
 
 	// write data to memory
 	void WriteMemData(t_addr addr, const t_data& data);
+	// --------------------------------------------------------------------
 
+	// --------------------------------------------------------------------
+	// array memory/stack operations
+	// --------------------------------------------------------------------
+	/**
+	 * pop an array from the stack
+	 * an array consists of an t_addr giving the length
+	 * following by the array elements
+	 */
+	template<class t_vec = t_vec_real> t_vec PopArray(bool raw_elems = true);
+
+	// get the array on top of the stack
+	template<class t_vec = t_vec_real> t_vec TopArray(t_addr sp_offs = 0) const;
+
+	// push an array onto the stack
+	template<class t_vec = t_vec_real> void PushArray(const t_vec& vec, bool raw = true);
+
+	// read an array from a memory address
+	template<class t_vec = t_vec_real>
+	t_vec ReadArrayRaw(t_addr addr) const;
+
+	// write an array to a memory address
+	template<class t_vec = t_vec_real>
+	void WriteArray(t_addr addr, const t_vec& vec, bool raw = true);
+
+	// read an array element from a given index and push it onto the stack
+	template<class t_vec = t_vec_real>
+	void ReadArrayElem(const t_data& arr, t_int idx = 0);
 
 	/**
-	 * pop a vector from the stack
-	 * a vector consists of an t_addr giving the length
-	 * following by the vector elements
+	 * read an array element range from given indices
+	 * and push the new array onto the stack
 	 */
 	template<class t_vec = t_vec_real>
-	t_vec PopVector(bool raw_elems = true)
-	{
-		using t_elem = typename t_vec::value_type;
-		constexpr const t_addr elem_size = GetDataTypeSize<t_elem>();
-		constexpr const std::size_t elem_type_idx = GetDataTypeIndex<t_elem>();
+	void ReadArrayElemRange(const t_data& arr, t_int idx1 = 0, t_int idx2 = 0);
 
-		// raw real array and vector size follow without descriptors
-		if(raw_elems)
-		{
-			t_addr num_elems = PopRaw<t_addr, m_addrsize>();
-			CheckMemoryBounds(m_sp, num_elems*elem_size);
-
-			t_elem* begin = reinterpret_cast<t_elem*>(m_mem.get() + m_sp);
-			t_vec vec(begin, num_elems);
-			m_sp += num_elems*elem_size;
-
-			if(m_zeropoppedvals)
-				std::memset(begin, 0, num_elems*elem_size);
-
-			return vec;
-		}
-
-		// individual elements and vector size with descriptor are on the stack
-		else
-		{
-			t_addr num_elems = PopAddress();
-			t_vec vec(num_elems);
-
-			for(t_addr i = 0; i < num_elems; ++i)
-			{
-				t_data val = PopData();
-				if(val.index() != elem_type_idx)
-					throw std::runtime_error("Wrong element type for vector.");
-
-				t_elem elem = std::get<elem_type_idx>(val);
-				vec[num_elems - i - 1] = elem;
-			}
-
-			if(m_debug)
-			{
-				using namespace m_ops;
-				std::cout << "popped non-raw vector " << vec << "." << std::endl;
-			}
-
-			return vec;
-		}
-	}
-
-
-	/**
-	 * get the vector on top of the stack
-	 */
+	// write an array element to a memory address
 	template<class t_vec = t_vec_real>
-	t_vec TopVector(t_addr sp_offs = 0) const
-	{
-		using t_elem = typename t_vec::value_type;
-		constexpr const t_addr elem_size = GetDataTypeSize<t_elem>();
+	void WriteArrayElem(t_addr addr, const t_data& data, t_int idx = 0);
 
-		t_addr num_elems = TopRaw<t_addr, m_addrsize>(sp_offs);
-		t_addr addr = m_sp + sp_offs + m_addrsize;
-
-		CheckMemoryBounds(addr, num_elems*elem_size);
-		const t_elem* begin = reinterpret_cast<t_elem*>(m_mem.get() + addr);
-		return t_vec(begin, num_elems);
-	}
-
-
-	/**
-	 * push a vector onto the stack
-	 */
+	// write an array element range to a memory address
 	template<class t_vec = t_vec_real>
-	void PushVector(const t_vec& vec)
-	{
-		using t_elem = typename t_vec::value_type;
-		constexpr const t_addr elem_size = GetDataTypeSize<t_elem>();
+	void WriteArrayElemRange(t_addr addr, const t_data& data,
+		t_int idx1 = 0, t_int idx2 = 0);
 
-		t_addr num_elems = static_cast<t_addr>(vec.size());
-		CheckMemoryBounds(m_sp, -num_elems*elem_size);
+	// --------------------------------------------------------------------
+	// raw memory/stack operations
+	// --------------------------------------------------------------------
+	// read a raw value from memory
+	template<class t_val> t_val ReadMemRaw(t_addr addr) const;
 
-		m_sp -= num_elems*elem_size;
-		t_elem* begin = reinterpret_cast<t_elem*>(m_mem.get() + m_sp);
-		std::memcpy(begin, vec.data(), num_elems*elem_size);
-
-		PushRaw<t_addr, m_addrsize>(num_elems);
-	}
-
-
-	/**
-	 * read a vector from a memory address
-	 */
-	template<class t_vec = t_vec_real>
-	t_vec ReadVectorRaw(t_addr addr) const
-	{
-		using t_elem = typename t_vec::value_type;
-		constexpr const t_addr elem_size = GetDataTypeSize<t_elem>();
-
-		t_addr num_elems = ReadMemRaw<t_addr>(addr);
-		addr += m_addrsize;
-
-		CheckMemoryBounds(addr, num_elems*elem_size);
-		const t_elem *begin = reinterpret_cast<t_elem*>(&m_mem[addr]);
-
-		return t_vec(begin, num_elems);
-	}
-
-
-	/**
-	 * write a vector to a memory address
-	 */
-	template<class t_vec = t_vec_real>
-	void WriteVectorRaw(t_addr addr, const t_vec& vec)
-	{
-		using t_elem = typename t_vec::value_type;
-		constexpr const t_addr elem_size = GetDataTypeSize<t_elem>();
-
-		t_addr num_elems = static_cast<t_addr>(vec.size());
-		CheckMemoryBounds(addr, m_addrsize + num_elems*elem_size);
-
-		// write vector length
-		WriteMemRaw<t_addr>(addr, num_elems);
-		addr += m_addrsize;
-
-		// write vector
-		t_elem* begin = reinterpret_cast<t_elem*>(&m_mem[addr]);
-		std::memcpy(begin, vec.data(), num_elems*elem_size);
-	}
-
-
-	/**
-	 * read a vector element from a given index and push it onto the stack
-	 */
-	template<class t_vec = t_vec_real>
-	void ReadVectorElem(const t_data& arr, t_int idx = 0)
-	{
-		using t_elem = typename t_vec::value_type;
-		constexpr const std::size_t vec_idx = GetDataTypeIndex<t_vec>();
-		constexpr const std::size_t elem_idx = GetDataTypeIndex<t_elem>();
-
-		// gets vector element
-		const t_vec& vec = std::get<vec_idx>(arr);
-		idx = safe_array_index<t_int>(idx, vec.size());
-
-		PushData(t_data{std::in_place_index<elem_idx>, vec[idx]});
-	}
-
-
-	/**
-	 * read a vector element range from given indices
-	 * and push the new vector onto the stack
-	 */
-	template<class t_vec = t_vec_real>
-	void ReadVectorElemRange(const t_data& arr, t_int idx1 = 0, t_int idx2 = 0)
-	{
-		constexpr const std::size_t vec_idx = GetDataTypeIndex<t_vec>();
-
-		// gets vector range
-		const t_vec& vec = std::get<vec_idx>(arr);
-		idx1 = safe_array_index<t_int>(idx1, vec.size());
-		idx2 = safe_array_index<t_int>(idx2, vec.size());
-
-		t_int delta = (idx2 >= idx1 ? 1 : -1);
-		idx2 += delta;
-
-		t_vec newvec = m::zero<t_vec>(std::abs(idx2 - idx1));
-		t_int new_idx = 0;
-		for(t_int idx = idx1; idx != idx2; idx += delta)
-			newvec[new_idx++] = vec[idx];
-		PushData(t_data{std::in_place_index<vec_idx>, newvec});
-	}
-
-
-	/**
-	 * write a vector element to a memory address
-	 */
-	template<class t_vec = t_vec_real>
-	void WriteVectorElem(t_addr addr, const t_data& data, t_int idx = 0)
-	{
-		using t_elem = typename t_vec::value_type;
-		constexpr const t_addr elem_size = GetDataTypeSize<t_elem>();
-		constexpr const std::size_t elem_idx = GetDataTypeIndex<t_elem>();
-
-		if(data.index() != elem_idx)
-		{
-			throw std::runtime_error(
-				"Vector element has to be of scalar type.");
-		}
-
-		// get vector length indicator
-		t_addr veclen = ReadMemRaw<t_addr>(addr);
-		addr += m_addrsize;
-
-		// skip to element and overwrite it
-		idx = safe_array_index<t_addr>(idx, veclen);
-		addr += idx * elem_size;
-		WriteMemRaw(addr, std::get<elem_idx>(data));
-	}
-
-
-	/**
-	 * write a vector element range to a memory address
-	 */
-	template<class t_vec = t_vec_real>
-	void WriteVectorElemRange(t_addr addr, const t_data& data,
-		t_int idx1 = 0, t_int idx2 = 0)
-	{
-		using t_elem = typename t_vec::value_type;
-		constexpr const t_addr elem_size = GetDataTypeSize<t_elem>();
-		constexpr const std::size_t vec_idx = GetDataTypeIndex<t_vec>();
-		constexpr const std::size_t elem_idx = GetDataTypeIndex<t_elem>();
-
-		const t_vec *rhsvec = nullptr;
-		const t_elem *rhsreal = nullptr;
-
-		if(data.index() == vec_idx)        // rhs is a vector
-			rhsvec = &std::get<vec_idx>(data);
-		else if(data.index() == elem_idx)  // rhs is a scalar
-			rhsreal = &std::get<elem_idx>(data);
-		else
-			throw std::runtime_error(
-				"Vector range has to be of vector or scalar type.");
-
-		// get vector length indicator
-		t_addr veclen = ReadMemRaw<t_addr>(addr);
-		addr += m_addrsize;
-
-		idx1 = safe_array_index<t_addr>(idx1, veclen);
-		idx2 = safe_array_index<t_addr>(idx2, veclen);
-		t_int delta = (idx2 >= idx1 ? 1 : -1);
-		idx2 += delta;
-
-		// skip to element range and overwrite it
-		addr += idx1 * elem_size;
-		t_int cur_idx = 0;
-		for(t_int idx = idx1; idx != idx2; idx += delta)
-		{
-			t_elem elem{};
-
-			if(rhsvec)
-			{
-				if(std::size_t(cur_idx) >= rhsvec->size())
-				{
-					throw std::runtime_error(
-						"Vector index out of bounds.");
-				}
-
-				elem = (*rhsvec)[cur_idx++];
-			}
-			else if(rhsreal)
-			{
-				elem = *rhsreal;
-			}
-
-			WriteMemRaw(addr, elem);
-			addr += elem_size * delta;
-		}
-	}
-
-
-	/**
-	 * read a raw value from memory
-	 */
+	// write a raw value to memory
 	template<class t_val>
-	t_val ReadMemRaw(t_addr addr) const
-	{
-		// string type
-		if constexpr(std::is_same_v<std::decay_t<t_val>, t_str>)
-		{
-			t_addr len = ReadMemRaw<t_addr>(addr);
-			addr += m_addrsize;
+	void WriteMemRaw(t_addr addr, const t_val& val);
 
-			CheckMemoryBounds(addr, len*m_charsize);
-			const t_char* begin = reinterpret_cast<t_char*>(&m_mem[addr]);
-
-			return t_str(begin, len);
-		}
-
-		// complex type
-		else if constexpr(std::is_same_v<std::decay_t<t_val>, t_cplx>)
-		{
-			CheckMemoryBounds(addr, GetDataTypeSize<t_cplx>());
-			const t_real* real = reinterpret_cast<t_real*>(
-				&m_mem[addr]);
-			const t_real* imag = reinterpret_cast<t_real*>(
-				&m_mem[addr + GetDataTypeSize<t_real>()]);
-
-			return t_cplx{*real, *imag};
-		}
-
-		// real vector type
-		else if constexpr(std::is_same_v<std::decay_t<t_val>, t_vec_real>)
-		{
-			return ReadVectorRaw<t_vec_real>(addr);
-		}
-
-		// primitive types
-		else
-		{
-			CheckMemoryBounds(addr, sizeof(t_val));
-			t_val val = *reinterpret_cast<t_val*>(&m_mem[addr]);
-
-			return val;
-		}
-	}
-
-
-	/**
-	 * write a raw value to memory
-	 */
-	template<class t_val>
-	void WriteMemRaw(t_addr addr, const t_val& val)
-	{
-		// string type
-		if constexpr(std::is_same_v<std::decay_t<t_val>, t_str>)
-		{
-			t_addr len = static_cast<t_addr>(val.length());
-			CheckMemoryBounds(addr, m_addrsize + len*m_charsize);
-
-			// write string length
-			WriteMemRaw<t_addr>(addr, len);
-			addr += m_addrsize;
-
-			// write string
-			t_char* begin = reinterpret_cast<t_char*>(&m_mem[addr]);
-			std::memcpy(begin, val.data(), len*m_charsize);
-		}
-
-		// complex type
-		else if constexpr(std::is_same_v<std::decay_t<t_val>, t_cplx>)
-		{
-			CheckMemoryBounds(addr, GetDataTypeSize<t_cplx>());
-
-			t_real* begin = reinterpret_cast<t_real*>(&m_mem[addr]);
-			*(begin + 0) = val.real();
-			*(begin + 1) = val.imag();
-		}
-
-		// real vector type
-		else if constexpr(std::is_same_v<std::decay_t<t_val>, t_vec_real>)
-		{
-			WriteVectorRaw(addr, val);
-		}
-
-		// primitive types
-		else
-		{
-			CheckMemoryBounds(addr, sizeof(t_val));
-			*reinterpret_cast<t_val*>(&m_mem[addr]) = val;
-		}
-	}
-
-
-	/**
-	 * get the value on top of the stack
-	 */
+	// get the value on top of the stack
 	template<class t_val, t_addr valsize = sizeof(t_val)>
-	t_val TopRaw(t_addr sp_offs = 0) const
-	{
-		t_addr addr = m_sp + sp_offs;
-		CheckMemoryBounds(addr, valsize);
+	t_val TopRaw(t_addr sp_offs = 0) const;
 
-		return *reinterpret_cast<t_val*>(m_mem.get() + addr);
-	}
-
-
-	/**
-	 * pop a raw value from the stack
-	 */
+	// pop a raw value from the stack
 	template<class t_val, t_addr valsize = sizeof(t_val)>
-	t_val PopRaw()
-	{
-		CheckMemoryBounds(m_sp, valsize);
+	t_val PopRaw();
 
-		t_val *valptr = reinterpret_cast<t_val*>(m_mem.get() + m_sp);
-		t_val val = *valptr;
-
-		if(m_zeropoppedvals)
-			*valptr = 0;
-
-		m_sp += valsize;	// stack grows to lower addresses
-
-		return val;
-	}
-
-
-	/**
-	 * push a raw value onto the stack
-	 */
+	// push a raw value onto the stack
 	template<class t_val, t_addr valsize = sizeof(t_val)>
-	void PushRaw(const t_val& val)
-	{
-		CheckMemoryBounds(m_sp, valsize);
+	void PushRaw(const t_val& val);
+	// --------------------------------------------------------------------
 
-		m_sp -= valsize;	// stack grows to lower addresses
-		*reinterpret_cast<t_val*>(m_mem.get() + m_sp) = val;
-	}
+	// --------------------------------------------------------------------
+	// operators
+	// --------------------------------------------------------------------
+	// cast from one variable type to the other
+	template<std::size_t toidx> void OpCast();
 
+	// cast to an array variable type
+	template<std::size_t toidx> void OpArrayCast(t_addr size);
 
-	/**
-	 * cast from one variable type to the other
-	 */
-	template<std::size_t toidx>
-	void OpCast()
-	{
-		using t_to = std::variant_alternative_t<toidx, t_data>;
-		t_data data = TopData();
-
-		// casting from real
-		if(data.index() == m_realidx)
-		{
-			if constexpr(std::is_same_v<std::decay_t<t_to>, t_real>)
-				return;  // don't need to cast to the same type
-
-			t_real val = std::get<m_realidx>(data);
-
-			// convert to string
-			if constexpr(std::is_same_v<std::decay_t<t_to>, t_str>)
-			{
-				if(m::equals_0<t_real>(val, m_eps))
-					val = t_real(0);
-
-				std::ostringstream ostr;
-				ostr.precision(m_prec);
-				ostr << val;
-				PopData();
-				PushData(t_data{std::in_place_index<m_stridx>, ostr.str()});
-			}
-
-			// convert to primitive type
-			else
-			{
-				PopData();
-				PushData(t_data{std::in_place_index<toidx>,
-					static_cast<t_to>(val)});
-			}
-		}
-
-		// casting from int
-		else if(data.index() == m_intidx)
-		{
-			if constexpr(std::is_same_v<std::decay_t<t_to>, t_int>)
-				return;  // don't need to cast to the same type
-
-			t_int val = std::get<m_intidx>(data);
-
-			// convert to string
-			if constexpr(std::is_same_v<std::decay_t<t_to>, t_str>)
-			{
-				std::ostringstream ostr;
-				ostr.precision(m_prec);
-				ostr << val;
-				PopData();
-				PushData(t_data{std::in_place_index<m_stridx>, ostr.str()});
-			}
-
-			// convert to primitive type
-			else
-			{
-				PopData();
-				PushData(t_data{std::in_place_index<toidx>,
-					static_cast<t_to>(val)});
-			}
-		}
-
-		// casting from bool
-		else if(data.index() == m_boolidx)
-		{
-			if constexpr(std::is_same_v<std::decay_t<t_to>, t_bool>)
-				return;  // don't need to cast to the same type
-
-			bool val = std::get<m_boolidx>(data) != 0;
-
-			// convert to string
-			if constexpr(std::is_same_v<std::decay_t<t_to>, t_str>)
-			{
-				std::ostringstream ostr;
-				ostr.precision(m_prec);
-				ostr << std::boolalpha << val;
-				PopData();
-				PushData(t_data{std::in_place_index<m_stridx>, ostr.str()});
-			}
-
-			// convert to primitive type
-			else
-			{
-				PopData();
-				PushData(t_data{std::in_place_index<toidx>,
-					static_cast<t_to>(val)});
-			}
-		}
-
-		// casting from complex
-		if(data.index() == m_cplxidx)
-		{
-			if constexpr(std::is_same_v<std::decay_t<t_to>, t_cplx>)
-				return;  // don't need to cast to the same type
-
-			t_cplx val = std::get<m_cplxidx>(data);
-
-			// convert to string
-			if constexpr(std::is_same_v<std::decay_t<t_to>, t_str>)
-			{
-				t_real real = val.real();
-				t_real imag = val.imag();
-
-				if(m::equals_0<t_real>(real, m_eps))
-					real = t_real(0);
-				if(m::equals_0<t_real>(imag, m_eps))
-					imag = t_real(0);
-
-				std::ostringstream ostr;
-				ostr.precision(m_prec);
-				ostr << "(" << real << ", " << imag << ")";
-				PopData();
-				PushData(t_data{std::in_place_index<m_stridx>, ostr.str()});
-			}
-
-			// convert to primitive type
-			else
-			{
-				std::ostringstream msg;
-				msg << "Invalid cast from complex to "
-					<< GetDataTypeName(toidx) << ".";
-				throw std::runtime_error(msg.str());
-			}
-		}
-
-		// casting from string
-		else if(data.index() == m_stridx)
-		{
-			if constexpr(std::is_same_v<std::decay_t<t_to>, t_str>)
-				return;  // don't need to cast to the same type
-
-			const t_str& val = std::get<m_stridx>(data);
-
-			t_to conv_val{};
-			std::istringstream{val} >> conv_val;
-			PopData();
-			PushData(t_data{std::in_place_index<toidx>, conv_val});
-		}
-
-		// casting from vector
-		else if(data.index() == m_realarridx)
-		{
-			if constexpr(std::is_same_v<std::decay_t<t_to>, t_vec_real>)
-				return;  // don't need to cast to the same type
-
-			const t_vec_real& val = std::get<m_realarridx>(data);
-
-			// convert to string
-			if constexpr(std::is_same_v<std::decay_t<t_to>, t_str>)
-			{
-				std::ostringstream ostr;
-				ostr.precision(m_prec);
-				ostr << "[ ";
-				for(std::size_t i = 0; i < val.size(); ++i)
-				{
-					t_real elem = val[i];
-					if(m::equals_0<t_real>(elem, m_eps))
-						elem = t_real(0);
-
-					ostr << elem;
-					if(i != val.size()-1)
-						ostr << ", ";
-				}
-				ostr << " ]";
-
-				PopData();
-				PushData(t_data{std::in_place_index<m_stridx>, ostr.str()});
-			}
-			else
-			{
-				std::ostringstream msg;
-				msg << "Invalid cast from vector to "
-					<< GetDataTypeName(toidx) << ".";
-				throw std::runtime_error(msg.str());
-			}
-		}
-	}
-
-
-	/**
-	 * cast to an array variable type
-	 */
-	template<std::size_t toidx>
-	void OpArrayCast(t_addr size)
-	{
-		//using t_to = std::variant_alternative_t<toidx, t_data>;
-		t_data data = TopData();
-
-		// casting to vector
-		if constexpr(toidx == m_realarridx)
-		{
-			// casting from vector
-			if(data.index() == m_realarridx)
-				return;  // no action needed, TODO: check sizes
-
-			// casting from real
-			else if(data.index() == m_realidx)
-			{
-				t_real val = std::get<m_realidx>(data);
-				PopData();
-
-				// set every element of the vector to the real value
-				t_vec_real vec = m::create<t_vec_real>(size);
-				for(t_addr i = 0; i < size; ++i)
-					vec[i] = val;
-				PushData(t_data{std::in_place_index<m_realarridx>, vec});
-			}
-
-			// casting from int
-			else if(data.index() == m_intidx)
-			{
-				t_real val = std::get<m_intidx>(data);
-				PopData();
-
-				// set every element of the vector to the int value
-				t_vec_real vec = m::create<t_vec_real>(size);
-				for(t_addr i = 0; i < size; ++i)
-					vec[i] = t_real(val);
-				PushData(t_data{std::in_place_index<m_realarridx>, vec});
-			}
-		}
-	}
-
-
-	/**
-	 * arithmetic operation
-	 */
+	// arithmetic operation
 	template<class t_val, char op>
-	t_val OpArithmetic(const t_val& val1, const t_val& val2)
-	{
-		t_val result{};
+	t_val OpArithmetic(const t_val& val1, const t_val& val2);
 
-		// string operators
-		if constexpr(std::is_same_v<std::decay_t<t_val>, t_str>)
-		{
-			if constexpr(op == '+')
-				result = val1 + val2;
-		}
+	// arithmetic operation
+	template<char op> void OpArithmetic();
 
-		// vector operators
-		else if constexpr(std::is_same_v<std::decay_t<t_val>, t_vec_real>)
-		{
-			if constexpr(op == '+')
-				result = val1 + val2;
-			else if constexpr(op == '-')
-				result = val1 - val2;
-		}
+	// logical operation
+	template<char op> void OpLogical();
 
-		// int / real operators
-		else if constexpr(std::is_same_v<std::decay_t<t_val>, t_int> ||
-			std::is_same_v<std::decay_t<t_val>, t_real>)
-		{
-			if constexpr(op == '+')
-				result = val1 + val2;
-			else if constexpr(op == '-')
-				result = val1 - val2;
-			else if constexpr(op == '*')
-				result = val1 * val2;
-			else if constexpr(op == '/')
-				result = val1 / val2;
-			else if constexpr(op == '%' && std::is_integral_v<t_val>)
-				result = val1 % val2;
-			else if constexpr(op == '%' && std::is_floating_point_v<t_val>)
-				result = std::fmod(val1, val2);
-			else if constexpr(op == '^' /*&& std::is_floating_point_v<t_val>*/)
-				result = pow<t_val>(val1, val2);
-		}
-
-		// complex operators
-		else if constexpr(std::is_same_v<std::decay_t<t_val>, t_cplx>)
-		{
-			if constexpr(op == '+')
-				result = val1 + val2;
-			else if constexpr(op == '-')
-				result = val1 - val2;
-			else if constexpr(op == '*')
-				result = val1 * val2;
-			else if constexpr(op == '/')
-				result = val1 / val2;
-			else if constexpr(op == '^')
-				result = pow<t_val>(val1, val2);
-		}
-
-		return result;
-	}
-
-
-	/**
-	 * arithmetic operation
-	 */
-	template<char op>
-	void OpArithmetic()
-	{
-		t_data val2 = PopData();
-		t_data val1 = PopData();
-		t_data result;
-
-		// dot product
-		if(val1.index() == m_realarridx && val2.index() == m_realarridx && op == '*')
-		{
-			const t_vec_real& vec1 = std::get<m_realarridx>(val1);
-			const t_vec_real& vec2 = std::get<m_realarridx>(val2);
-			t_real dot = m::inner<t_vec_real>(vec1, vec2);
-			result = t_data{std::in_place_index<m_realidx>, dot};
-		}
-
-		// scale vector
-		else if(val1.index() == m_realarridx && val2.index() == m_realidx && op == '*')
-		{
-			using namespace m_ops;
-			const t_vec_real& vec = std::get<m_realarridx>(val1);
-			const t_real s = std::get<m_realidx>(val2);
-			result = t_data{std::in_place_index<m_realarridx>, s * vec};
-		}
-
-		// scale vector
-		else if(val1.index() == m_realarridx && val2.index() == m_realidx && op == '/')
-		{
-			using namespace m_ops;
-			const t_vec_real& vec = std::get<m_realarridx>(val1);
-			const t_real s = std::get<m_realidx>(val2);
-			result = t_data{std::in_place_index<m_realarridx>, vec / s};
-		}
-
-		// scale vector
-		else if(val2.index() == m_realarridx && val1.index() == m_realidx && op == '*')
-		{
-			using namespace m_ops;
-			const t_vec_real& vec = std::get<m_realarridx>(val2);
-			const t_real s = std::get<m_realidx>(val1);
-			result = t_data{std::in_place_index<m_realarridx>, s * vec};
-		}
-
-		// same-type operations
-		else if(val1.index() == val2.index())
-		{
-			if(val1.index() == m_realidx)
-			{
-				result = t_data{std::in_place_index<m_realidx>, OpArithmetic<t_real, op>(
-					std::get<m_realidx>(val1), std::get<m_realidx>(val2))};
-			}
-			else if(val1.index() == m_intidx)
-			{
-				result = t_data{std::in_place_index<m_intidx>, OpArithmetic<t_int, op>(
-					std::get<m_intidx>(val1), std::get<m_intidx>(val2))};
-			}
-			else if(val1.index() == m_cplxidx)
-			{
-				result = t_data{std::in_place_index<m_cplxidx>, OpArithmetic<t_cplx, op>(
-					std::get<m_cplxidx>(val1), std::get<m_cplxidx>(val2))};
-			}
-			else if(val1.index() == m_stridx)
-			{
-				result = t_data{std::in_place_index<m_stridx>, OpArithmetic<t_str, op>(
-					std::get<m_stridx>(val1), std::get<m_stridx>(val2))};
-			}
-			else if(val1.index() == m_realarridx)
-			{
-				result = t_data{std::in_place_index<m_realarridx>, OpArithmetic<t_vec_real, op>(
-					std::get<m_realarridx>(val1), std::get<m_realarridx>(val2))};
-			}
-		}
-		else
-		{
-			std::ostringstream err;
-			err << "Unknown arithmetic operation. "
-				<< "Types: " << GetDataTypeName(val1.index())
-				<< ", " << GetDataTypeName(val2.index()) << ".";
-			throw std::runtime_error(err.str());
-		}
-
-		PushData(result);
-	}
-
-
-	/**
-	 * logical operation
-	 */
-	template<char op>
-	void OpLogical()
-	{
-		bool val2 = PopBool();
-		bool val1 = PopBool();
-
-		bool result = 0;
-		if constexpr(op == '&')
-			result = val1 && val2;
-		else if constexpr(op == '|')
-			result = val1 || val2;
-		else if constexpr(op == '^')
-			result = val1 ^ val2;
-
-		PushBool(result);
-	}
-
-
-	/**
-	 * binary operation
-	 */
+	// binary operation
 	template<class t_val, char op>
-	t_val OpBinary(const t_val& val1, const t_val& val2)
-	{
-		t_val result{};
+	t_val OpBinary(const t_val& val1, const t_val& val2);
 
-		// int operators
-		if constexpr(std::is_same_v<std::decay_t<t_int>, t_int>)
-		{
-			if constexpr(op == '&')
-				result = val1 & val2;
-			else if constexpr(op == '|')
-				result = val1 | val2;
-			else if constexpr(op == '^')
-				result = val1 ^ val2;
-			else if constexpr(op == '<')  // left shift
-				result = val1 << val2;
-			else if constexpr(op == '>')  // right shift
-				result = val1 >> val2;
-			else if constexpr(op == 'l')  // left rotation
-				result = static_cast<t_int>(std::rotl<t_uint>(val1, static_cast<int>(val2)));
-			else if constexpr(op == 'r')  // right rotation
-				result = static_cast<t_int>(std::rotr<t_uint>(val1, static_cast<int>(val2)));
-		}
+	// binary operation
+	template<char op> void OpBinary();
 
-		return result;
-	}
-
-
-	/**
-	 * binary operation
-	 */
-	template<char op>
-	void OpBinary()
-	{
-		t_data val2 = PopData();
-		t_data val1 = PopData();
-
-		if(val1.index() != val2.index())
-		{
-			std::ostringstream err;
-			err << "Type mismatch in binary operation. "
-				<< "Types: " << GetDataTypeName(val1.index())
-				<< ", " << GetDataTypeName(val2.index()) << ".";
-			throw std::runtime_error(err.str());
-		}
-
-		t_data result;
-
-		if(val1.index() == m_intidx)
-		{
-			result = t_data{std::in_place_index<m_intidx>, OpBinary<t_int, op>(
-				std::get<m_intidx>(val1), std::get<m_intidx>(val2))};
-		}
-		else
-		{
-			throw std::runtime_error("Invalid type in binary operation.");
-		}
-
-		PushData(result);
-	}
-
-
-	/**
-	 * comparison operation
-	 */
+	// comparison operation
 	template<class t_val, OpCode op>
-	bool OpComparison(const t_val& val1, const t_val& val2)
-	{
-		bool result = 0;
+	bool OpComparison(const t_val& val1, const t_val& val2);
 
-		// string comparison
-		if constexpr(std::is_same_v<std::decay_t<t_val>, t_str>)
-		{
-			if constexpr(op == OpCode::EQU)
-				result = (val1 == val2);
-			else if constexpr(op == OpCode::NEQU)
-				result = (val1 != val2);
-		}
-
-		// vector comparison
-		else if constexpr(std::is_same_v<std::decay_t<t_val>, t_vec_real>)
-		{
-			if constexpr(op == OpCode::EQU)
-				result = m::equals(val1, val2, m_eps);
-			else if constexpr(op == OpCode::NEQU)
-				result = !m::equals(val1, val2, m_eps);
-		}
-
-		// integer / real comparison
-		else
-		{
-			if constexpr(op == OpCode::GT)
-				result = (val1 > val2);
-			else if constexpr(op == OpCode::LT)
-				result = (val1 < val2);
-			else if constexpr(op == OpCode::GEQU)
-				result = (val1 >= val2);
-			else if constexpr(op == OpCode::LEQU)
-				result = (val1 <= val2);
-			else if constexpr(op == OpCode::EQU)
-			{
-				if constexpr(std::is_same_v<std::decay_t<t_val>, t_real>)
-					result = (std::abs(val1 - val2) <= m_eps);
-				else
-					result = (val1 == val2);
-			}
-			else if constexpr(op == OpCode::NEQU)
-			{
-				if constexpr(std::is_same_v<std::decay_t<t_val>, t_real>)
-					result = (std::abs(val1 - val2) > m_eps);
-				else
-					result = (val1 != val2);
-			}
-		}
-
-		return result;
-	}
-
-
-	/**
-	 * comparison operation
-	 */
-	template<OpCode op>
-	void OpComparison()
-	{
-		t_data val2 = PopData();
-		t_data val1 = PopData();
-
-		if(val1.index() != val2.index())
-		{
-			std::ostringstream err;
-			err << "Type mismatch in comparison operation. "
-				<< "Types: " << GetDataTypeName(val1.index())
-				<< ", " << GetDataTypeName(val2.index()) << ".";
-			throw std::runtime_error(err.str());
-		}
-
-		bool result;
-
-		if(val1.index() == m_realidx)
-		{
-			result = OpComparison<t_real, op>(
-				std::get<m_realidx>(val1), std::get<m_realidx>(val2));
-		}
-		else if(val1.index() == m_intidx)
-		{
-			result = OpComparison<t_int, op>(
-				std::get<m_intidx>(val1), std::get<m_intidx>(val2));
-		}
-		else if(val1.index() == m_stridx)
-		{
-			result = OpComparison<t_str, op>(
-				std::get<m_stridx>(val1), std::get<m_stridx>(val2));
-		}
-		else if(val1.index() == m_realarridx)
-		{
-			result = OpComparison<t_vec_real, op>(
-				std::get<m_realarridx>(val1), std::get<m_realarridx>(val2));
-		}
-		else
-		{
-			throw std::runtime_error("Invalid type in comparison operation.");
-		}
-
-		PushBool(result);
-	}
-
-
-	// sets the address of an interrupt service routine
-	void SetISR(t_addr num, t_addr addr);
-
-	void StartTimer();
-	void StopTimer();
+	// comparison operation
+	template<OpCode op> void OpComparison();
+	// --------------------------------------------------------------------
 
 
 private:

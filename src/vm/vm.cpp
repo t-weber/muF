@@ -6,6 +6,7 @@
  */
 
 #include "vm.h"
+#include "mem.h"
 
 #include <iostream>
 #include <sstream>
@@ -193,7 +194,7 @@ VM::t_str VM::TopString(t_addr sp_offs) const
 /**
  * push a string to the stack
  */
-void VM::PushString(const VM::t_str& str)
+void VM::PushString(const VM::t_str& str, bool raw)
 {
 	t_addr len = static_cast<t_addr>(str.length());
 	CheckMemoryBounds(m_sp, -len*m_charsize);
@@ -203,6 +204,15 @@ void VM::PushString(const VM::t_str& str)
 	std::memcpy(begin, str.data(), len*m_charsize);
 
 	PushRaw<t_addr, m_addrsize>(len);
+
+	if(!raw)
+	{
+		// push descriptor
+		PushRaw<t_byte, m_bytesize>(static_cast<t_byte>(VMType::STR));
+
+		if(m_debug)
+			std::cout << "pushed string \"" << str << "\"." << std::endl;
+	}
 }
 
 
@@ -242,7 +252,7 @@ VM::t_cplx VM::TopComplex(t_addr sp_offs) const
 /**
  * push a complex number to the stack
  */
-void VM::PushComplex(const VM::t_cplx& cplx)
+void VM::PushComplex(const VM::t_cplx& cplx, bool raw)
 {
 	CheckMemoryBounds(m_sp, -GetDataTypeSize<t_cplx>());
 
@@ -251,6 +261,15 @@ void VM::PushComplex(const VM::t_cplx& cplx)
 
 	*(begin + 0) = cplx.real();
 	*(begin + 1) = cplx.imag();
+
+	if(!raw)
+	{
+		// push descriptor
+		PushRaw<t_byte, m_bytesize>(static_cast<t_byte>(VMType::CPLX));
+
+		if(m_debug)
+			std::cout << "pushed complex " << cplx << "." << std::endl;
+	}
 }
 
 
@@ -317,7 +336,21 @@ VM::t_data VM::TopData() const
 		case VMType::REALARR:
 		{
 			dat = t_data{std::in_place_index<m_realarridx>,
-				TopVector(m_bytesize)};
+				TopArray<t_vec_real>(m_bytesize)};
+				break;
+		}
+
+		case VMType::INTARR:
+		{
+			dat = t_data{std::in_place_index<m_intarridx>,
+				TopArray<t_vec_int>(m_bytesize)};
+				break;
+		}
+
+		case VMType::CPLXARR:
+		{
+			dat = t_data{std::in_place_index<m_cplxarridx>,
+				TopArray<t_vec_cplx>(m_bytesize)};
 				break;
 		}
 
@@ -428,11 +461,38 @@ VM::t_data VM::PopData()
 
 		case VMType::REALARR:
 		{
-			dat = t_data{std::in_place_index<m_realarridx>, PopVector<t_vec_real>()};
+			dat = t_data{std::in_place_index<m_realarridx>, PopArray<t_vec_real>()};
 			if(m_debug)
 			{
 				using namespace m_ops;
-				std::cout << "popped vector " << std::get<m_realarridx>(dat)
+				std::cout << "popped " << GetDataTypeName(dat) << " "
+					<< std::get<m_realarridx>(dat)
+					<< "." << std::endl;
+			}
+			break;
+		}
+
+		case VMType::INTARR:
+		{
+			dat = t_data{std::in_place_index<m_intarridx>, PopArray<t_vec_int>()};
+			if(m_debug)
+			{
+				using namespace m_ops;
+				std::cout << "popped " << GetDataTypeName(dat) << " "
+					<< std::get<m_intarridx>(dat)
+					<< "." << std::endl;
+			}
+			break;
+		}
+
+		case VMType::CPLXARR:
+		{
+			dat = t_data{std::in_place_index<m_cplxarridx>, PopArray<t_vec_cplx>()};
+			if(m_debug)
+			{
+				using namespace m_ops;
+				std::cout << "popped " << GetDataTypeName(dat) << " "
+					<< std::get<m_cplxarridx>(dat)
 					<< "." << std::endl;
 			}
 			break;
@@ -496,17 +556,7 @@ void VM::PushData(const VM::t_data& data, VMType ty, bool err_on_unknown)
 	else if(data.index() == m_cplxidx)
 	{
 		// push the actual complex number
-		PushComplex(std::get<m_cplxidx>(data));
-
-		// push descriptor
-		PushRaw<t_byte, m_bytesize>(static_cast<t_byte>(VMType::CPLX));
-
-		if(m_debug)
-		{
-			std::cout << "pushed complex "
-				<< std::get<m_cplxidx>(data) << "."
-				<< std::endl;
-		}
+		PushComplex(std::get<m_cplxidx>(data), false);
 	}
 
 	// bool data
@@ -547,35 +597,28 @@ void VM::PushData(const VM::t_data& data, VMType ty, bool err_on_unknown)
 	else if(data.index() == m_stridx)
 	{
 		// push the actual string
-		PushString(std::get<m_stridx>(data));
-
-		// push descriptor
-		PushRaw<t_byte, m_bytesize>(static_cast<t_byte>(VMType::STR));
-
-		if(m_debug)
-		{
-			std::cout << "pushed string \""
-				<< std::get<m_stridx>(data) << "\"."
-				<< std::endl;
-		}
+		PushString(std::get<m_stridx>(data), false);
 	}
 
-	// vector data
+	// real array data
 	else if(data.index() == m_realarridx)
 	{
-		// push the actual vector
-		PushVector(std::get<m_realarridx>(data));
+		// push the actual array
+		PushArray<t_vec_real>(std::get<m_realarridx>(data), false);
+	}
 
-		// push descriptor
-		PushRaw<t_byte, m_bytesize>(static_cast<t_byte>(VMType::REALARR));
+	// int array data
+	else if(data.index() == m_intarridx)
+	{
+		// push the actual array
+		PushArray<t_vec_int>(std::get<m_intarridx>(data), false);
+	}
 
-		if(m_debug)
-		{
-			using namespace m_ops;
-			std::cout << "pushed vector "
-				<< std::get<m_realarridx>(data) << "."
-				<< std::endl;
-		}
+	// complex array data
+	else if(data.index() == m_cplxarridx)
+	{
+		// push the actual array
+		PushArray<t_vec_cplx>(std::get<m_cplxarridx>(data), false);
 	}
 
 	// unknown data
@@ -688,7 +731,7 @@ std::tuple<VMType, VM::t_data> VM::ReadMemData(VM::t_addr addr)
 			break;
 		}
 
-		case VMType::STR:
+		case VMType::STR:      // string type
 		{
 			t_str str = ReadMemRaw<t_str>(addr);
 			dat = t_data{std::in_place_index<m_stridx>, str};
@@ -702,7 +745,7 @@ std::tuple<VMType, VM::t_data> VM::ReadMemData(VM::t_addr addr)
 			break;
 		}
 
-		case VMType::REALARR:
+		case VMType::REALARR:  // real array type
 		{
 			t_vec_real vec = ReadMemRaw<t_vec_real>(addr);
 			dat = t_data{std::in_place_index<m_realarridx>, vec};
@@ -710,7 +753,37 @@ std::tuple<VMType, VM::t_data> VM::ReadMemData(VM::t_addr addr)
 			if(m_debug)
 			{
 				using namespace m_ops;
-				std::cout << "read vector \"" << vec
+				std::cout << "read " << GetDataTypeName(dat) << " \"" << vec
+					<< "\" from address " << (addr - 1)
+					<< "." << std::endl;
+			}
+			break;
+		}
+
+		case VMType::INTARR:  // int array type
+		{
+			t_vec_int vec = ReadMemRaw<t_vec_int>(addr);
+			dat = t_data{std::in_place_index<m_intarridx>, vec};
+
+			if(m_debug)
+			{
+				using namespace m_ops;
+				std::cout << "read " << GetDataTypeName(dat) << " \"" << vec
+					<< "\" from address " << (addr - 1)
+					<< "." << std::endl;
+			}
+			break;
+		}
+
+		case VMType::CPLXARR:  // complex array type
+		{
+			t_vec_cplx vec = ReadMemRaw<t_vec_cplx>(addr);
+			dat = t_data{std::in_place_index<m_cplxarridx>, vec};
+
+			if(m_debug)
+			{
+				using namespace m_ops;
+				std::cout << "read " << GetDataTypeName(dat) << " \"" << vec
 					<< "\" from address " << (addr - 1)
 					<< "." << std::endl;
 			}
@@ -852,24 +925,22 @@ void VM::WriteMemData(VM::t_addr addr, const VM::t_data& data)
 		WriteMemRaw<t_str>(addr, std::get<m_stridx>(data));
 	}
 
-	// vector type
+	// real array type
 	else if(data.index() == m_realarridx)
 	{
-		if(m_debug)
-		{
-			using namespace m_ops;
-			std::cout << "writing vector \""
-				<< std::get<m_realarridx>(data)
-				<< "\" to address " << addr
-				<< "." << std::endl;
-		}
+		WriteArray<t_vec_real>(addr, std::get<m_realarridx>(data), false);
+	}
 
-		// write descriptor prefix
-		WriteMemRaw<t_byte>(addr, static_cast<t_byte>(VMType::REALARR));
-		addr += m_bytesize;
+	// int array type
+	else if(data.index() == m_intarridx)
+	{
+		WriteArray<t_vec_int>(addr, std::get<m_intarridx>(data), false);
+	}
 
-		// write the actual data
-		WriteMemRaw<t_vec_real>(addr, std::get<m_realarridx>(data));
+	// complex array type
+	else if(data.index() == m_cplxarridx)
+	{
+		WriteArray<t_vec_cplx>(addr, std::get<m_cplxarridx>(data), false);
 	}
 
 	// unknown type
@@ -962,32 +1033,6 @@ void VM::SetMem(t_addr addr, const VM::t_byte* data, std::size_t size, bool is_c
 
 	for(std::size_t i = 0; i < size; ++i)
 		SetMem(addr + t_addr(i), data[i]);
-}
-
-
-const char* VM::GetDataTypeName(std::size_t type_idx)
-{
-	switch(type_idx)
-	{
-		case m_realidx: return "real";
-		case m_intidx: return "integer";
-		case m_cplxidx: return "complex";
-		case m_boolidx: return "bool";
-
-		case m_addridx: return "address";
-
-		case m_realarridx: return "array_real";
-
-		case m_stridx: return "string";
-
-		default: return "unknown";
-	}
-}
-
-
-const char* VM::GetDataTypeName(const t_data& dat)
-{
-	return GetDataTypeName(dat.index());
 }
 
 
