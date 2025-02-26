@@ -1610,19 +1610,28 @@ void Grammar::CreateGrammar()
 #endif
 	++semanticindex;
 
-	// real array
+	// array
 #ifdef CREATE_PRODUCTION_RULES
 	expression->AddRule({ array_begin, expressions, array_end }, semanticindex);
 #endif
 #ifdef CREATE_SEMANTIC_RULES
 	rules.emplace(std::make_pair(semanticindex,
-	[](bool full_match, const lalr1::t_semanticargs& args, [[maybe_unused]] lalr1::t_astbaseptr retval) -> lalr1::t_astbaseptr
+	[this](bool full_match, const lalr1::t_semanticargs& args, [[maybe_unused]] lalr1::t_astbaseptr retval) -> lalr1::t_astbaseptr
 	{
 		if(!full_match)
 			return nullptr;
 
 		auto exprs = std::dynamic_pointer_cast<ASTExprList>(args[1]);
-		exprs->SetScalarArray(true);
+
+		// set array symbol type from context (if available)
+		SymbolType ctx_sym_ty = m_context.GetSymType();
+		if(ctx_sym_ty == SymbolType::REAL_ARRAY ||
+			ctx_sym_ty == SymbolType::INT_ARRAY ||
+			ctx_sym_ty == SymbolType::CPLX_ARRAY)
+			exprs->SetArrayType(ctx_sym_ty);
+		else
+			exprs->SetArrayType(SymbolType::REAL_ARRAY);
+
 		return exprs;
 	}));
 #endif

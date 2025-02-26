@@ -11,6 +11,37 @@
 // ----------------------------------------------------------------------------
 // arrays
 // ----------------------------------------------------------------------------
+std::pair<Symbol*, Symbol*> ZeroACAsm::GetArrayTypeConst(SymbolType ty) const
+{
+	Symbol *arr_ty = nullptr;
+	Symbol *arr_elem_ty = nullptr;
+
+	switch(ty)
+	{
+		case SymbolType::STRING:
+			arr_ty = m_str_const;
+			arr_elem_ty = m_str_const;
+			break;
+		case SymbolType::REAL_ARRAY:
+			arr_ty = m_real_array_const;
+			arr_elem_ty = m_real_const;
+			break;
+		case SymbolType::INT_ARRAY:
+			arr_ty = m_int_array_const;
+			arr_elem_ty = m_int_const;
+			break;
+		case SymbolType::CPLX_ARRAY:
+			arr_ty = m_cplx_array_const;
+			arr_elem_ty = m_cplx_const;
+			break;
+		default:
+			break;
+	}
+
+	return std::make_pair(arr_ty, arr_elem_ty);
+}
+
+
 t_astret ZeroACAsm::visit(const ASTArrayAccess* ast)
 {
 	t_astret term = ast->GetTerm()->accept(this);
@@ -32,10 +63,10 @@ t_astret ZeroACAsm::visit(const ASTArrayAccess* ast)
 
 		m_ostr->put(static_cast<t_vm_byte>(OpCode::RDARR));
 
-		if(term->ty == SymbolType::STRING)
-			return m_str_const;
-		else
-			return m_scalar_const;
+		if(auto [arr_ty, arr_elem_ty] = GetArrayTypeConst(term->ty); arr_elem_ty)
+			return arr_elem_ty;
+
+		throw std::runtime_error("ASTArrayAccess: Invalid array type of \"" + term->name + "\".");
 	}
 
 	// ranged array access
@@ -50,10 +81,10 @@ t_astret ZeroACAsm::visit(const ASTArrayAccess* ast)
 
 		m_ostr->put(static_cast<t_vm_byte>(OpCode::RDARRR));
 
-		if(term->ty == SymbolType::STRING)
-			return m_str_const;
-		else
-			return m_real_array_const;
+		if(auto [arr_ty, arr_elem_ty] = GetArrayTypeConst(term->ty); arr_elem_ty)
+			return arr_ty;
+
+		throw std::runtime_error("ASTArrayAccess: Invalid array type of \"" + term->name + "\".");
 	}
 
 	throw std::runtime_error("ASTArrayAccess: Invalid array access to \"" + term->name + "\".");
@@ -91,8 +122,15 @@ t_astret ZeroACAsm::visit(const ASTArrayAssign* ast)
 	// single-element array assignment
 	if(!ranged12 && !ranged34 && num1 && !num2 && !num3 && !num4)
 	{
-		if(expr->ty != SymbolType::REAL)
-			CastTo(m_scalar_const);
+		Symbol *elem_sym_type = nullptr;
+		if(auto [arr_ty, arr_elem_ty] = GetArrayTypeConst(sym->ty); arr_elem_ty)
+			elem_sym_type = arr_elem_ty;
+
+		if(!elem_sym_type)
+			throw std::runtime_error("ASTArrayAssign: Invalid array element type in \"" + varname + "\".");
+
+		if(expr->ty != sym->ty)
+			CastTo(elem_sym_type);
 
 		t_astret num1sym = num1->accept(this);
 		if(num1sym->ty != SymbolType::INT)
@@ -121,16 +159,24 @@ t_astret ZeroACAsm::visit(const ASTArrayAssign* ast)
 t_astret ZeroACAsm::visit(const ASTExprList* ast)
 {
 	t_astret sym_ret = nullptr;
-	bool is_arr = ast->IsScalarArray();
+	const bool is_arr = ast->IsArray();
+	const SymbolType arr_sym_ty = ast->GetArrayType();
+
+	auto [arr_ty, arr_elem_ty] = GetArrayTypeConst(arr_sym_ty);
+	if(!arr_ty || !arr_elem_ty)
+	{
+		arr_ty = m_real_array_const;
+		arr_elem_ty = m_real_const;
+	}
 
 	t_vm_addr num_elems = 0;
 	for(const auto& elem : ast->GetList())
 	{
 		t_astret sym = elem->accept(this);
 
-		// make sure all array elements are real
+		// make sure all (array) elements are of the element type
 		if(is_arr)
-			CastTo(m_scalar_const);
+			CastTo(arr_elem_ty);
 
 		if(!sym_ret)
 			sym_ret = sym;
@@ -147,8 +193,15 @@ t_astret ZeroACAsm::visit(const ASTExprList* ast)
 		m_ostr->write(reinterpret_cast<const char*>(&num_elems),
 			vm_type_size<VMType::ADDR_MEM, false>);
 
-		m_ostr->put(static_cast<t_vm_byte>(OpCode::MAKEREALARR));
-		sym_ret = m_real_array_const;
+		if(arr_sym_ty == SymbolType::REAL_ARRAY)
+			m_ostr->put(static_cast<t_vm_byte>(OpCode::MAKEREALARR));
+		else if(arr_sym_ty == SymbolType::INT_ARRAY)
+			m_ostr->put(static_cast<t_vm_byte>(OpCode::MAKEINTARR));
+		else if(arr_sym_ty == SymbolType::CPLX_ARRAY)
+			m_ostr->put(static_cast<t_vm_byte>(OpCode::MAKECPLXARR));
+		else
+			 throw std::runtime_error("ASTExprList: Invalid array type.");
+		sym_ret = arr_ty;
 	}
 
 	return sym_ret;

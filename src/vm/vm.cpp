@@ -753,8 +753,8 @@ std::tuple<VMType, VM::t_data> VM::ReadMemData(VM::t_addr addr)
 			if(m_debug)
 			{
 				using namespace m_ops;
-				std::cout << "read " << GetDataTypeName(dat) << " \"" << vec
-					<< "\" from address " << (addr - 1)
+				std::cout << "read " << GetDataTypeName(dat) << " " << vec
+					<< " from address " << (addr - 1)
 					<< "." << std::endl;
 			}
 			break;
@@ -768,8 +768,8 @@ std::tuple<VMType, VM::t_data> VM::ReadMemData(VM::t_addr addr)
 			if(m_debug)
 			{
 				using namespace m_ops;
-				std::cout << "read " << GetDataTypeName(dat) << " \"" << vec
-					<< "\" from address " << (addr - 1)
+				std::cout << "read " << GetDataTypeName(dat) << " " << vec
+					<< " from address " << (addr - 1)
 					<< "." << std::endl;
 			}
 			break;
@@ -783,8 +783,8 @@ std::tuple<VMType, VM::t_data> VM::ReadMemData(VM::t_addr addr)
 			if(m_debug)
 			{
 				using namespace m_ops;
-				std::cout << "read " << GetDataTypeName(dat) << " \"" << vec
-					<< "\" from address " << (addr - 1)
+				std::cout << "read " << GetDataTypeName(dat) << " " << vec
+					<< " from address " << (addr - 1)
 					<< "." << std::endl;
 			}
 			break;

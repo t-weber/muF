@@ -157,6 +157,11 @@ public:
 		m_symtype = ty;
 	}
 
+	SymbolType GetSymType() const
+	{
+		return m_symtype;
+	}
+
 	// dimensions of vector and matrix symbols
 	void SetSymDims(std::size_t dim1, std::size_t dim2=1)
 	{

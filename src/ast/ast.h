@@ -82,9 +82,9 @@ enum class ASTType
 	LoopBreak,
 	LoopNext,
 	ExprList,
-	NumConst,
-	Label,
 	Jump,
+	Label,
+	NumConst,
 };
 
 
@@ -205,7 +205,7 @@ public:
 
 private:
 	ASTPtr term1{}, term2{};
-	bool inverted = false;
+	bool inverted{ false };
 };
 
 
@@ -224,7 +224,7 @@ public:
 
 private:
 	ASTPtr term1{}, term2{};
-	bool inverted = false;
+	bool inverted{ false };
 };
 
 
@@ -324,7 +324,7 @@ public:
 private:
 	// label to jump to (or come from)
 	t_str label{};
-	bool is_comefrom{false};
+	bool is_comefrom{ false };
 };
 
 
@@ -442,7 +442,7 @@ public:
 	virtual ASTType type() override { return ASTType::TypeDecl; }
 
 private:
-	SymbolType ty{SymbolType::UNKNOWN};
+	SymbolType ty{ SymbolType::UNKNOWN };
 	std::vector<std::size_t> dims{ 1 };
 };
 
@@ -498,7 +498,7 @@ public:
 
 private:
 	std::shared_ptr<ASTExprList> rets{};
-	bool multi_return = false;
+	bool multi_return{ false };
 };
 
 
@@ -519,23 +519,28 @@ public:
 	}
 
 	/**
-	 * specialised use as an array of scalars
+	 * specialised use as an array
 	 */
-	void SetScalarArray(bool b)
+	void SetArrayType(SymbolType ty = SymbolType::REAL_ARRAY)
 	{
-		m_scalararray = b;
+		m_array_type = ty;
 	}
 
-	bool IsScalarArray() const
+	SymbolType GetArrayType() const
 	{
-		return m_scalararray;
+		return m_array_type;
+	}
+
+	bool IsArray() const
+	{
+		return m_array_type != SymbolType::VOID;
 	}
 
 	virtual ASTType type() override { return ASTType::ExprList; }
 
 private:
 	std::list<ASTPtr> exprs{};
-	bool m_scalararray = false;
+	SymbolType m_array_type = SymbolType::VOID;  /* void: no array */
 };
 
 
@@ -742,7 +747,7 @@ public:
 	t_int GetNumLoops() const { return num_loops; }
 
 private:
-	t_int num_loops{0};
+	t_int num_loops{ 0 };
 };
 
 
@@ -757,7 +762,7 @@ public:
 	t_int GetNumLoops() const { return num_loops; }
 
 private:
-	t_int num_loops{0};
+	t_int num_loops{ 0 };
 };
 
 
@@ -790,8 +795,8 @@ private:
 
 	ASTPtr num1{}, num2{};
 	ASTPtr num3{}, num4{};
-	bool ranged12 = false;
-	bool ranged34 = false;
+	bool ranged12{ false };
+	bool ranged34{ false };
 };
 
 
@@ -827,8 +832,8 @@ private:
 
 	ASTPtr num1{}, num2{};
 	ASTPtr num3{}, num4{};
-	bool ranged12 = false;
-	bool ranged34 = false;
+	bool ranged12{ false };
+	bool ranged34{ false };
 };
 
 

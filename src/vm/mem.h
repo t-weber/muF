@@ -171,7 +171,7 @@ void VM::WriteArray(typename VM::t_addr addr, const t_vec& vec, bool raw)
 		{
 			using namespace m_ops;
 			std::cout << "writing " << GetDataTypeName(vec_idx)
-				<< " \"" << vec << "\" to address " << addr
+				<< " " << vec << " to address " << addr
 				<< "." << std::endl;
 		}
 
@@ -357,6 +357,18 @@ t_val VM::ReadMemRaw(typename VM::t_addr addr) const
 	else if constexpr(std::is_same_v<std::decay_t<t_val>, t_vec_real>)
 	{
 		return ReadArrayRaw<t_vec_real>(addr);
+	}
+
+	// int array type
+	else if constexpr(std::is_same_v<std::decay_t<t_val>, t_vec_int>)
+	{
+		return ReadArrayRaw<t_vec_int>(addr);
+	}
+
+	// complex array type
+	else if constexpr(std::is_same_v<std::decay_t<t_val>, t_vec_cplx>)
+	{
+		return ReadArrayRaw<t_vec_cplx>(addr);
 	}
 
 	// primitive types

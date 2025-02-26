@@ -16,15 +16,21 @@ Symbol* ZeroACAsm::GetTypeConst(SymbolType ty) const
 	switch(ty)
 	{
 		case SymbolType::REAL:
-			return m_scalar_const;
+			return m_real_const;
 		case SymbolType::INT:
 			return m_int_const;
+		case SymbolType::CPLX:
+			return m_cplx_const;
+		case SymbolType::REAL_ARRAY:
+			return m_real_array_const;
+		case SymbolType::INT_ARRAY:
+			return m_int_array_const;
+		case SymbolType::CPLX_ARRAY:
+			return m_cplx_array_const;
 		case SymbolType::BOOL:
 			return m_bool_const;
 		case SymbolType::STRING:
 			return m_str_const;
-		case SymbolType::REAL_ARRAY:
-			return m_real_array_const;
 		default:
 			return nullptr;
 	}
@@ -73,11 +79,11 @@ ZeroACAsm::GetCastSymType(t_astret term1, t_astret term2)
 	else if(ty1 == SymbolType::REAL_ARRAY && ty2 == SymbolType::REAL)
 		return std::make_tuple(nullptr, nullptr, term1);
 	else if(ty1 == SymbolType::REAL_ARRAY && ty2 == SymbolType::INT)
-		return std::make_tuple(nullptr, m_scalar_const, term1);
+		return std::make_tuple(nullptr, m_real_const, term1);
 	else if(ty1 == SymbolType::REAL && ty2 == SymbolType::REAL_ARRAY)
 		return std::make_tuple(nullptr, nullptr, term2);
 	else if(ty1 == SymbolType::INT && ty2 == SymbolType::REAL_ARRAY)
-		return std::make_tuple(m_scalar_const, nullptr, term2);
+		return std::make_tuple(m_real_const, nullptr, term2);
 
 	return std::make_tuple(nullptr, term1, term1);
 }
@@ -95,25 +101,55 @@ void ZeroACAsm::CastTo(t_astret ty_to,
 
 	t_vm_byte op = static_cast<t_vm_byte>(OpCode::NOP);
 
-	if(ty_to->ty == SymbolType::STRING)
+	if(ty_to->ty == SymbolType::REAL)
 	{
-		op = static_cast<t_vm_byte>(OpCode::TOS);
+		op = static_cast<t_vm_byte>(OpCode::TOR);
 	}
 	else if(ty_to->ty == SymbolType::INT)
 	{
 		op = static_cast<t_vm_byte>(OpCode::TOI);
 	}
+	else if(ty_to->ty == SymbolType::CPLX)
+	{
+		op = static_cast<t_vm_byte>(OpCode::TOC);
+	}
+	else if(ty_to->ty == SymbolType::STRING)
+	{
+		op = static_cast<t_vm_byte>(OpCode::TOS);
+	}
 	else if(ty_to->ty == SymbolType::BOOL)
 	{
 		op = static_cast<t_vm_byte>(OpCode::TOB);
 	}
-	else if(ty_to->ty == SymbolType::REAL)
-	{
-		op = static_cast<t_vm_byte>(OpCode::TOR);
-	}
 	else if(ty_to->ty == SymbolType::REAL_ARRAY && allow_array_cast)
 	{
 		op = static_cast<t_vm_byte>(OpCode::TOREALARR);
+
+		// TODO: this doesn't work if "pos" is also given
+		// push vector length
+		t_vm_addr cols = static_cast<t_vm_addr>(ty_to->dims[0]);
+
+		m_ostr->put(static_cast<t_vm_byte>(OpCode::PUSH));
+		m_ostr->put(static_cast<t_vm_byte>(VMType::ADDR_MEM));
+		m_ostr->write(reinterpret_cast<const char*>(&cols),
+			vm_type_size<VMType::ADDR_MEM, false>);
+	}
+	else if(ty_to->ty == SymbolType::INT_ARRAY && allow_array_cast)
+	{
+		op = static_cast<t_vm_byte>(OpCode::TOINTARR);
+
+		// TODO: this doesn't work if "pos" is also given
+		// push vector length
+		t_vm_addr cols = static_cast<t_vm_addr>(ty_to->dims[0]);
+
+		m_ostr->put(static_cast<t_vm_byte>(OpCode::PUSH));
+		m_ostr->put(static_cast<t_vm_byte>(VMType::ADDR_MEM));
+		m_ostr->write(reinterpret_cast<const char*>(&cols),
+			vm_type_size<VMType::ADDR_MEM, false>);
+	}
+	else if(ty_to->ty == SymbolType::CPLX_ARRAY && allow_array_cast)
+	{
+		op = static_cast<t_vm_byte>(OpCode::TOCPLXARR);
 
 		// TODO: this doesn't work if "pos" is also given
 		// push vector length

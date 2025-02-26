@@ -18,10 +18,10 @@ ZeroACAsm::ZeroACAsm(SymTab* syms, std::ostream* ostr)
 	: m_syms{syms}, m_ostr{ostr}
 {
 	// dummy symbol for real constants
-	m_scalar_const = new Symbol();
-	m_scalar_const->ty = SymbolType::REAL;
-	m_scalar_const->is_tmp = true;
-	m_scalar_const->name = "<real>";
+	m_real_const = new Symbol();
+	m_real_const->ty = SymbolType::REAL;
+	m_real_const->is_tmp = true;
+	m_real_const->name = "<real>";
 
 	// dummy symbol for int constants
 	m_int_const = new Symbol();
@@ -45,22 +45,34 @@ ZeroACAsm::ZeroACAsm(SymTab* syms, std::ostream* ostr)
 	m_str_const = new Symbol();
 	m_str_const->ty = SymbolType::STRING;
 	m_str_const->is_tmp = true;
-	m_str_const->name = "<str>";
+	m_str_const->name = "<string>";
 
 	// dummy symbol for real array constants
 	m_real_array_const = new Symbol();
 	m_real_array_const->ty = SymbolType::REAL_ARRAY;
 	m_real_array_const->is_tmp = true;
-	m_real_array_const->name = "<vec>";
+	m_real_array_const->name = "<array_real>";
+
+	// dummy symbol for int array constants
+	m_int_array_const = new Symbol();
+	m_int_array_const->ty = SymbolType::INT_ARRAY;
+	m_int_array_const->is_tmp = true;
+	m_int_array_const->name = "<array_integer>";
+
+	// dummy symbol for complex array constants
+	m_cplx_array_const = new Symbol();
+	m_cplx_array_const->ty = SymbolType::CPLX_ARRAY;
+	m_cplx_array_const->is_tmp = true;
+	m_cplx_array_const->name = "<array_complex>";
 }
 
 
 ZeroACAsm::~ZeroACAsm()
 {
 	for(Symbol** sym : {
-		&m_scalar_const, &m_int_const,
-		&m_cplx_const, &m_bool_const,
-		&m_str_const, &m_real_array_const, })
+		&m_real_const, &m_int_const, &m_cplx_const,
+		&m_real_array_const, &m_int_array_const, &m_cplx_array_const,
+		&m_bool_const, &m_str_const, })
 	{
 		delete *sym;
 		*sym = nullptr;

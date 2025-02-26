@@ -106,12 +106,15 @@ protected:
 	void PushCplxConst(const t_vm_cplx&);
 	void PushBoolConst(t_vm_bool);
 	void PushStrConst(const t_vm_str& str);
-	void PushVecConst(const std::vector<t_vm_real>& vec);
+	void PushRealVecConst(const std::vector<t_vm_real>& vec);
+	void PushIntVecConst(const std::vector<t_vm_int>& vec);
+	void PushCplxVecConst(const std::vector<t_vm_cplx>& vec);
 
 	void AssignVar(t_astret sym);
 	void CallExternal(const t_str& funcname);
 
 	Symbol* GetTypeConst(SymbolType ty) const;
+	std::pair<Symbol*, Symbol*> GetArrayTypeConst(SymbolType ty) const;
 
 
 private:
@@ -148,8 +151,9 @@ private:
 	std::vector<std::pair<t_str, std::streampos>> m_goto_comefroms{};
 
 	// dummy symbols for constants
-	Symbol *m_scalar_const{}, *m_int_const{}, *m_cplx_const{}, *m_bool_const{};
-	Symbol *m_real_array_const{}, *m_str_const{};
+	Symbol *m_real_const{}, *m_int_const{}, *m_cplx_const{};
+	Symbol *m_real_array_const{}, *m_int_array_const{}, *m_cplx_array_const{};
+	Symbol *m_bool_const{}, *m_str_const{};
 
 	bool m_debug{false};
 };

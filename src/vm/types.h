@@ -161,4 +161,22 @@ static inline t_vm_addr get_vm_vec_real_size(t_vm_addr raw_len,
 }
 
 
+static inline t_vm_addr get_vm_vec_int_size(t_vm_addr raw_len,
+	bool with_descr = false, bool with_len = false)
+{
+	return raw_len*sizeof(t_vm_int)
+		+ (with_len ? sizeof(t_vm_addr) : 0)
+		+ (with_descr ? sizeof(t_vm_byte) : 0);
+}
+
+
+static inline t_vm_addr get_vm_vec_cplx_size(t_vm_addr raw_len,
+	bool with_descr = false, bool with_len = false)
+{
+	return raw_len*sizeof(t_vm_real)*2
+		+ (with_len ? sizeof(t_vm_addr) : 0)
+		+ (with_descr ? sizeof(t_vm_byte) : 0);
+}
+
+
 #endif
