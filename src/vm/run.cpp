@@ -515,21 +515,21 @@ bool VM::Run()
 			case OpCode::TOREALARR: // converts value to t_vec_real
 			{
 				t_addr vec_size = PopAddress();
-				OpArrayCast<m_realarridx>(vec_size);
+				OpCastToArray<t_vec_real>(vec_size);
 				break;
 			}
 
 			case OpCode::TOINTARR: // converts value to t_vec_int
 			{
 				t_addr vec_size = PopAddress();
-				OpArrayCast<m_intarridx>(vec_size);
+				OpCastToArray<t_vec_int>(vec_size);
 				break;
 			}
 
 			case OpCode::TOCPLXARR: // converts value to t_vec_cplx
 			{
 				t_addr vec_size = PopAddress();
-				OpArrayCast<m_cplxarridx>(vec_size);
+				OpCastToArray<t_vec_cplx>(vec_size);
 				break;
 			}
 

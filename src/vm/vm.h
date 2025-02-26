@@ -38,14 +38,13 @@ public:
 	using t_int = ::t_vm_int;
 	using t_cplx = ::t_vm_cplx;
 
-	using t_addr = ::t_vm_addr;
-	using t_byte = ::t_vm_byte;
-	using t_bool = ::t_vm_byte;
-
 	using t_vec_real = ::t_vm_vec_real;
 	using t_vec_int = ::t_vm_vec_int;
 	using t_vec_cplx = ::t_vm_vec_cplx;
 
+	using t_addr = ::t_vm_addr;
+	using t_byte = ::t_vm_byte;
+	using t_bool = ::t_vm_byte;
 	using t_str = ::t_vm_str;
 
 	using t_uint = typename std::make_unsigned<t_int>::type;
@@ -367,12 +366,15 @@ protected:
 	// cast from one variable type to the other
 	template<std::size_t toidx> void OpCast();
 
-	// cast to an array variable type
-	template<std::size_t toidx> void OpArrayCast(t_addr size);
+	// cast from an array variable type
+	template<class t_to, class t_vec> void OpCastFromArray(const t_data& data);
 
-	// arithmetic operation
+	// cast to an array variable type
+	template<class t_vec_to> void OpCastToArray(t_addr size);
+
+	// same-type arithmetic operation
 	template<class t_val, char op>
-	t_val OpArithmetic(const t_val& val1, const t_val& val2);
+	t_val OpArithmeticSameType(const t_val& val1, const t_val& val2);
 
 	// arithmetic operation
 	template<char op> void OpArithmetic();
@@ -380,16 +382,16 @@ protected:
 	// logical operation
 	template<char op> void OpLogical();
 
-	// binary operation
+	// same-type binary operation
 	template<class t_val, char op>
-	t_val OpBinary(const t_val& val1, const t_val& val2);
+	t_val OpBinarySameType(const t_val& val1, const t_val& val2);
 
 	// binary operation
 	template<char op> void OpBinary();
 
-	// comparison operation
+	// same-type comparison operation
 	template<class t_val, OpCode op>
-	bool OpComparison(const t_val& val1, const t_val& val2);
+	bool OpComparisonSameType(const t_val& val1, const t_val& val2);
 
 	// comparison operation
 	template<OpCode op> void OpComparison();
