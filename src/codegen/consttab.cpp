@@ -40,6 +40,20 @@ std::streampos ConstTab::AddConst(const t_constval& constval)
 		m_ostr.write(reinterpret_cast<const char*>(&intval),
 			vm_type_size<VMType::INT, false>);
 	}
+	/*else if(std::holds_alternative<t_cplx>(constval))
+	{
+		const t_real realval = std::get<t_cplx>(constval).real();
+		const t_real imagval = std::get<t_cplx>(constval).imag();
+
+		// write int type descriptor byte
+		m_ostr.put(static_cast<t_vm_byte>(VMType::CPLX));
+		// write real data
+		m_ostr.write(reinterpret_cast<const char*>(&realval),
+			vm_type_size<VMType::REAL, false>);
+		// write imaginary data
+		m_ostr.write(reinterpret_cast<const char*>(&imagval),
+			vm_type_size<VMType::REAL, false>);
+	}*/
 	else if(std::holds_alternative<t_str>(constval))
 	{
 		const t_str& strval = std::get<t_str>(constval);

@@ -11,36 +11,9 @@
 // ----------------------------------------------------------------------------
 // operations
 // ----------------------------------------------------------------------------
-Symbol* ZeroACAsm::GetTypeConst(SymbolType ty) const
-{
-	switch(ty)
-	{
-		case SymbolType::REAL:
-			return m_real_const;
-		case SymbolType::INT:
-			return m_int_const;
-		case SymbolType::CPLX:
-			return m_cplx_const;
-		case SymbolType::REAL_ARRAY:
-			return m_real_array_const;
-		case SymbolType::INT_ARRAY:
-			return m_int_array_const;
-		case SymbolType::CPLX_ARRAY:
-			return m_cplx_array_const;
-		case SymbolType::BOOL:
-			return m_bool_const;
-		case SymbolType::STRING:
-			return m_str_const;
-		default:
-			return nullptr;
-	}
-	return nullptr;
-}
-
-
 /**
  * returns common type of a binary operation
- * @returns [ needs_cast?, first type cast, second type cast, operation result type ]
+ * @returns [ first type cast, second type cast, operation result type ]
  */
 std::tuple<t_astret, t_astret, t_astret>
 ZeroACAsm::GetCastSymType(t_astret term1, t_astret term2)
@@ -66,6 +39,16 @@ ZeroACAsm::GetCastSymType(t_astret term1, t_astret term2)
 	else if(ty1 == SymbolType::REAL && ty2 == SymbolType::INT)
 		return std::make_tuple(nullptr, term1, term1);
 
+	else if(ty1 == SymbolType::INT && ty2 == SymbolType::CPLX)
+		return std::make_tuple(term2, nullptr, term2);
+	else if(ty1 == SymbolType::CPLX && ty2 == SymbolType::INT)
+		return std::make_tuple(nullptr, term1, term1);
+
+	else if(ty1 == SymbolType::REAL && ty2 == SymbolType::CPLX)
+		return std::make_tuple(term2, nullptr, term2);
+	else if(ty1 == SymbolType::CPLX && ty2 == SymbolType::REAL)
+		return std::make_tuple(nullptr, term1, term1);
+
 	else if(ty1 == SymbolType::STRING && ty2 == SymbolType::REAL)
 		return std::make_tuple(nullptr, term1, term1);
 	else if(ty1 == SymbolType::STRING && ty2 == SymbolType::INT)
@@ -75,7 +58,7 @@ ZeroACAsm::GetCastSymType(t_astret term1, t_astret term2)
 	else if(ty1 == SymbolType::INT && ty2 == SymbolType::STRING)
 		return std::make_tuple(term2, nullptr, term2);
 
-	// no casts between vector/real operations
+	// no casts between real array/scalar operations
 	else if(ty1 == SymbolType::REAL_ARRAY && ty2 == SymbolType::REAL)
 		return std::make_tuple(nullptr, nullptr, term1);
 	else if(ty1 == SymbolType::REAL_ARRAY && ty2 == SymbolType::INT)
@@ -84,6 +67,30 @@ ZeroACAsm::GetCastSymType(t_astret term1, t_astret term2)
 		return std::make_tuple(nullptr, nullptr, term2);
 	else if(ty1 == SymbolType::INT && ty2 == SymbolType::REAL_ARRAY)
 		return std::make_tuple(m_real_const, nullptr, term2);
+
+	// no casts between int array/scalar operations
+	else if(ty1 == SymbolType::INT_ARRAY && ty2 == SymbolType::INT)
+		return std::make_tuple(nullptr, nullptr, term1);
+	else if(ty1 == SymbolType::INT_ARRAY && ty2 == SymbolType::REAL)
+		return std::make_tuple(nullptr, m_int_const, term1);
+	else if(ty1 == SymbolType::INT && ty2 == SymbolType::INT_ARRAY)
+		return std::make_tuple(nullptr, nullptr, term2);
+	else if(ty1 == SymbolType::REAL && ty2 == SymbolType::INT_ARRAY)
+		return std::make_tuple(m_int_const, nullptr, term2);
+
+	// no casts between complex array/scalar operations
+	else if(ty1 == SymbolType::CPLX_ARRAY && ty2 == SymbolType::CPLX)
+		return std::make_tuple(nullptr, nullptr, term1);
+	else if(ty1 == SymbolType::CPLX_ARRAY && ty2 == SymbolType::INT)
+		return std::make_tuple(nullptr, m_cplx_const, term1);
+	else if(ty1 == SymbolType::CPLX_ARRAY && ty2 == SymbolType::REAL)
+		return std::make_tuple(nullptr, m_cplx_const, term1);
+	else if(ty1 == SymbolType::CPLX && ty2 == SymbolType::CPLX_ARRAY)
+		return std::make_tuple(nullptr, nullptr, term2);
+	else if(ty1 == SymbolType::INT && ty2 == SymbolType::CPLX_ARRAY)
+		return std::make_tuple(m_cplx_const, nullptr, term2);
+	else if(ty1 == SymbolType::REAL && ty2 == SymbolType::CPLX_ARRAY)
+		return std::make_tuple(m_cplx_const, nullptr, term2);
 
 	return std::make_tuple(nullptr, term1, term1);
 }
@@ -100,57 +107,37 @@ void ZeroACAsm::CastTo(t_astret ty_to,
 		return;
 
 	t_vm_byte op = static_cast<t_vm_byte>(OpCode::NOP);
+	bool to_arr = false;
 
 	if(ty_to->ty == SymbolType::REAL)
-	{
 		op = static_cast<t_vm_byte>(OpCode::TOR);
-	}
 	else if(ty_to->ty == SymbolType::INT)
-	{
 		op = static_cast<t_vm_byte>(OpCode::TOI);
-	}
 	else if(ty_to->ty == SymbolType::CPLX)
-	{
 		op = static_cast<t_vm_byte>(OpCode::TOC);
-	}
 	else if(ty_to->ty == SymbolType::STRING)
-	{
 		op = static_cast<t_vm_byte>(OpCode::TOS);
-	}
 	else if(ty_to->ty == SymbolType::BOOL)
-	{
 		op = static_cast<t_vm_byte>(OpCode::TOB);
-	}
 	else if(ty_to->ty == SymbolType::REAL_ARRAY && allow_array_cast)
 	{
 		op = static_cast<t_vm_byte>(OpCode::TOREALARR);
-
-		// TODO: this doesn't work if "pos" is also given
-		// push vector length
-		t_vm_addr cols = static_cast<t_vm_addr>(ty_to->dims[0]);
-
-		m_ostr->put(static_cast<t_vm_byte>(OpCode::PUSH));
-		m_ostr->put(static_cast<t_vm_byte>(VMType::ADDR_MEM));
-		m_ostr->write(reinterpret_cast<const char*>(&cols),
-			vm_type_size<VMType::ADDR_MEM, false>);
+		to_arr = true;
 	}
 	else if(ty_to->ty == SymbolType::INT_ARRAY && allow_array_cast)
 	{
 		op = static_cast<t_vm_byte>(OpCode::TOINTARR);
-
-		// TODO: this doesn't work if "pos" is also given
-		// push vector length
-		t_vm_addr cols = static_cast<t_vm_addr>(ty_to->dims[0]);
-
-		m_ostr->put(static_cast<t_vm_byte>(OpCode::PUSH));
-		m_ostr->put(static_cast<t_vm_byte>(VMType::ADDR_MEM));
-		m_ostr->write(reinterpret_cast<const char*>(&cols),
-			vm_type_size<VMType::ADDR_MEM, false>);
+		to_arr = true;
 	}
 	else if(ty_to->ty == SymbolType::CPLX_ARRAY && allow_array_cast)
 	{
 		op = static_cast<t_vm_byte>(OpCode::TOCPLXARR);
+		to_arr = true;
+	}
 
+	// target type is an array
+	if(to_arr)
+	{
 		// TODO: this doesn't work if "pos" is also given
 		// push vector length
 		t_vm_addr cols = static_cast<t_vm_addr>(ty_to->dims[0]);
@@ -191,8 +178,7 @@ t_astret ZeroACAsm::visit(const ASTPlus* ast)
 	t_astret common_type = term1;
 
 	// cast if needed
-	auto [first_ty, second_ty, res_ty]
-		= GetCastSymType(term1, term2);
+	auto [first_ty, second_ty, res_ty] = GetCastSymType(term1, term2);
 	if(first_ty)
 		CastTo(first_ty, term1_pos);
 	if(second_ty)
@@ -221,8 +207,7 @@ t_astret ZeroACAsm::visit(const ASTMult* ast)
 	t_astret common_type = term1;
 
 	// cast if needed
-	auto [first_ty, second_ty, res_ty]
-		= GetCastSymType(term1, term2);
+	auto [first_ty, second_ty, res_ty] = GetCastSymType(term1, term2);
 	if(first_ty)
 		CastTo(first_ty, term1_pos);
 	if(second_ty)
@@ -251,8 +236,7 @@ t_astret ZeroACAsm::visit(const ASTMod* ast)
 	t_astret common_type = term1;
 
 	// cast if needed
-	auto [first_ty, second_ty, res_ty]
-		= GetCastSymType(term1, term2);
+	auto [first_ty, second_ty, res_ty] = GetCastSymType(term1, term2);
 	if(first_ty)
 		CastTo(first_ty, term1_pos);
 	if(second_ty)
@@ -278,8 +262,7 @@ t_astret ZeroACAsm::visit(const ASTPow* ast)
 	t_astret common_type = term1;
 
 	// cast if needed
-	auto [first_ty, second_ty, res_ty]
-		= GetCastSymType(term1, term2);
+	auto [first_ty, second_ty, res_ty] = GetCastSymType(term1, term2);
 	if(first_ty)
 		CastTo(first_ty, term1_pos);
 	if(second_ty)

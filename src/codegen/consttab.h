@@ -25,7 +25,7 @@ class ConstTab
 {
 public:
 	// possible constant types
-	using t_constval = std::variant<std::monostate, t_real, t_int, t_str>;
+	using t_constval = std::variant<std::monostate, t_real, t_int, /*t_cplx,*/ t_str>;
 
 
 public:

@@ -106,6 +106,7 @@ protected:
 	void PushCplxConst(const t_vm_cplx&);
 	void PushBoolConst(t_vm_bool);
 	void PushStrConst(const t_vm_str& str);
+	void PushVecSize(std::size_t size);
 	void PushRealVecConst(const std::vector<t_vm_real>& vec);
 	void PushIntVecConst(const std::vector<t_vm_int>& vec);
 	void PushCplxVecConst(const std::vector<t_vm_cplx>& vec);

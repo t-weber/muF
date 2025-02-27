@@ -38,6 +38,33 @@ t_astret ZeroACAsm::GetSym(const t_str& name) const
 }
 
 
+Symbol* ZeroACAsm::GetTypeConst(SymbolType ty) const
+{
+	switch(ty)
+	{
+		case SymbolType::REAL:
+			return m_real_const;
+		case SymbolType::INT:
+			return m_int_const;
+		case SymbolType::CPLX:
+			return m_cplx_const;
+		case SymbolType::REAL_ARRAY:
+			return m_real_array_const;
+		case SymbolType::INT_ARRAY:
+			return m_int_array_const;
+		case SymbolType::CPLX_ARRAY:
+			return m_cplx_array_const;
+		case SymbolType::BOOL:
+			return m_bool_const;
+		case SymbolType::STRING:
+			return m_str_const;
+		default:
+			return nullptr;
+	}
+	return nullptr;
+}
+
+
 /**
  * finds the size of the symbol for the stack frame
  */
@@ -320,6 +347,19 @@ void ZeroACAsm::PushStrConst(const t_vm_str& val)
 }
 
 
+/**
+ * push the number of elements in an array
+ */
+void ZeroACAsm::PushVecSize(std::size_t size)
+{
+	t_vm_addr num_elems = static_cast<t_vm_addr>(size);
+	m_ostr->put(static_cast<t_vm_byte>(OpCode::PUSH));
+	m_ostr->put(static_cast<t_vm_byte>(VMType::ADDR_MEM));
+	m_ostr->write(reinterpret_cast<const char*>(&num_elems),
+		vm_type_size<VMType::ADDR_MEM, false>);
+}
+
+
 void ZeroACAsm::PushRealVecConst(const std::vector<t_vm_real>& vec)
 {
 	// push elements
@@ -327,11 +367,7 @@ void ZeroACAsm::PushRealVecConst(const std::vector<t_vm_real>& vec)
 		PushRealConst(val);
 
 	// push number of elements
-	t_vm_addr num_elems = static_cast<t_vm_addr>(vec.size());
-	m_ostr->put(static_cast<t_vm_byte>(OpCode::PUSH));
-	m_ostr->put(static_cast<t_vm_byte>(VMType::ADDR_MEM));
-	m_ostr->write(reinterpret_cast<const char*>(&num_elems),
-		vm_type_size<VMType::ADDR_MEM, false>);
+	PushVecSize(vec.size());
 
 	m_ostr->put(static_cast<t_vm_byte>(OpCode::MAKEREALARR));
 }
@@ -344,11 +380,7 @@ void ZeroACAsm::PushIntVecConst(const std::vector<t_vm_int>& vec)
 		PushIntConst(val);
 
 	// push number of elements
-	t_vm_addr num_elems = static_cast<t_vm_addr>(vec.size());
-	m_ostr->put(static_cast<t_vm_byte>(OpCode::PUSH));
-	m_ostr->put(static_cast<t_vm_byte>(VMType::ADDR_MEM));
-	m_ostr->write(reinterpret_cast<const char*>(&num_elems),
-		vm_type_size<VMType::ADDR_MEM, false>);
+	PushVecSize(vec.size());
 
 	m_ostr->put(static_cast<t_vm_byte>(OpCode::MAKEINTARR));
 }
@@ -361,11 +393,7 @@ void ZeroACAsm::PushCplxVecConst(const std::vector<t_vm_cplx>& vec)
 		PushCplxConst(val);
 
 	// push number of elements
-	t_vm_addr num_elems = static_cast<t_vm_addr>(vec.size());
-	m_ostr->put(static_cast<t_vm_byte>(OpCode::PUSH));
-	m_ostr->put(static_cast<t_vm_byte>(VMType::ADDR_MEM));
-	m_ostr->write(reinterpret_cast<const char*>(&num_elems),
-		vm_type_size<VMType::ADDR_MEM, false>);
+	PushVecSize(vec.size());
 
 	m_ostr->put(static_cast<t_vm_byte>(OpCode::MAKECPLXARR));
 }
