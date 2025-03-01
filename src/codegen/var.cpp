@@ -77,11 +77,11 @@ std::size_t ZeroACAsm::GetSymSize(const Symbol* sym) const
 	else if(sym->ty == SymbolType::CPLX)
 		return vm_type_size<VMType::CPLX, true>;
 	else if(sym->ty == SymbolType::REAL_ARRAY)
-		return get_vm_vec_real_size(sym->dims[0], true, true);
+		return get_vm_vec_real_size(sym->get_total_size(), true, true);
 	else if(sym->ty == SymbolType::INT_ARRAY)
-		return get_vm_vec_int_size(sym->dims[0], true, true);
+		return get_vm_vec_int_size(sym->get_total_size(), true, true);
 	else if(sym->ty == SymbolType::CPLX_ARRAY)
-		return get_vm_vec_cplx_size(sym->dims[0], true, true);
+		return get_vm_vec_cplx_size(sym->get_total_size(), true, true);
 	else if(sym->ty == SymbolType::BOOL)
 		return vm_type_size<VMType::BOOL, true>;
 	else if(sym->ty == SymbolType::STRING)
@@ -164,19 +164,19 @@ t_astret ZeroACAsm::visit(const ASTVarDecl* ast)
 			}
 			else if(sym->ty == SymbolType::REAL_ARRAY)
 			{
-				std::vector<t_vm_real> vec(sym->dims[0]);
+				std::vector<t_vm_real> vec(sym->get_total_size());
 				PushRealVecConst(vec);
 				AssignVar(sym);
 			}
 			else if(sym->ty == SymbolType::INT_ARRAY)
 			{
-				std::vector<t_vm_int> vec(sym->dims[0]);
+				std::vector<t_vm_int> vec(sym->get_total_size());
 				PushIntVecConst(vec);
 				AssignVar(sym);
 			}
 			else if(sym->ty == SymbolType::CPLX_ARRAY)
 			{
-				std::vector<t_vm_cplx> vec(sym->dims[0]);
+				std::vector<t_vm_cplx> vec(sym->get_total_size());
 				PushCplxVecConst(vec);
 				AssignVar(sym);
 			}
@@ -436,5 +436,12 @@ t_astret ZeroACAsm::visit(const ASTStrConst* ast)
 	const t_str& val = ast->GetVal();
 	PushStrConst(val);
 	return m_str_const;
+}
+
+
+t_astret ZeroACAsm::visit(const ASTNumConstList<t_int>*)
+{
+	// directly handled in grammar
+	return nullptr;
 }
 // ----------------------------------------------------------------------------

@@ -12,6 +12,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <numeric>
 #include <optional>
 #include <iostream>
 
@@ -73,6 +74,18 @@ struct Symbol
 
 	mutable std::size_t refcnt{0};    // number of reference to this symbol
 
+	/**
+	 * get total element count for arrays
+	 */
+	std::size_t get_total_size(std::size_t start_dim = 0) const
+	{
+		return std::accumulate(std::next(dims.begin(), start_dim), dims.end(), 1,
+			[](std::size_t i, std::size_t j) -> std::size_t
+		{
+			return i * j;
+		});
+	}
+
 	// get the corresponding data type name
 	static t_str get_type_name(SymbolType ty);
 
@@ -107,7 +120,6 @@ public:
 		const std::vector<SymbolType>* multirettypes = nullptr);
 
 	Symbol* FindSymbol(const t_str& name);
-
 	const Symbol* FindSymbol(const t_str& name) const;
 
 	std::vector<const Symbol*> FindSymbolsWithSameScope(

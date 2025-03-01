@@ -21,6 +21,7 @@ void Grammar::CreateGrammar()
 	statement = std::make_shared<lalr1::NonTerminal>(STATEMENT, "statement");
 	statements = std::make_shared<lalr1::NonTerminal>(STATEMENTS, "statements");
 	variables = std::make_shared<lalr1::NonTerminal>(VARIABLES, "variables");
+	int_constants = std::make_shared<lalr1::NonTerminal>(INT_CONSTANTS, "int_constants");
 	full_argumentlist = std::make_shared<lalr1::NonTerminal>(FULL_ARGUMENTLIST, "full_argumentlist");
 	argumentlist = std::make_shared<lalr1::NonTerminal>(ARGUMENTLIST, "argumentlist");
 	identlist = std::make_shared<lalr1::NonTerminal>(IDENTLIST, "identlist");
@@ -29,6 +30,7 @@ void Grammar::CreateGrammar()
 	typedecl = std::make_shared<lalr1::NonTerminal>(TYPEDECL, "typedecl");
 	opt_assign = std::make_shared<lalr1::NonTerminal>(OPT_ASSIGN, "opt_assign");
 	var_range = std::make_shared<lalr1::NonTerminal>(VAR_RANGE, "var_range");
+	cases = std::make_shared<lalr1::NonTerminal>(CASES, "cases");
 
 	// terminals
 	op_assign = std::make_shared<lalr1::Terminal>('=', "=");
@@ -77,21 +79,30 @@ void Grammar::CreateGrammar()
 	keyword_if = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::IF), "if");
 	keyword_then = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::THEN), "then");
 	keyword_else = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::ELSE), "else");
+	keyword_end = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::END), "end");
+
+	keyword_select = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::SELECT), "select");
+	keyword_case = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::CASE), "case");
+	keyword_default = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::DEFAULT), "default");
+
 	keyword_while = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::WHILE), "while");
 	keyword_do = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::DO), "do");
+	keyword_next = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::NEXT), "next");
+	keyword_break = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::BREAK), "break");
+
 	keyword_func = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::FUNC), "function");
 	keyword_procedure = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::PROC), "procedure");
-	keyword_program = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::PROGRAM), "program");
 	keyword_ret = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::RET), "return");
+	keyword_program = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::PROGRAM), "program");
+
 	keyword_result = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::RESULT), "result");
 	keyword_results = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::RESULTS), "results");
-	keyword_next = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::NEXT), "next");
-	keyword_end = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::END), "end");
-	keyword_break = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::BREAK), "break");
+
 	keyword_assign = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::ASSIGN), "assign");
+	keyword_dim = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::DIM), "dimension");
+
 	keyword_goto = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::GOTO), "goto");
 	keyword_comefrom = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::COMEFROM), "comefrom");
-	keyword_dim = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::DIM), "dimension");
 
 	// for the if/else s/r conflict shift "else"
 	// see: https://www.gnu.org/software/bison/manual/html_node/Non-Operators.html
@@ -220,10 +231,9 @@ void Grammar::CreateGrammar()
 
 		auto varident = std::dynamic_pointer_cast<ASTStrConst>(args[0]);
 		const t_str& name = varident->GetVal();
-		t_str symName = m_context.AddScopedSymbol(name)->scoped_name;
 
 		auto lst = std::dynamic_pointer_cast<ASTVarDecl>(args[2]);
-		lst->AddVariable(symName);
+		lst->AddVariable(m_context.AddScopedSymbol(name)->scoped_name);
 		return lst;
 	}));
 #endif
@@ -242,10 +252,9 @@ void Grammar::CreateGrammar()
 
 		auto ident = std::dynamic_pointer_cast<ASTStrConst>(args[0]);
 		const t_str& name = ident->GetVal();
-		t_str symName = m_context.AddScopedSymbol(name)->scoped_name;
 
 		auto lst = std::make_shared<ASTVarDecl>();
-		lst->AddVariable(symName);
+		lst->AddVariable(m_context.AddScopedSymbol(name)->scoped_name);
 		return lst;
 	}));
 #endif
@@ -264,12 +273,57 @@ void Grammar::CreateGrammar()
 
 		auto ident = std::dynamic_pointer_cast<ASTStrConst>(args[0]);
 		const t_str& name = ident->GetVal();
-		t_str symName = m_context.AddScopedSymbol(name)->scoped_name;
 
 		auto term = std::dynamic_pointer_cast<AST>(args[2]);
 
 		auto lst = std::make_shared<ASTVarDecl>(std::make_shared<ASTAssign>(name, term));
-		lst->AddVariable(symName);
+		lst->AddVariable(m_context.AddScopedSymbol(name)->scoped_name);
+		return lst;
+	}));
+#endif
+	++semanticindex;
+	// --------------------------------------------------------------------------------
+
+	// --------------------------------------------------------------------------------
+	// constants
+	// --------------------------------------------------------------------------------
+	// several int constants
+#ifdef CREATE_PRODUCTION_RULES
+	int_constants->AddRule({ sym_int, comma, int_constants }, semanticindex);
+#endif
+#ifdef CREATE_SEMANTIC_RULES
+	rules.emplace(std::make_pair(semanticindex,
+	[](bool full_match, const lalr1::t_semanticargs& args, [[maybe_unused]] lalr1::t_astbaseptr retval) -> lalr1::t_astbaseptr
+	{
+		if(!full_match)
+			return nullptr;
+
+		auto int_node = std::dynamic_pointer_cast<ASTNumConst<t_int>>(args[0]);
+		const t_int val = int_node->GetVal();
+
+		auto lst = std::dynamic_pointer_cast<ASTNumConstList<t_int>>(args[2]);
+		lst->AddValue(val);
+		return lst;
+	}));
+#endif
+	++semanticindex;
+
+	// a single int constant
+#ifdef CREATE_PRODUCTION_RULES
+	int_constants->AddRule({ sym_int }, semanticindex);
+#endif
+#ifdef CREATE_SEMANTIC_RULES
+	rules.emplace(std::make_pair(semanticindex,
+	[](bool full_match, const lalr1::t_semanticargs& args, [[maybe_unused]] lalr1::t_astbaseptr retval) -> lalr1::t_astbaseptr
+	{
+		if(!full_match)
+			return nullptr;
+
+		auto int_node = std::dynamic_pointer_cast<ASTNumConst<t_int>>(args[0]);
+		const t_int val = int_node->GetVal();
+
+		auto lst = std::make_shared<ASTNumConstList<t_int>>();
+		lst->AddValue(val);
 		return lst;
 	}));
 #endif
@@ -473,7 +527,9 @@ void Grammar::CreateGrammar()
 
 	// int array declaration
 #ifdef CREATE_PRODUCTION_RULES
-	statement->AddRule({ int_decl, comma, keyword_dim, bracket_open, sym_int, bracket_close, type_sep, variables/*, stmt_end*/ }, semanticindex);
+	statement->AddRule({ int_decl, comma,
+		keyword_dim, bracket_open, int_constants, bracket_close,
+		type_sep, variables/*, stmt_end*/ }, semanticindex);
 #endif
 #ifdef CREATE_SEMANTIC_RULES
 	rules.emplace(std::make_pair(semanticindex,
@@ -481,11 +537,14 @@ void Grammar::CreateGrammar()
 	{
 		if(args.size() == 6)
 		{
-			auto dim_node = std::dynamic_pointer_cast<ASTNumConst<t_int>>(args[4]);
-			const t_int dim = dim_node->GetVal();
+			auto dim_node = std::dynamic_pointer_cast<ASTNumConstList<t_int>>(args[4]);
+			std::vector<std::size_t> dims;
+			dims.reserve(dim_node->GetSize());
+			for(t_int dim : dim_node->GetValues())
+				dims.push_back(static_cast<std::size_t>(dim));
 
 			m_context.SetSymType(SymbolType::INT_ARRAY);
-			m_context.SetSymDims(std::size_t(dim));
+			m_context.SetSymDims(dims);
 		}
 
 		if(!full_match)
@@ -497,7 +556,9 @@ void Grammar::CreateGrammar()
 
 	// real array declaration
 #ifdef CREATE_PRODUCTION_RULES
-	statement->AddRule({ real_decl, comma, keyword_dim, bracket_open, sym_int, bracket_close, type_sep, variables/*, stmt_end*/ }, semanticindex);
+	statement->AddRule({ real_decl, comma,
+		keyword_dim, bracket_open, int_constants, bracket_close,
+		type_sep, variables/*, stmt_end*/ }, semanticindex);
 #endif
 #ifdef CREATE_SEMANTIC_RULES
 	rules.emplace(std::make_pair(semanticindex,
@@ -505,11 +566,15 @@ void Grammar::CreateGrammar()
 	{
 		if(args.size() == 6)
 		{
-			auto dim_node = std::dynamic_pointer_cast<ASTNumConst<t_int>>(args[4]);
-			const t_int dim = dim_node->GetVal();
+			auto dim_node = std::dynamic_pointer_cast<ASTNumConstList<t_int>>(args[4]);
+			std::vector<std::size_t> dims;
+			dims.reserve(dim_node->GetSize());
+			for(t_int dim : dim_node->GetValues())
+				dims.push_back(static_cast<std::size_t>(dim));
+
 
 			m_context.SetSymType(SymbolType::REAL_ARRAY);
-			m_context.SetSymDims(std::size_t(dim));
+			m_context.SetSymDims(dims);
 		}
 
 		if(!full_match)
@@ -521,7 +586,9 @@ void Grammar::CreateGrammar()
 
 	// complex array declaration
 #ifdef CREATE_PRODUCTION_RULES
-	statement->AddRule({ cplx_decl, comma, keyword_dim, bracket_open, sym_int, bracket_close, type_sep, variables/*, stmt_end*/ }, semanticindex);
+	statement->AddRule({ cplx_decl, comma,
+		keyword_dim, bracket_open, sym_int, bracket_close,
+		type_sep, variables/*, stmt_end*/ }, semanticindex);
 #endif
 #ifdef CREATE_SEMANTIC_RULES
 	rules.emplace(std::make_pair(semanticindex,
@@ -529,11 +596,14 @@ void Grammar::CreateGrammar()
 	{
 		if(args.size() == 6)
 		{
-			auto dim_node = std::dynamic_pointer_cast<ASTNumConst<t_int>>(args[4]);
-			const t_int dim = dim_node->GetVal();
+			auto dim_node = std::dynamic_pointer_cast<ASTNumConstList<t_int>>(args[4]);
+			std::vector<std::size_t> dims;
+			dims.reserve(dim_node->GetSize());
+			for(t_int dim : dim_node->GetValues())
+				dims.push_back(static_cast<std::size_t>(dim));
 
 			m_context.SetSymType(SymbolType::CPLX_ARRAY);
-			m_context.SetSymDims(std::size_t(dim));
+			m_context.SetSymDims(dims);
 		}
 
 		if(!full_match)
@@ -554,7 +624,7 @@ void Grammar::CreateGrammar()
 		if(args.size() == 2)
 		{
 			m_context.SetSymType(SymbolType::STRING);
-			m_context.SetSymDims(std::size_t(DEFAULT_STRING_SIZE));
+			m_context.SetSymDim(std::size_t(DEFAULT_STRING_SIZE));
 		}
 
 		if(!full_match)
@@ -578,7 +648,7 @@ void Grammar::CreateGrammar()
 			const t_int dim = dim_node->GetVal();
 
 			m_context.SetSymType(SymbolType::STRING);
-			m_context.SetSymDims(std::size_t(dim));
+			m_context.SetSymDim(std::size_t(dim));
 		}
 
 		if(!full_match)
@@ -598,6 +668,7 @@ void Grammar::CreateGrammar()
 	{
 		if(!full_match)
 			return nullptr;
+
 		auto cond = std::dynamic_pointer_cast<AST>(args[1]);
 		auto if_stmt = std::dynamic_pointer_cast<AST>(args[3]);
 		return std::make_shared<ASTCond>(cond, if_stmt);
@@ -615,10 +686,93 @@ void Grammar::CreateGrammar()
 	{
 		if(!full_match)
 			return nullptr;
+
 		auto cond = std::dynamic_pointer_cast<AST>(args[1]);
 		auto if_stmt = std::dynamic_pointer_cast<AST>(args[3]);
 		auto else_stmt = std::dynamic_pointer_cast<AST>(args[5]);
 		return std::make_shared<ASTCond>(cond, if_stmt, else_stmt);
+	}));
+#endif
+	++semanticindex;
+
+	// select case
+#ifdef CREATE_PRODUCTION_RULES
+	statement->AddRule({ keyword_select, keyword_case,
+		expression /*2*/, cases /*3*/,
+		keyword_end, keyword_select }, semanticindex);
+#endif
+#ifdef CREATE_SEMANTIC_RULES
+	rules.emplace(std::make_pair(semanticindex,
+	[](bool full_match, const lalr1::t_semanticargs& args, [[maybe_unused]] lalr1::t_astbaseptr retval) -> lalr1::t_astbaseptr
+	{
+		if(!full_match)
+			return nullptr;
+
+		auto expr = std::dynamic_pointer_cast<AST>(args[2]);
+		auto cases = std::dynamic_pointer_cast<ASTCases>(args[3]);
+		cases->SetExpr(expr);
+		return cases;
+	}));
+#endif
+	++semanticindex;
+
+	// cases
+#ifdef CREATE_PRODUCTION_RULES
+	cases->AddRule({ keyword_case, bracket_open, expression /*2*/, bracket_close,
+		statements /*4*/, cases /*5*/ }, semanticindex);
+#endif
+#ifdef CREATE_SEMANTIC_RULES
+	rules.emplace(std::make_pair(semanticindex,
+	[](bool full_match, const lalr1::t_semanticargs& args, [[maybe_unused]] lalr1::t_astbaseptr retval) -> lalr1::t_astbaseptr
+	{
+		if(!full_match)
+			return nullptr;
+
+		auto cond = std::dynamic_pointer_cast<AST>(args[2]);
+		auto stmts = std::dynamic_pointer_cast<AST>(args[4]);
+		auto cases = std::dynamic_pointer_cast<ASTCases>(args[5]);
+		cases->AddCase(cond, stmts);
+		return cases;
+	}));
+#endif
+	++semanticindex;
+
+	// a single case
+#ifdef CREATE_PRODUCTION_RULES
+	cases->AddRule({ keyword_case, bracket_open, expression /*2*/, bracket_close,
+		statements /*4*/ }, semanticindex);
+#endif
+#ifdef CREATE_SEMANTIC_RULES
+	rules.emplace(std::make_pair(semanticindex,
+	[](bool full_match, const lalr1::t_semanticargs& args, [[maybe_unused]] lalr1::t_astbaseptr retval) -> lalr1::t_astbaseptr
+	{
+		if(!full_match)
+			return nullptr;
+
+		auto cond = std::dynamic_pointer_cast<AST>(args[2]);
+		auto stmts = std::dynamic_pointer_cast<AST>(args[4]);
+		auto cases = std::make_shared<ASTCases>();
+		cases->AddCase(cond, stmts);
+		return cases;
+	}));
+#endif
+	++semanticindex;
+
+	// default case
+#ifdef CREATE_PRODUCTION_RULES
+	cases->AddRule({ keyword_case, keyword_default, statements }, semanticindex);
+#endif
+#ifdef CREATE_SEMANTIC_RULES
+	rules.emplace(std::make_pair(semanticindex,
+	[](bool full_match, const lalr1::t_semanticargs& args, [[maybe_unused]] lalr1::t_astbaseptr retval) -> lalr1::t_astbaseptr
+	{
+		if(!full_match)
+			return nullptr;
+
+		auto stmts = std::dynamic_pointer_cast<AST>(args[2]);
+		auto cases = std::make_shared<ASTCases>();
+		cases->SetDefaultCase(stmts);
+		return cases;
 	}));
 #endif
 	++semanticindex;
@@ -633,6 +787,7 @@ void Grammar::CreateGrammar()
 	{
 		if(!full_match)
 			return nullptr;
+
 		auto cond = std::dynamic_pointer_cast<AST>(args[3]);
 		auto stmt = std::dynamic_pointer_cast<AST>(args[5]);
 		return std::make_shared<ASTLoop>(cond, stmt);
@@ -834,7 +989,8 @@ void Grammar::CreateGrammar()
 
 	// int array declaration
 #ifdef CREATE_PRODUCTION_RULES
-	typedecl->AddRule({ int_decl, /*comma,*/ keyword_dim, bracket_open, sym_int, bracket_close }, semanticindex);
+	typedecl->AddRule({ int_decl, /*comma,*/
+		keyword_dim, bracket_open, int_constants, bracket_close }, semanticindex);
 #endif
 #ifdef CREATE_SEMANTIC_RULES
 	rules.emplace(std::make_pair(semanticindex,
@@ -843,17 +999,21 @@ void Grammar::CreateGrammar()
 		if(!full_match)
 			return nullptr;
 
-		auto dim_node = std::dynamic_pointer_cast<ASTNumConst<t_int>>(args[3]);
-		const t_int dim = dim_node->GetVal();
-		return std::make_shared<ASTTypeDecl>(SymbolType::INT_ARRAY,
-			std::vector<std::size_t>{ std::size_t(dim) });
+		auto dim_node = std::dynamic_pointer_cast<ASTNumConstList<t_int>>(args[3]);
+		std::vector<std::size_t> dims;
+		dims.reserve(dim_node->GetSize());
+		for(t_int dim : dim_node->GetValues())
+			dims.push_back(static_cast<std::size_t>(dim));
+
+		return std::make_shared<ASTTypeDecl>(SymbolType::INT_ARRAY, dims);
 	}));
 #endif
 	++semanticindex;
 
 	// real array declaration
 #ifdef CREATE_PRODUCTION_RULES
-	typedecl->AddRule({ real_decl, /*comma,*/ keyword_dim, bracket_open, sym_int, bracket_close }, semanticindex);
+	typedecl->AddRule({ real_decl, /*comma,*/
+		keyword_dim, bracket_open, sym_int, bracket_close }, semanticindex);
 #endif
 #ifdef CREATE_SEMANTIC_RULES
 	rules.emplace(std::make_pair(semanticindex,
@@ -862,17 +1022,21 @@ void Grammar::CreateGrammar()
 		if(!full_match)
 			return nullptr;
 
-		auto dim_node = std::dynamic_pointer_cast<ASTNumConst<t_int>>(args[3]);
-		const t_int dim = dim_node->GetVal();
-		return std::make_shared<ASTTypeDecl>(SymbolType::REAL_ARRAY,
-			std::vector<std::size_t>{ std::size_t(dim) });
+		auto dim_node = std::dynamic_pointer_cast<ASTNumConstList<t_int>>(args[3]);
+		std::vector<std::size_t> dims;
+		dims.reserve(dim_node->GetSize());
+		for(t_int dim : dim_node->GetValues())
+			dims.push_back(static_cast<std::size_t>(dim));
+
+		return std::make_shared<ASTTypeDecl>(SymbolType::REAL_ARRAY, dims);
 	}));
 #endif
 	++semanticindex;
 
 	// complex array declaration
 #ifdef CREATE_PRODUCTION_RULES
-	typedecl->AddRule({ cplx_decl, /*comma,*/ keyword_dim, bracket_open, sym_int, bracket_close }, semanticindex);
+	typedecl->AddRule({ cplx_decl, /*comma,*/
+		keyword_dim, bracket_open, sym_int, bracket_close }, semanticindex);
 #endif
 #ifdef CREATE_SEMANTIC_RULES
 	rules.emplace(std::make_pair(semanticindex,
@@ -881,10 +1045,13 @@ void Grammar::CreateGrammar()
 		if(!full_match)
 			return nullptr;
 
-		auto dim_node = std::dynamic_pointer_cast<ASTNumConst<t_int>>(args[3]);
-		const t_int dim = dim_node->GetVal();
-		return std::make_shared<ASTTypeDecl>(SymbolType::CPLX_ARRAY,
-			std::vector<std::size_t>{ std::size_t(dim) });
+		auto dim_node = std::dynamic_pointer_cast<ASTNumConstList<t_int>>(args[3]);
+		std::vector<std::size_t> dims;
+		dims.reserve(dim_node->GetSize());
+		for(t_int dim : dim_node->GetValues())
+			dims.push_back(static_cast<std::size_t>(dim));
+
+		return std::make_shared<ASTTypeDecl>(SymbolType::CPLX_ARRAY, dims);
 	}));
 #endif
 	++semanticindex;
@@ -1690,7 +1857,7 @@ void Grammar::CreateGrammar()
 	// array access and assignment
 #ifdef CREATE_PRODUCTION_RULES
 	expression->AddRule({ expression /*0*/, array_begin,
-		expression /*2*/, array_end,
+		expressions /*2*/, array_end,
 		opt_assign /*4*/ }, semanticindex);
 #endif
 #ifdef CREATE_SEMANTIC_RULES
@@ -1701,12 +1868,12 @@ void Grammar::CreateGrammar()
 			return nullptr;
 
 		auto term = std::dynamic_pointer_cast<AST>(args[0]);
-		auto idx = std::dynamic_pointer_cast<AST>(args[2]);
+		auto indices = std::dynamic_pointer_cast<AST>(args[2]);
 
 		if(!args[4])
 		{
 			// array access into an array expression
-			return std::make_shared<ASTArrayAccess>(term, idx);
+			return std::make_shared<ASTArrayAccess>(term, indices);
 		}
 		else
 		{
@@ -1721,7 +1888,7 @@ void Grammar::CreateGrammar()
 				auto opt_term = std::dynamic_pointer_cast<AST>(args[4]);
 				auto var = std::static_pointer_cast<ASTVar>(term);
 				return std::make_shared<ASTArrayAssign>(
-					var->GetIdent(), opt_term, idx);
+					var->GetIdent(), opt_term, indices);
 			}
 		}
 
@@ -1750,8 +1917,7 @@ void Grammar::CreateGrammar()
 		if(!args[6])
 		{
 			// array access into an array expression
-			return std::make_shared<ASTArrayAccess>(
-				term, idx1, idx2, nullptr, nullptr, true);
+			return std::make_shared<ASTArrayAccess>(term, idx1, idx2, true);
 		}
 		else
 		{
@@ -1766,8 +1932,7 @@ void Grammar::CreateGrammar()
 				auto opt_term = std::dynamic_pointer_cast<AST>(args[6]);
 				auto var = std::static_pointer_cast<ASTVar>(term);
 				return std::make_shared<ASTArrayAssign>(
-					var->GetIdent(), opt_term,
-					idx1, idx2, nullptr, nullptr, true);
+					var->GetIdent(), opt_term, idx1, idx2, true);
 			}
 		}
 

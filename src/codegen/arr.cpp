@@ -47,19 +47,48 @@ t_astret ZeroACAsm::visit(const ASTArrayAccess* ast)
 	t_astret term = ast->GetTerm()->accept(this);
 
 	bool ranged12 = ast->IsRanged12();
-	bool ranged34 = ast->IsRanged34();
-
-	const ASTPtr num1 = ast->GetNum1();
-	const ASTPtr num2 = ast->GetNum2();
-	const ASTPtr num3 = ast->GetNum3();
-	const ASTPtr num4 = ast->GetNum4();
+	const auto num1 = ast->GetNum1();
+	const auto num2 = ast->GetNum2();
 
 	// single-element array access
-	if(!ranged12 && !ranged34 && num1 && !num2 && !num3 && !num4)
+	if(!ranged12 && num1 && !num2)
 	{
-		t_astret num1sym = num1->accept(this);
-		if(num1sym->ty != SymbolType::INT)
-			CastTo(m_int_const);
+		// multi-dimensional array
+		if(num1->type() == ASTType::ExprList)
+		{
+			auto indices1 = std::dynamic_pointer_cast<ASTExprList>(num1)->GetList();
+			if(term->dims.size() != indices1.size())
+				throw std::runtime_error("ASTArrayAccess: Dimension mismatch.");
+
+			std::size_t cur_dim = 0;
+			for(const auto& num1_comp : indices1)
+			{
+				t_astret num1sym = num1_comp->accept(this);
+				if(num1sym->ty != SymbolType::INT)
+					CastTo(m_int_const);
+
+				// multiply with the rest of the array dimensions
+				t_vm_int dims_rest = t_vm_int(term->get_total_size(cur_dim + 1));
+				if(dims_rest > 1)
+				{
+					PushIntConst(dims_rest);
+					m_ostr->put(static_cast<t_vm_byte>(OpCode::MUL));
+				}
+
+				++cur_dim;
+			}
+
+			// add indices
+			for(std::size_t i = 0; i < cur_dim - 1; ++i)
+				m_ostr->put(static_cast<t_vm_byte>(OpCode::ADD));
+		}
+		// one-dimensional array
+		else
+		{
+			t_astret num1sym = num1->accept(this);
+			if(num1sym->ty != SymbolType::INT)
+				CastTo(m_int_const);
+		}
 
 		m_ostr->put(static_cast<t_vm_byte>(OpCode::RDARR));
 
@@ -70,14 +99,23 @@ t_astret ZeroACAsm::visit(const ASTArrayAccess* ast)
 	}
 
 	// ranged array access
-	else if(ranged12 && !ranged34 && num1 && num2 && !num3 && !num4)
+	else if(ranged12 && num1 && num2)
 	{
-		t_astret num1sym = num1->accept(this);
-		if(num1sym->ty != SymbolType::INT)
-			CastTo(m_int_const);
-		t_astret num2sym = num2->accept(this);
-		if(num2sym->ty != SymbolType::INT)
-			CastTo(m_int_const);
+		// TODO: multi-dimensional array
+		if(num1->type() == ASTType::ExprList || num2->type() == ASTType::ExprList)
+		{
+			throw std::runtime_error("ASTArrayAccess: Ranged multi-dimensional array access not yet supported.");
+		}
+		// one-dimensional array
+		else
+		{
+			t_astret num1sym = num1->accept(this);
+			if(num1sym->ty != SymbolType::INT)
+				CastTo(m_int_const);
+			t_astret num2sym = num2->accept(this);
+			if(num2sym->ty != SymbolType::INT)
+				CastTo(m_int_const);
+		}
 
 		m_ostr->put(static_cast<t_vm_byte>(OpCode::RDARRR));
 
@@ -112,15 +150,11 @@ t_astret ZeroACAsm::visit(const ASTArrayAssign* ast)
 	t_astret expr = ast->GetExpr()->accept(this);
 
 	bool ranged12 = ast->IsRanged12();
-	bool ranged34 = ast->IsRanged34();
-
-	const ASTPtr num1 = ast->GetNum1();
-	const ASTPtr num2 = ast->GetNum2();
-	const ASTPtr num3 = ast->GetNum3();
-	const ASTPtr num4 = ast->GetNum4();
+	const auto num1 = ast->GetNum1();
+	const auto num2 = ast->GetNum2();
 
 	// single-element array assignment
-	if(!ranged12 && !ranged34 && num1 && !num2 && !num3 && !num4)
+	if(!ranged12 && num1 && !num2)
 	{
 		Symbol *elem_sym_type = nullptr;
 		if(auto [arr_ty, arr_elem_ty] = GetArrayTypeConst(sym->ty); arr_elem_ty)
@@ -132,22 +166,63 @@ t_astret ZeroACAsm::visit(const ASTArrayAssign* ast)
 		if(expr->ty != sym->ty)
 			CastTo(elem_sym_type);
 
-		t_astret num1sym = num1->accept(this);
-		if(num1sym->ty != SymbolType::INT)
-			CastTo(m_int_const);
+		// multi-dimensional array
+		if(num1->type() == ASTType::ExprList)
+		{
+			auto indices1 = std::dynamic_pointer_cast<ASTExprList>(num1)->GetList();
+			if(sym->dims.size() != indices1.size())
+				throw std::runtime_error("ASTArrayAssign: Dimension mismatch.");
+
+			std::size_t cur_dim = 0;
+			for(const auto& num1_comp : indices1)
+			{
+				t_astret num1sym = num1_comp->accept(this);
+				if(num1sym->ty != SymbolType::INT)
+					CastTo(m_int_const);
+
+				// multiply with the rest of the array dimensions
+				t_vm_int dims_rest = t_vm_int(sym->get_total_size(cur_dim + 1));
+				if(dims_rest > 1)
+				{
+					PushIntConst(dims_rest);
+					m_ostr->put(static_cast<t_vm_byte>(OpCode::MUL));
+				}
+
+				++cur_dim;
+			}
+
+			// add indices
+			for(std::size_t i = 0; i < cur_dim - 1; ++i)
+				m_ostr->put(static_cast<t_vm_byte>(OpCode::ADD));
+		}
+		// one-dimensional array
+		else
+		{
+			t_astret num1sym = num1->accept(this);
+			if(num1sym->ty != SymbolType::INT)
+				CastTo(m_int_const);
+		}
 
 		m_ostr->put(static_cast<t_vm_byte>(OpCode::WRARR));
 	}
 
 	// ranged array assignment
-	else if(ranged12 && !ranged34 && num1 && num2 && !num3 && !num4)
+	else if(ranged12 && num1 && num2)
 	{
-		t_astret num1sym = num1->accept(this);
-		if(num1sym->ty != SymbolType::INT)
-			CastTo(m_int_const);
-		t_astret num2sym = num2->accept(this);
-		if(num2sym->ty != SymbolType::INT)
-			CastTo(m_int_const);
+		// TODO: multi-dimensional array
+		if(num1->type() == ASTType::ExprList || num2->type() == ASTType::ExprList)
+		{
+			throw std::runtime_error("ASTArrayAssign: Ranged multi-dimensional array access not yet supported.");
+		}
+		else
+		{
+			t_astret num1sym = num1->accept(this);
+			if(num1sym->ty != SymbolType::INT)
+				CastTo(m_int_const);
+			t_astret num2sym = num2->accept(this);
+			if(num2sym->ty != SymbolType::INT)
+				CastTo(m_int_const);
+		}
 
 		m_ostr->put(static_cast<t_vm_byte>(OpCode::WRARRR));
 	}

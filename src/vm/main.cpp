@@ -139,7 +139,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
 				<< std::endl;
 			std::cout << "Internal data type lengths:"
 				<< " real: " << sizeof(t_vm_real)*8 << " bits,"
-				<< " int: " << sizeof(t_vm_int)*8 << " bits."
+				<< " integer: " << sizeof(t_vm_int)*8 << " bits."
 				<< " address: " << sizeof(t_vm_addr)*8 << " bits."
 				<< std::endl;
 

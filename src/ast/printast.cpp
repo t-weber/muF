@@ -283,7 +283,6 @@ t_astret ASTPrinter::visit(const ASTArrayAccess* ast)
 {
 	(*m_ostr) << "<ArrayAccess"
 		<< " is_range_12=\"" << ast->IsRanged12() << "\""
-		<< " is_range_34=\"" << ast->IsRanged34() << "\""
 		<< ">\n";
 
 	(*m_ostr) << "<idx1>\n";
@@ -295,20 +294,6 @@ t_astret ASTPrinter::visit(const ASTArrayAccess* ast)
 		(*m_ostr) << "<idx2>\n";
 		ast->GetNum2()->accept(this);
 		(*m_ostr) << "</idx2>\n";
-	}
-
-	if(ast->GetNum3())
-	{
-		(*m_ostr) << "<idx3>\n";
-		ast->GetNum3()->accept(this);
-		(*m_ostr) << "</idx3>\n";
-	}
-
-	if(ast->GetNum4())
-	{
-		(*m_ostr) << "<idx4>\n";
-		ast->GetNum4()->accept(this);
-		(*m_ostr) << "</idx4>\n";
 	}
 
 	(*m_ostr) << "<term>\n";
@@ -325,7 +310,6 @@ t_astret ASTPrinter::visit(const ASTArrayAssign* ast)
 {
 	(*m_ostr) << "<ArrayAssign ident=\"" << ast->GetIdent() << "\""
 		<< " is_range_12=\"" << ast->IsRanged12() << "\""
-		<< " is_range_34=\"" << ast->IsRanged34() << "\""
 		<< ">\n";
 
 	(*m_ostr) << "<idx1>\n";
@@ -337,20 +321,6 @@ t_astret ASTPrinter::visit(const ASTArrayAssign* ast)
 		(*m_ostr) << "<idx2>\n";
 		ast->GetNum2()->accept(this);
 		(*m_ostr) << "</idx2>\n";
-	}
-
-	if(ast->GetNum3())
-	{
-		(*m_ostr) << "<idx3>\n";
-		ast->GetNum3()->accept(this);
-		(*m_ostr) << "</idx3>\n";
-	}
-
-	if(ast->GetNum4())
-	{
-		(*m_ostr) << "<idx4>\n";
-		ast->GetNum2()->accept(this);
-		(*m_ostr) << "</idx4>\n";
 	}
 
 	(*m_ostr) << "<expr>\n";
@@ -406,6 +376,40 @@ t_astret ASTPrinter::visit(const ASTCond* ast)
 	}
 
 	(*m_ostr) << "</Cond>\n";
+
+	return nullptr;
+}
+
+
+t_astret ASTPrinter::visit(const ASTCases* ast)
+{
+	(*m_ostr) << "<Cases>\n";
+
+	(*m_ostr) << "<expr>\n";
+	ast->GetExpr()->accept(this);
+	(*m_ostr) << "</expr>\n";
+
+	for(auto& [ cond, stmts ] : ast->GetCases())
+	{
+		(*m_ostr) << "<case>\n";
+		(*m_ostr) << "<cond>\n";
+		cond->accept(this);
+		(*m_ostr) << "</cond>\n";
+
+		(*m_ostr) << "<stmts>\n";
+		stmts->accept(this);
+		(*m_ostr) << "</stmts>\n";
+		(*m_ostr) << "</case>\n";
+	}
+
+	if(ast->GetDefaultCase())
+	{
+		(*m_ostr) << "<default>\n";
+		ast->GetDefaultCase()->accept(this);
+		(*m_ostr) << "</default>\n";
+	}
+
+	(*m_ostr) << "</Cases>\n";
 
 	return nullptr;
 }
@@ -524,6 +528,17 @@ t_astret ASTPrinter::visit(const ASTNumConst<t_real>* ast)
 t_astret ASTPrinter::visit(const ASTNumConst<t_int>* ast)
 {
 	(*m_ostr) << "<Const type=\"integer\" val=\"" << ast->GetVal() << "\" />\n";
+
+	return nullptr;
+}
+
+
+t_astret ASTPrinter::visit(const ASTNumConstList<t_int>* ast)
+{
+	(*m_ostr) << "<Const type=\"integers\" val=\"";
+	for(t_int val : ast->GetValues())
+		(*m_ostr) << val << ", ";
+	(*m_ostr) << "\" />\n";
 
 	return nullptr;
 }

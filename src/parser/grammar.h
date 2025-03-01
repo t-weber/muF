@@ -29,6 +29,8 @@ enum : std::size_t
 	STATEMENTS,
 
 	VARIABLES,
+	INT_CONSTANTS,
+
 	FULL_ARGUMENTLIST,
 	ARGUMENTLIST,
 	IDENTLIST,
@@ -40,6 +42,8 @@ enum : std::size_t
 	OPT_ASSIGN,
 
 	VAR_RANGE,
+
+	CASES,
 };
 
 
@@ -56,7 +60,7 @@ public:
 			start,
 			expression, expressions,
 			statement, statements,
-			variables,
+			variables, int_constants,
 			full_argumentlist, argumentlist,
 			identlist, typelist,
 			function,
@@ -83,10 +87,11 @@ private:
 	lalr1::NonTerminalPtr start{},
 		expressions{}, expression{},
 		statements{}, statement{},
-		typedecl{}, variables{},
+		typedecl{}, variables{}, int_constants{},
 		full_argumentlist{}, argumentlist{},
 		identlist{}, typelist{},
-		function{}, opt_assign{}, var_range{};
+		function{}, opt_assign{}, var_range{},
+		cases{};
 
 	// terminals
 	lalr1::TerminalPtr op_assign{}, op_plus{}, op_minus{},
@@ -98,6 +103,7 @@ private:
 	lalr1::TerminalPtr bracket_open{}, bracket_close{};
 	lalr1::TerminalPtr array_begin{}, array_end{}, range{};
 	lalr1::TerminalPtr keyword_if{}, keyword_then{}, keyword_else{};
+	lalr1::TerminalPtr keyword_select{}, keyword_case{}, keyword_default{};
 	lalr1::TerminalPtr keyword_while{}, keyword_do{};
 	lalr1::TerminalPtr keyword_break{}, keyword_next{}, keyword_end{};
 	lalr1::TerminalPtr keyword_func{}, keyword_procedure{}, keyword_ret{};

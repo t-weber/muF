@@ -304,6 +304,13 @@ t_astret ZeroACAsm::visit(const ASTCond* ast)
 }
 
 
+t_astret ZeroACAsm::visit(const ASTCases* ast)
+{
+	// TODO
+	return nullptr;
+}
+
+
 t_astret ZeroACAsm::visit(const ASTLoop* ast)
 {
 	std::size_t loop_ident = ++m_loop_ident;

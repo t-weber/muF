@@ -140,7 +140,7 @@ void ZeroACAsm::CastTo(t_astret ty_to,
 	{
 		// TODO: this doesn't work if "pos" is also given
 		// push vector length
-		t_vm_addr cols = static_cast<t_vm_addr>(ty_to->dims[0]);
+		t_vm_addr cols = static_cast<t_vm_addr>(ty_to->get_total_size());
 
 		m_ostr->put(static_cast<t_vm_byte>(OpCode::PUSH));
 		m_ostr->put(static_cast<t_vm_byte>(VMType::ADDR_MEM));

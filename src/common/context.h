@@ -43,13 +43,18 @@ public:
  */
 class ParserContext
 {
+public:
+	// possible data types
+	using t_variant = std::variant<t_real, t_int, t_cplx, t_str>;
+
+
 protected:
 	std::shared_ptr<ASTStmts> m_statements{};
 
 	SymTab m_symbols{};
-	std::unordered_map<t_str, std::variant<t_real, t_int, t_str>> m_consts
+	std::unordered_map<t_str, t_variant> m_consts
 	{{
-		{"pi", t_real(M_PI)},
+		{ "pi", t_real(M_PI) },
 	}};
 
 	// information about currently parsed symbol
@@ -93,10 +98,10 @@ public:
 	/**
 	 * get the currently active scope name, ignoring the last "up" levels
 	 */
-	t_str GetScopeName(std::size_t up=0) const
+	t_str GetScopeName(std::size_t up = 0) const
 	{
 		t_str name;
-		for(std::size_t level=0; level<m_curscope.size()-up; ++level)
+		for(std::size_t level = 0; level < m_curscope.size() - up; ++level)
 			name += m_curscope[level] + Symbol::get_scopenameseparator();
 		return name;
 	}
@@ -151,7 +156,9 @@ public:
 		return m_symbols;
 	}
 
-	// type of current symbol
+	/**
+	 * type of current symbol
+	 */
 	void SetSymType(SymbolType ty)
 	{
 		m_symtype = ty;
@@ -162,16 +169,24 @@ public:
 		return m_symtype;
 	}
 
-	// dimensions of vector and matrix symbols
-	void SetSymDims(std::size_t dim1, std::size_t dim2=1)
+	/**
+	 * dimensions of n-d vector symbol
+	 */
+	void SetSymDims(const std::vector<std::size_t>& dims)
 	{
-		m_symdims[0] = dim1;
-		m_symdims[1] = dim2;
+		m_symdims = dims;
 	}
 
+	/**
+	 * dimension of 1-d vector symbol
+	 */
+	void SetSymDim(std::size_t dim)
+	{
+		m_symdims.resize(1);
+		m_symdims[0] = dim;
+	}
 
-	std::pair<bool, std::variant<t_real, t_int, t_str>>
-	GetConst(const t_str& name) const
+	std::pair<bool, t_variant> GetConst(const t_str& name) const
 	{
 		auto iter = m_consts.find(name);
 		if(iter == m_consts.end())

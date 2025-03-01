@@ -65,6 +65,9 @@ enum class Token : lalr1::t_symbol_id
 	IF          = 5000,
 	THEN        = 5001,
 	ELSE        = 5002,
+	SELECT      = 5010,
+	CASE        = 5011,
+	DEFAULT     = 5012,
 
 	// loops
 	WHILE       = 6000,

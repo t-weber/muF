@@ -128,6 +128,21 @@ Lexer::GetMatchingTokens(const std::string& str, std::size_t line)
 		matches.emplace_back(std::make_tuple(
 			static_cast<t_symbol_id>(Token::DO), str, line));
 	}
+	else if(str == "select")
+	{
+		matches.emplace_back(std::make_tuple(
+			static_cast<t_symbol_id>(Token::SELECT), str, line));
+	}
+	else if(str == "case")
+	{
+		matches.emplace_back(std::make_tuple(
+			static_cast<t_symbol_id>(Token::CASE), str, line));
+	}
+	else if(str == "default")
+	{
+		matches.emplace_back(std::make_tuple(
+			static_cast<t_symbol_id>(Token::DEFAULT), str, line));
+	}
 	else if(str == "end")
 	{
 		matches.emplace_back(std::make_tuple(

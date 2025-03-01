@@ -43,6 +43,7 @@ class ASTArrayAccess;
 class ASTComp;
 class ASTBool;
 class ASTCond;
+class ASTCases;
 class ASTLoop;
 class ASTRangedLoop;
 class ASTLoopBreak;
@@ -51,6 +52,7 @@ class ASTExprList;
 class ASTJump;
 class ASTLabel;
 template<class> class ASTNumConst;
+template<class> class ASTNumConstList;
 
 
 enum class ASTType
@@ -77,6 +79,7 @@ enum class ASTType
 	Comp,
 	Bool,
 	Cond,
+	Cases,
 	Loop,
 	RangedLoop,
 	LoopBreak,
@@ -85,6 +88,7 @@ enum class ASTType
 	Jump,
 	Label,
 	NumConst,
+	NumConstList,
 };
 
 
@@ -119,6 +123,9 @@ public:
 	virtual t_astret visit(const ASTNumConst<t_int>* ast) = 0;
 	virtual t_astret visit(const ASTNumConst<t_cplx>* ast) = 0;
 	virtual t_astret visit(const ASTNumConst<bool>* ast) = 0;
+
+	virtual t_astret visit(const ASTNumConstList<t_int>* ast) = 0;
+
 	virtual t_astret visit(const ASTStrConst* ast) = 0;
 
 	virtual t_astret visit(const ASTFunc* ast) = 0;
@@ -127,6 +134,7 @@ public:
 	virtual t_astret visit(const ASTStmts* ast) = 0;
 
 	virtual t_astret visit(const ASTCond* ast) = 0;
+	virtual t_astret visit(const ASTCases* ast) = 0;
 	virtual t_astret visit(const ASTLoop* ast) = 0;
 	virtual t_astret visit(const ASTRangedLoop* ast) = 0;
 	virtual t_astret visit(const ASTLoopBreak* ast) = 0;
@@ -701,6 +709,38 @@ private:
 };
 
 
+class ASTCases : public ASTAcceptor<ASTCases>
+{
+public:
+	using t_case = std::pair<ASTPtr /*cond*/, ASTPtr /*stmts*/>;
+	using t_cases = std::list<t_case>;
+
+public:
+	ASTCases()
+	{}
+
+	void SetExpr(ASTPtr expr) { this->expr = expr; }
+	const ASTPtr GetExpr() const { return expr; }
+
+	void AddCase(ASTPtr cond, ASTPtr stmts)
+	{
+		cases.push_front(std::make_pair(cond, stmts));
+	}
+
+	const t_cases& GetCases() const { return cases; }
+
+	void SetDefaultCase(ASTPtr stmts) { default_stmts = stmts; }
+	const ASTPtr GetDefaultCase() const { return default_stmts; }
+
+	virtual ASTType type() override { return ASTType::Cases; }
+
+private:
+	ASTPtr expr{};           // expression to select
+	t_cases cases{};         // cases to handle
+	ASTPtr default_stmts{};  // default case
+};
+
+
 class ASTLoop : public ASTAcceptor<ASTLoop>
 {
 public:
@@ -771,22 +811,16 @@ class ASTArrayAccess : public ASTAcceptor<ASTArrayAccess>
 public:
 	ASTArrayAccess(ASTPtr term,
 		ASTPtr num1, ASTPtr num2 = nullptr,
-		ASTPtr num3 = nullptr, ASTPtr num4 = nullptr,
-		bool ranged12 = false, bool ranged34 = false)
-		: term{term},
-			num1{num1}, num2{num2}, num3{num3}, num4{num4},
-			ranged12{ranged12}, ranged34{ranged34}
+		bool ranged12 = false)
+		: term{term}, num1{num1}, num2{num2}, ranged12{ranged12}
 	{}
 
 	const ASTPtr GetTerm() const { return term; }
 
 	const ASTPtr GetNum1() const { return num1; }
 	const ASTPtr GetNum2() const { return num2; }
-	const ASTPtr GetNum3() const { return num3; }
-	const ASTPtr GetNum4() const { return num4; }
 
 	bool IsRanged12() const { return ranged12; }
-	bool IsRanged34() const { return ranged34; }
 
 	virtual ASTType type() override { return ASTType::ArrayAccess; }
 
@@ -794,9 +828,7 @@ private:
 	ASTPtr term;
 
 	ASTPtr num1{}, num2{};
-	ASTPtr num3{}, num4{};
 	bool ranged12{ false };
-	bool ranged34{ false };
 };
 
 
@@ -804,13 +836,8 @@ class ASTArrayAssign : public ASTAcceptor<ASTArrayAssign>
 {
 public:
 	ASTArrayAssign(const t_str& ident, ASTPtr expr,
-		ASTPtr num1, ASTPtr num2 = nullptr,
-		ASTPtr num3 = nullptr, ASTPtr num4 = nullptr,
-		bool ranged12 = false, bool ranged34 = false)
-		: ident{ident}, expr{expr},
-			num1{num1}, num2{num2},
-			num3{num3}, num4{num4},
-			ranged12{ranged12}, ranged34{ranged34}
+		ASTPtr num1, ASTPtr num2 = nullptr, bool ranged12 = false)
+		: ident{ident}, expr{expr}, num1{num1}, num2{num2}, ranged12{ranged12}
 	{}
 
 	const t_str& GetIdent() const { return ident; }
@@ -818,11 +845,8 @@ public:
 
 	const ASTPtr GetNum1() const { return num1; }
 	const ASTPtr GetNum2() const { return num2; }
-	const ASTPtr GetNum3() const { return num3; }
-	const ASTPtr GetNum4() const { return num4; }
 
 	bool IsRanged12() const { return ranged12; }
-	bool IsRanged34() const { return ranged34; }
 
 	virtual ASTType type() override { return ASTType::ArrayAssign; }
 
@@ -831,9 +855,7 @@ private:
 	ASTPtr expr{};
 
 	ASTPtr num1{}, num2{};
-	ASTPtr num3{}, num4{};
 	bool ranged12{ false };
-	bool ranged34{ false };
 };
 
 
@@ -850,6 +872,25 @@ public:
 
 private:
 	t_num val{};
+};
+
+
+template<class t_num>
+class ASTNumConstList : public ASTAcceptor<ASTNumConstList<t_num>>
+{
+public:
+	ASTNumConstList()
+	{}
+
+	const std::list<t_num>& GetValues() const { return vals; }
+	std::size_t GetSize() const { return vals.size(); }
+	void AddValue(t_num val) { vals.push_front(val); }
+	t_num GetValue(std::size_t idx) const { return *std::next(vals.begin(), idx); }
+
+	virtual ASTType type() override { return ASTType::NumConstList; }
+
+private:
+	std::list<t_num> vals{};
 };
 
 

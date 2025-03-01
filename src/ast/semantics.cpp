@@ -200,6 +200,23 @@ t_astret Semantics::visit(const ASTCond* ast)
 }
 
 
+t_astret Semantics::visit(const ASTCases* ast)
+{
+	ast->GetExpr()->accept(this);
+
+	for(auto& [ cond, stmts ] : ast->GetCases())
+	{
+		cond->accept(this);
+		stmts->accept(this);
+	}
+
+	if(ast->GetDefaultCase())
+		ast->GetDefaultCase()->accept(this);
+
+	return nullptr;
+}
+
+
 t_astret Semantics::visit(const ASTBool* ast)
 {
 	ast->GetTerm1()->accept(this);
@@ -262,6 +279,12 @@ t_astret Semantics::visit([[maybe_unused]] const ASTNumConst<t_cplx>* ast)
 
 
 t_astret Semantics::visit([[maybe_unused]] const ASTNumConst<bool>* ast)
+{
+	return nullptr;
+}
+
+
+t_astret Semantics::visit([[maybe_unused]] const ASTNumConstList<t_int>* ast)
 {
 	return nullptr;
 }
