@@ -60,13 +60,11 @@ public:
 			start,
 			expression, expressions,
 			statement, statements,
-			variables, int_constants,
+			typedecl, variables, int_constants,
 			full_argumentlist, argumentlist,
 			identlist, typelist,
-			function,
-			typedecl,
-			opt_assign,
-			var_range,
+			function, opt_assign, var_range,
+			cases,
 		}};
 	}
 

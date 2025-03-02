@@ -68,7 +68,6 @@ static bool lalr1_create_parser(
 			t_map_follow follow;
 			for(const NonTerminalPtr& nonterminal : all_nonterminals)
 				nonterminal->CalcFollow(all_nonterminals, start, first, follow);
-
 			for(const auto& pair : follow)
 			{
 				std::cout << pair.first->GetStrId() << ": ";

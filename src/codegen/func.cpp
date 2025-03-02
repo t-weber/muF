@@ -113,6 +113,7 @@ t_astret ZeroACAsm::visit(const ASTFunc* ast)
 
 	// end-of-function jump address
 	std::streampos end_func_streampos = m_ostr->tellp();
+	func->end_addr = end_func_streampos;
 
 	// fill in any saved, unset end-of-function jump addresses
 	for(std::streampos pos : m_endfunc_comefroms)

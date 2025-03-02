@@ -156,17 +156,19 @@ std::ostream& operator<<(std::ostream& ostr, const SymTab& tab)
 	const int name_len = 32;
 	const int type_len = 24;
 	const int refs_len = 8;
+	const int addr_len = 16;
 	const int dims_len = 8;
-	//const int addr_len = 8;
 
 	ostr
 		<< std::left << std::setw(name_len) << "full name"
 		<< std::left << std::setw(type_len) << "type"
 		<< std::left << std::setw(refs_len) << "refs"
+		<< std::left << std::setw(addr_len) << "addr"
 		<< std::left << std::setw(dims_len) << "dims"
-		//<< std::left << std::setw(addr_len) << "addr"
-		<< "\n";
-	ostr << "--------------------------------------------------------------------------------\n";
+		<< '\n';
+	for(int i = 0; i < name_len + type_len + refs_len + addr_len + dims_len; ++i)
+		ostr << '-';
+	ostr << '\n';
 
 	for(const auto& pair : tab.m_syms)
 	{
@@ -182,18 +184,19 @@ std::ostream& operator<<(std::ostream& ostr, const SymTab& tab)
 		if(sym.is_tmp)
 			ty += " (tmp)";
 
-		/*std::string addr = "-";
+		std::string addr = "";
 		if(sym.addr)
-			addr = std::to_string(*sym.addr);*/
+			addr = std::to_string(*sym.addr);
+		if(sym.end_addr)
+			addr += " - " + std::to_string(*sym.end_addr);
 
 		ostr << std::left << std::setw(name_len) << pair.first
 			<< std::left << std::setw(type_len) << ty
-			<< std::left << std::setw(refs_len) << sym.refcnt;
+			<< std::left << std::setw(refs_len) << sym.refcnt
+			<< std::left << std::setw(addr_len) << addr;
 		for(std::size_t i = 0; i < sym.dims.size(); ++i)
 			ostr << std::left << std::setw(dims_len) << sym.dims[i];
-		ostr
-			//<< std::left << std::setw(addr_len) << addr
-			<< "\n";
+		ostr << '\n';
 	}
 
 	return ostr;

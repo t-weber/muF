@@ -758,7 +758,7 @@ void Grammar::CreateGrammar()
 #endif
 	++semanticindex;
 
-	// default case
+	// default case (has to be last in the cases list)
 #ifdef CREATE_PRODUCTION_RULES
 	cases->AddRule({ keyword_case, keyword_default, statements }, semanticindex);
 #endif
@@ -1962,9 +1962,9 @@ void Grammar::CreateGrammar()
 		}
 		else
 		{
-			// TODO: move this check into semantics.cpp, as only the functions
-			// that have already been parsed are registered at this point
-			std::cerr << "Cannot find function \"" << funcname << "\"." << std::endl;
+			// TODO: move this check into semantics.cpp, as only the functions that have
+			// already been parsed are registered at this point (so e.g. no recursive ones)
+			std::cerr << "Cannot (yet) find function \"" << funcname << "\"." << std::endl;
 		}
 
 		return std::make_shared<ASTCall>(funcname);
@@ -1993,9 +1993,9 @@ void Grammar::CreateGrammar()
 		}
 		else
 		{
-			// TODO: move this check into semantics.cpp, as only the functions
-			// that have already been parsed are registered at this point
-			std::cerr << "Cannot find function \"" << funcname << "\"." << std::endl;
+			// TODO: move this check into semantics.cpp, as only the functions that have
+			// already been parsed are registered at this point (so e.g. no recursive ones)
+			std::cerr << "Cannot (yet) find function \"" << funcname << "\"." << std::endl;
 		}
 
 		auto funcargs = std::dynamic_pointer_cast<ASTExprList>(args[2]);

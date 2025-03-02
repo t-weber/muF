@@ -76,10 +76,9 @@ if(EXISTS "${CMAKE_BINARY_DIR}/parser.cpp")
 		src/parser/grammar.cpp src/parser/grammar.h
 		src/parser/lexer.cpp src/parser/lexer.h
 		src/codegen/asm.cpp src/codegen/asm.h
-		src/codegen/arr.cpp
-		src/codegen/func.cpp
-		src/codegen/ops.cpp
-		src/codegen/var.cpp
+		src/codegen/var.cpp src/codegen/arr.cpp
+		src/codegen/func.cpp src/codegen/ops.cpp
+		src/codegen/loops.cpp
 		src/codegen/consttab.cpp src/codegen/consttab.h
 		src/common/sym.cpp src/common/sym.h
 		src/ast/ast.h

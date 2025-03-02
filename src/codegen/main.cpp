@@ -199,15 +199,6 @@ int main(int argc, char** argv)
 		auto [parse_time, parse_time_unit] = get_elapsed_time<
 			t_real, t_timepoint>(parse_start_time);
 
-		if(show_symbols)
-		{
-			std::cout << "Writing symbol table to \"" << outprog_syms << "\"..." << std::endl;
-
-			std::ofstream ostrSyms{outprog_syms};
-			//ostrSyms << "\nSymbol table:\n";
-			ostrSyms << ctx.GetSymbols() << std::endl;
-		}
-
 		if(show_ast)
 		{
 			std::cout << "Writing AST to \"" << outprog_ast << "\"..." << std::endl;
@@ -244,8 +235,19 @@ int main(int argc, char** argv)
 		for(auto iter = stmts.begin(); iter != stmts.end(); ++iter)
 			(*iter)->accept(&codegen);
 		codegen.Finish();
+		if(debug)
+			std::cout << std::endl;
 		// --------------------------------------------------------------------
 
+
+		if(show_symbols)
+		{
+			std::cout << "Writing symbol table to \"" << outprog_syms << "\"..." << std::endl;
+
+			std::ofstream ostrSyms{outprog_syms};
+			//ostrSyms << "\nSymbol table:\n";
+			ostrSyms << ctx.GetSymbols() << std::endl;
+		}
 
 		auto [comp_time, time_unit] = get_elapsed_time<
 			t_real, t_timepoint>(start_time);
