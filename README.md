@@ -1,5 +1,6 @@
 # $\mathrm{\mu F}$
-A compiler and virtual machine for a small F90-inspired language.
+A compiler and virtual machine for a small F90-inspired language.  
+[![DOI: 10.5281/zenodo.14955118](https://zenodo.org/badge/DOI/10.5281/zenodo.14955118.svg)](https://doi.org/10.5281/zenodo.14955118)
 
 ## Dependencies
  - Install the LALR(1) library: https://github.com/t-weber/lalr1.
