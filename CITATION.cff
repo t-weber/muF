@@ -6,7 +6,7 @@
 cff-version: 1.2.0
 type: software
 title: muF
-message: microF compiler and VM.
+message: µF compiler and VM.
 authors:
   - family-names: Weber
     given-names: Tobias
