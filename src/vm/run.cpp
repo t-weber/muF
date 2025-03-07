@@ -15,6 +15,8 @@
 bool VM::Run()
 {
 	bool running = true;
+	std::size_t num_ops = 0;
+
 	while(running)
 	{
 		CheckPointerBounds();
@@ -47,13 +49,15 @@ bool VM::Run()
 
 		if(!irq_active)
 		{
+			// fetch instruction
 			t_byte _op = m_mem[m_ip++];
 			op = static_cast<OpCode>(_op);
 		}
 
 		if(m_debug)
 		{
-			std::cout << "*** read instruction at ip = " << t_int(m_ip)
+			std::cout << "*** [" << num_ops << "] read instruction"
+				<< " at ip = " << t_int(m_ip)
 				<< ", sp = " << t_int(m_sp)
 				<< ", bp = " << t_int(m_bp)
 				<< ", gbp = " << t_int(m_gbp)
@@ -63,7 +67,9 @@ bool VM::Run()
 				<< std::dec << ". ***" << std::endl;
 		}
 
-		// run instruction
+		// run instruction (as this is a zero-address machine without
+		// general-purpose registers and only one direct data instruction
+		// (push), we don't need an explicit decode step before)
 		switch(op)
 		{
 			case OpCode::HALT:
@@ -77,8 +83,10 @@ bool VM::Run()
 				break;
 			}
 
-			// push direct data onto stack
-			case OpCode::PUSH:
+			// ----------------------------------------------------
+			// memory instructions
+			// ----------------------------------------------------
+			case OpCode::PUSH:  // push direct data onto stack
 			{
 				auto [ty, val] = ReadMemData(m_ip);
 				m_ip += GetDataSize(val) + m_bytesize;
@@ -107,8 +115,12 @@ bool VM::Run()
 				PushData(val, ty);
 				break;
 			}
+			// ----------------------------------------------------
 
-			case OpCode::RDARR:
+			// ----------------------------------------------------
+			// array instructions
+			// ----------------------------------------------------
+			case OpCode::RDARR:  // read array element
 			{
 				t_int idx = std::get<m_intidx>(PopData());
 				t_data arr = PopData();
@@ -143,7 +155,7 @@ bool VM::Run()
 				break;
 			}
 
-			case OpCode::RDARRR:
+			case OpCode::RDARRR:  // read a range of array elements
 			{
 				t_int idx2 = std::get<m_intidx>(PopData());
 				t_int idx1 = std::get<m_intidx>(PopData());
@@ -184,7 +196,7 @@ bool VM::Run()
 				break;
 			}
 
-			case OpCode::WRARR:
+			case OpCode::WRARR:  // write an array element
 			{
 				t_int idx = std::get<m_intidx>(PopData());
 
@@ -208,7 +220,7 @@ bool VM::Run()
 				break;
 			}
 
-			case OpCode::WRARRR:
+			case OpCode::WRARRR:  // write a range of array elements
 			{
 				t_int idx2 = std::get<m_intidx>(PopData());
 				t_int idx1 = std::get<m_intidx>(PopData());
@@ -286,6 +298,31 @@ bool VM::Run()
 				break;
 			}
 
+			case OpCode::MAKEREALARR:  // create a real array out of the elements on the stack
+			{
+				t_vec_real vec = PopArray<t_vec_real>(false);
+				PushData(t_data{std::in_place_index<m_realarridx>, vec});
+				break;
+			}
+
+			case OpCode::MAKEINTARR:  // create an int array out of the elements on the stack
+			{
+				t_vec_int vec = PopArray<t_vec_int>(false);
+				PushData(t_data{std::in_place_index<m_intarridx>, vec});
+				break;
+			}
+
+			case OpCode::MAKECPLXARR:  // create a complex array out of the elements on the stack
+			{
+				t_vec_cplx vec = PopArray<t_vec_cplx>(false);
+				PushData(t_data{std::in_place_index<m_cplxarridx>, vec});
+				break;
+			}
+			// ----------------------------------------------------
+
+			// ----------------------------------------------------
+			// arithmetic instructions
+			// ----------------------------------------------------
 			case OpCode::USUB:
 			{
 				t_data val = PopData();
@@ -301,11 +338,28 @@ bool VM::Run()
 					result = t_data{std::in_place_index<m_intidx>,
 						-std::get<m_intidx>(val)};
 				}
+				else if(val.index() == m_cplxidx)
+				{
+					result = t_data{std::in_place_index<m_cplxidx>,
+						-std::get<m_cplxidx>(val)};
+				}
 				else if(val.index() == m_realarridx)
 				{
 					using namespace m_ops;
 					result = t_data{std::in_place_index<m_realarridx>,
 						-std::get<m_realarridx>(val)};
+				}
+				else if(val.index() == m_intarridx)
+				{
+					using namespace m_ops;
+					result = t_data{std::in_place_index<m_intarridx>,
+						-std::get<m_intarridx>(val)};
+				}
+				else if(val.index() == m_cplxarridx)
+				{
+					using namespace m_ops;
+					result = t_data{std::in_place_index<m_cplxarridx>,
+						-std::get<m_cplxarridx>(val)};
 				}
 				else
 				{
@@ -352,7 +406,11 @@ bool VM::Run()
 				OpArithmetic<'^'>();
 				break;
 			}
+			// ----------------------------------------------------
 
+			// ----------------------------------------------------
+			// logical instructions
+			// ----------------------------------------------------
 			case OpCode::AND:
 			{
 				OpLogical<'&'>();
@@ -378,16 +436,49 @@ bool VM::Run()
 
 				// push new value
 				PushBool(!boolval);
-
-				if(m_debug)
-				{
-					std::cout << "not: " << std::boolalpha
-						<< boolval << " -> " << !boolval
-						<< "." << std::endl;
-				}
 				break;
 			}
 
+			case OpCode::GT:
+			{
+				OpComparison<OpCode::GT>();
+				break;
+			}
+
+			case OpCode::LT:
+			{
+				OpComparison<OpCode::LT>();
+				break;
+			}
+
+			case OpCode::GEQU:
+			{
+				OpComparison<OpCode::GEQU>();
+				break;
+			}
+
+			case OpCode::LEQU:
+			{
+				OpComparison<OpCode::LEQU>();
+				break;
+			}
+
+			case OpCode::EQU:
+			{
+				OpComparison<OpCode::EQU>();
+				break;
+			}
+
+			case OpCode::NEQU:
+			{
+				OpComparison<OpCode::NEQU>();
+				break;
+			}
+			// ----------------------------------------------------
+
+			// ----------------------------------------------------
+			// binary instructions
+			// ----------------------------------------------------
 			case OpCode::BINAND:
 			{
 				OpBinary<'&'>();
@@ -445,43 +536,11 @@ bool VM::Run()
 				OpBinary<'r'>();
 				break;
 			}
+			// ----------------------------------------------------
 
-			case OpCode::GT:
-			{
-				OpComparison<OpCode::GT>();
-				break;
-			}
-
-			case OpCode::LT:
-			{
-				OpComparison<OpCode::LT>();
-				break;
-			}
-
-			case OpCode::GEQU:
-			{
-				OpComparison<OpCode::GEQU>();
-				break;
-			}
-
-			case OpCode::LEQU:
-			{
-				OpComparison<OpCode::LEQU>();
-				break;
-			}
-
-			case OpCode::EQU:
-			{
-				OpComparison<OpCode::EQU>();
-				break;
-			}
-
-			case OpCode::NEQU:
-			{
-				OpComparison<OpCode::NEQU>();
-				break;
-			}
-
+			// ----------------------------------------------------
+			// type casts
+			// ----------------------------------------------------
 			case OpCode::TOR: // converts value to t_real
 			{
 				OpCast<m_realidx>();
@@ -532,7 +591,11 @@ bool VM::Run()
 				OpCastToArray<t_vec_cplx>(vec_size);
 				break;
 			}
+			// ----------------------------------------------------
 
+			// ----------------------------------------------------
+			// jumps and function calls
+			// ----------------------------------------------------
 			case OpCode::JMP: // jump to direct address
 			{
 				// get address from stack and set ip
@@ -552,9 +615,8 @@ bool VM::Run()
 				{
 					if(!boolcond)
 						std::cout << "no ";
-					std::cout << "conditional jump to address "
-						<< addr << "."
-						<< std::endl;
+					std::cout << "conditional jump to address " << addr
+						<< "." << std::endl;
 				}
 
 				// set instruction pointer
@@ -601,9 +663,8 @@ bool VM::Run()
 
 				if(m_debug)
 				{
-					std::cout << "saved base pointer "
-						<< m_bp << "."
-						<< std::endl;
+					std::cout << "saved base pointer " << m_bp
+						<< "." << std::endl;
 				}
 				m_bp = m_sp;
 				m_sp -= framesize;
@@ -612,9 +673,8 @@ bool VM::Run()
 				m_ip = funcaddr;
 				if(m_debug)
 				{
-					std::cout << "calling function "
-						<< funcaddr << "."
-						<< std::endl;
+					std::cout << "calling function " << funcaddr
+						<< "." << std::endl;
 				}
 				break;
 			}
@@ -642,9 +702,8 @@ bool VM::Run()
 
 				if(m_debug)
 				{
-					std::cout << "restored base pointer "
-						<< m_bp << "."
-						<< std::endl;
+					std::cout << "restored base pointer " << m_bp
+						<< "." << std::endl;
 				}
 
 				// remove function arguments from stack
@@ -674,8 +733,7 @@ bool VM::Run()
 				if(m_debug)
 				{
 					std::cout << "created stack frame of size "
-						<< framesize << "."
-						<< std::endl;
+						<< framesize << "." << std::endl;
 				}
 				break;
 			}
@@ -693,32 +751,11 @@ bool VM::Run()
 				if(m_debug)
 				{
 					std::cout << "removed stack frame of size "
-						<< framesize << "."
-						<< std::endl;
+						<< framesize << "." << std::endl;
 				}
 				break;
 			}
-
-			case OpCode::MAKEREALARR:  // create a real array out of the elements on the stack
-			{
-				t_vec_real vec = PopArray<t_vec_real>(false);
-				PushData(t_data{std::in_place_index<m_realarridx>, vec});
-				break;
-			}
-
-			case OpCode::MAKEINTARR:  // create an int array out of the elements on the stack
-			{
-				t_vec_int vec = PopArray<t_vec_int>(false);
-				PushData(t_data{std::in_place_index<m_intarridx>, vec});
-				break;
-			}
-
-			case OpCode::MAKECPLXARR:  // create a complex array out of the elements on the stack
-			{
-				t_vec_cplx vec = PopArray<t_vec_cplx>(false);
-				PushData(t_data{std::in_place_index<m_cplxarridx>, vec});
-				break;
-			}
+			// ----------------------------------------------------
 
 			default:
 			{
@@ -727,11 +764,25 @@ bool VM::Run()
 					<< std::endl;
 				return false;
 			}
-		}
+		}  // switch(op)
+		++num_ops;
 
 		// wrap around
 		if(m_ip >= m_memsize)
+		{
 			m_ip %= m_memsize;
+
+			if(m_debug)
+			{
+				std::cout << "ip wrapped around memory limit."
+					<< std::endl;
+			}
+		}
+	}  // while(running)
+
+	if(m_debug)
+	{
+		std::cout << "Ran " << num_ops << " instructions." << std::endl;
 	}
 
 	return true;

@@ -189,7 +189,7 @@ int main(int argc, char** argv)
 		if(show_help)
 		{
 			std::cout << "MicroF parser generator"
-				<< " by Tobias Weber <tobias.weber@tum.de>, 2022."
+				<< " by Tobias Weber <tobias.weber@tum.de>, 2025."
 				<< std::endl;
 			std::cout << "Internal data type lengths:"
 				<< " real: " << sizeof(t_real)*8 << " bits,"
