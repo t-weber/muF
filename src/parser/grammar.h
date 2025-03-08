@@ -31,9 +31,6 @@ enum : std::size_t
 	VARIABLES,
 	INT_CONSTANTS,
 
-	FULL_ARGUMENTLIST,
-	ARGUMENTLIST,
-
 	FULL_IDENTLIST,
 	IDENTLIST,
 
@@ -64,7 +61,6 @@ public:
 			expression, expressions,
 			statement, statements,
 			typedecl, variables, int_constants,
-			full_argumentlist, argumentlist,
 			full_identlist, identlist,
 			typelist,
 			function, opt_assign, var_range,
@@ -98,7 +94,6 @@ private:
 		expressions{}, expression{},
 		statements{}, statement{},
 		typedecl{}, variables{}, int_constants{},
-		full_argumentlist{}, argumentlist{},
 		full_identlist{}, identlist{},
 		typelist{},
 		function{}, opt_assign{}, var_range{},
@@ -118,7 +113,7 @@ private:
 	lalr1::TerminalPtr keyword_while{}, keyword_do{};
 	lalr1::TerminalPtr keyword_break{}, keyword_next{}, keyword_end{};
 	lalr1::TerminalPtr keyword_func{}, keyword_procedure{}, keyword_ret{};
-	lalr1::TerminalPtr keyword_result{}, keyword_results{};
+	lalr1::TerminalPtr keyword_results{};
 	lalr1::TerminalPtr keyword_program{};
 	lalr1::TerminalPtr keyword_assign{}, keyword_dim{};
 	lalr1::TerminalPtr comma{}/*, stmt_end{}*/;

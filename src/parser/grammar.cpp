@@ -20,8 +20,6 @@ void Grammar::CreateGrammar()
 	statements = std::make_shared<lalr1::NonTerminal>(STATEMENTS, "statements");
 	variables = std::make_shared<lalr1::NonTerminal>(VARIABLES, "variables");
 	int_constants = std::make_shared<lalr1::NonTerminal>(INT_CONSTANTS, "int_constants");
-	full_argumentlist = std::make_shared<lalr1::NonTerminal>(FULL_ARGUMENTLIST, "full_argumentlist");
-	argumentlist = std::make_shared<lalr1::NonTerminal>(ARGUMENTLIST, "argumentlist");
 	full_identlist = std::make_shared<lalr1::NonTerminal>(FULL_IDENTLIST, "full_identlist");
 	identlist = std::make_shared<lalr1::NonTerminal>(IDENTLIST, "identlist");
 	typelist = std::make_shared<lalr1::NonTerminal>(TYPELIST, "typelist");
@@ -94,7 +92,6 @@ void Grammar::CreateGrammar()
 	keyword_ret = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::RET), "return");
 	keyword_program = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::PROGRAM), "program");
 
-	keyword_result = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::RESULT), "result");
 	keyword_results = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::RESULTS), "results");
 
 	keyword_assign = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::ASSIGN), "assign");

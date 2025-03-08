@@ -163,12 +163,7 @@ Lexer::GetMatchingTokens(const std::string& str, std::size_t line)
 		matches.emplace_back(std::make_tuple(
 			static_cast<t_symbol_id>(Token::RET), str, line));
 	}
-	else if(str == "result")
-	{
-		matches.emplace_back(std::make_tuple(
-			static_cast<t_symbol_id>(Token::RESULT), str, line));
-	}
-	else if(str == "results")
+	else if(str == "result" || str == "results")
 	{
 		matches.emplace_back(std::make_tuple(
 			static_cast<t_symbol_id>(Token::RESULTS), str, line));

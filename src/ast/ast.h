@@ -474,18 +474,16 @@ private:
 class ASTFunc : public ASTAcceptor<ASTFunc>
 {
 public:
-	ASTFunc(const t_str& ident, std::shared_ptr<ASTTypeDecl>& rettype,
+	ASTFunc(const t_str& ident,
 		std::shared_ptr<ASTArgNames> args, std::shared_ptr<ASTStmts> stmts,
 		std::shared_ptr<ASTArgNames> rets = nullptr)
-		: ident{ident}, rettype{rettype->GetRet()}, args{args->GetArgs()},
-			stmts{stmts}, rets{}
+		: ident{ident}, args{args->GetArgs()}, rets{}, stmts{stmts}
 	{
 		if(rets)
 			this->rets = rets->GetArgs();
 	}
 
 	const t_str& GetIdent() const { return ident; }
-	std::tuple<SymbolType, std::vector<std::size_t>> GetRetType() const { return rettype; }
 
 	const std::list<std::tuple<t_str, SymbolType, std::vector<std::size_t>>>&
 	GetArgs() const { return args; }
@@ -499,10 +497,9 @@ public:
 
 private:
 	t_str ident{};
-	std::tuple<SymbolType, std::vector<std::size_t>> rettype{};
 	std::list<std::tuple<t_str, SymbolType, std::vector<std::size_t>>> args{};
-	std::shared_ptr<ASTStmts> stmts{};
 	std::list<std::tuple<t_str, SymbolType, std::vector<std::size_t>>> rets{};
+	std::shared_ptr<ASTStmts> stmts{};
 };
 
 

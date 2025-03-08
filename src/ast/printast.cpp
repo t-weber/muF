@@ -151,13 +151,6 @@ t_astret ASTPrinter::visit(const ASTFunc* ast)
 {
 	(*m_ostr) << "<Func ident=\"" << ast->GetIdent() << "\"" << ">\n";
 
-	auto ret = ast->GetRetType();
-	t_str retTypeName = Symbol::get_type_name(std::get<0>(ret));
-	(*m_ostr) << "<ret type=\"" << retTypeName;
-	for(std::size_t i = 0; i < std::get<1>(ret).size(); ++i)
-		(*m_ostr) << "\" dim" << (i + 1) << "=\"" << std::get<1>(ret)[i] << "\"";
-	(*m_ostr) << " />\n";
-
 	std::size_t argidx = 0;
 	for(const auto& arg : ast->GetArgs())
 	{
@@ -169,6 +162,19 @@ t_astret ASTPrinter::visit(const ASTFunc* ast)
 			(*m_ostr) << "\" dim" << i << "=\"" << std::get<2>(arg)[i] << "\"";
 		(*m_ostr) << " />\n";
 		++argidx;
+	}
+
+	std::size_t retidx = 0;
+	for(const auto& arg : ast->GetRets())
+	{
+		t_str argTypeName = Symbol::get_type_name(std::get<1>(arg));
+
+		(*m_ostr) << "<ret_" << retidx << " name=\"" << std::get<0>(arg) << "\"";
+		(*m_ostr) << " type=\"" << argTypeName;
+		for(std::size_t i = 0; i < std::get<2>(arg).size(); ++i)
+			(*m_ostr) << "\" dim" << i << "=\"" << std::get<2>(arg)[i] << "\"";
+		(*m_ostr) << " />\n";
+		++retidx;
 	}
 
 	ast->GetStatements()->accept(this);
