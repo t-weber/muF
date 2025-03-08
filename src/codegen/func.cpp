@@ -1,17 +1,17 @@
 /**
- * zero-address code generator
+ * zero-address code generator -- functions
  * @author Tobias Weber (orcid: 0000-0002-7230-1932)
  * @date 10-july-2022
  * @license see 'LICENSE' file
  */
 
-#include "asm.h"
+#include "codegen.h"
 
 
 /**
  * finds the size of the local function variables for the stack frame
  */
-std::size_t ZeroACAsm::GetStackFrameSize(const Symbol* func) const
+std::size_t Codegen::GetStackFrameSize(const Symbol* func) const
 {
 	std::vector<const Symbol*> syms;
 	if(func)
@@ -46,7 +46,7 @@ std::size_t ZeroACAsm::GetStackFrameSize(const Symbol* func) const
 // ----------------------------------------------------------------------------
 // functions
 // ----------------------------------------------------------------------------
-t_astret ZeroACAsm::visit(const ASTFunc* ast)
+t_astret Codegen::visit(const ASTFunc* ast)
 {
 	const t_str& funcname = ast->GetIdent();
 	m_curscope.push_back(funcname);
@@ -70,15 +70,15 @@ t_astret ZeroACAsm::visit(const ASTFunc* ast)
 		// get variable from symbol table and assign an address
 		t_astret sym = GetSym(argname);
 		if(!sym)
-			throw std::runtime_error("ASTFunc: Argument \"" + argname + "\" is not in symbol table.");
+			throw std::runtime_error("ASTFunc: Function \"" + funcname + "\" argument \"" + argname + "\" is not in symbol table.");
 		if(sym->addr)
-			throw std::runtime_error("ASTFunc: Argument \"" + argname + "\" already declared.");
+			throw std::runtime_error("ASTFunc: Function \"" + funcname + "\" argument \"" + argname + "\" already declared.");
 		if(!sym->is_arg)
-			throw std::runtime_error("ASTFunc: Variable \"" + argname + "\" is not an argument.");
+			throw std::runtime_error("ASTFunc: Function \"" + funcname + "\" variable \"" + argname + "\" is not an argument.");
 		if(sym->ty != argtype)
-			throw std::runtime_error("ASTFunc: Argument \"" + argname + "\" type mismatch.");
+			throw std::runtime_error("ASTFunc: Function \"" + funcname + "\" argument \"" + argname + "\" type mismatch.");
 		if(sym->argidx != argidx)
-			throw std::runtime_error("ASTFunc: Argument \"" + argname + "\" index mismatch.");
+			throw std::runtime_error("ASTFunc: Function \"" + funcname + "\" argument \"" + argname + "\" index mismatch.");
 
 		sym->addr = frame_addr;
 		frame_addr += GetSymSize(sym);
@@ -145,7 +145,7 @@ t_astret ZeroACAsm::visit(const ASTFunc* ast)
 /**
  * calls an external function
  */
-void ZeroACAsm::CallExternal(const t_str& funcname)
+void Codegen::CallExternal(const t_str& funcname)
 {
 	// get constant address
 	std::streampos funcname_addr = m_consttab.AddConst(funcname);
@@ -172,7 +172,7 @@ void ZeroACAsm::CallExternal(const t_str& funcname)
 }
 
 
-t_astret ZeroACAsm::visit(const ASTCall* ast)
+t_astret Codegen::visit(const ASTCall* ast)
 {
 	const t_str* funcname = &ast->GetIdent();
 	t_astret func = GetSym(*funcname);
@@ -226,7 +226,7 @@ t_astret ZeroACAsm::visit(const ASTCall* ast)
 }
 
 
-t_astret ZeroACAsm::visit(const ASTReturn* ast)
+t_astret Codegen::visit(const ASTReturn* ast)
 {
 	if(!m_curscope.size())
 		throw std::runtime_error("ASTReturn: Not in a function.");
@@ -260,7 +260,7 @@ t_astret ZeroACAsm::visit(const ASTReturn* ast)
 }
 
 
-t_astret ZeroACAsm::visit(const ASTStmts* ast)
+t_astret Codegen::visit(const ASTStmts* ast)
 {
 	for(const auto& stmt : ast->GetStatementList())
 		stmt->accept(this);

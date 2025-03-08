@@ -1,17 +1,17 @@
 /**
- * zero-address code generator
+ * zero-address code generator -- variables and constants
  * @author Tobias Weber (orcid: 0000-0002-7230-1932)
  * @date 10-july-2022
  * @license see 'LICENSE' file
  */
 
-#include "asm.h"
+#include "codegen.h"
 
 
 /**
  * find the symbol with a specific name in the symbol table
  */
-t_astret ZeroACAsm::GetSym(const t_str& name) const
+t_astret Codegen::GetSym(const t_str& name) const
 {
 	t_str scoped_name;
 	for(const t_str& scope : m_curscope)
@@ -38,7 +38,7 @@ t_astret ZeroACAsm::GetSym(const t_str& name) const
 }
 
 
-Symbol* ZeroACAsm::GetTypeConst(SymbolType ty) const
+Symbol* Codegen::GetTypeConst(SymbolType ty) const
 {
 	switch(ty)
 	{
@@ -68,7 +68,7 @@ Symbol* ZeroACAsm::GetTypeConst(SymbolType ty) const
 /**
  * finds the size of the symbol for the stack frame
  */
-std::size_t ZeroACAsm::GetSymSize(const Symbol* sym) const
+std::size_t Codegen::GetSymSize(const Symbol* sym) const
 {
 	if(sym->ty == SymbolType::REAL)
 		return vm_type_size<VMType::REAL, true>;
@@ -97,7 +97,7 @@ std::size_t ZeroACAsm::GetSymSize(const Symbol* sym) const
 // ----------------------------------------------------------------------------
 // variables
 // ----------------------------------------------------------------------------
-t_astret ZeroACAsm::visit(const ASTVarDecl* ast)
+t_astret Codegen::visit(const ASTVarDecl* ast)
 {
 	bool is_global = !m_curscope.size();
 	t_astret sym_ret = nullptr;
@@ -108,6 +108,8 @@ t_astret ZeroACAsm::visit(const ASTVarDecl* ast)
 		t_astret sym = GetSym(varname);
 		if(!sym)
 			throw std::runtime_error("ASTVarDecl: Variable \"" + varname + "\" is not in symbol table.");
+		if(sym->is_arg)
+			continue;  // arguments already declared with function
 		if(sym->addr)
 			throw std::runtime_error("ASTVarDecl: Variable \"" + varname + "\" already declared.");
 
@@ -190,7 +192,7 @@ t_astret ZeroACAsm::visit(const ASTVarDecl* ast)
 }
 
 
-t_astret ZeroACAsm::visit(const ASTVar* ast)
+t_astret Codegen::visit(const ASTVar* ast)
 {
 	const t_str& varname = ast->GetIdent();
 
@@ -220,7 +222,7 @@ t_astret ZeroACAsm::visit(const ASTVar* ast)
 /**
  * assign symbol variable to current value on the stack
  */
-void ZeroACAsm::AssignVar(t_astret sym)
+void Codegen::AssignVar(t_astret sym)
 {
 	// push variable address
 	m_ostr->put(static_cast<t_vm_byte>(OpCode::PUSH));
@@ -235,7 +237,7 @@ void ZeroACAsm::AssignVar(t_astret sym)
 }
 
 
-t_astret ZeroACAsm::visit(const ASTAssign* ast)
+t_astret Codegen::visit(const ASTAssign* ast)
 {
 	if(ast->GetExpr())
 		ast->GetExpr()->accept(this);
@@ -260,7 +262,7 @@ t_astret ZeroACAsm::visit(const ASTAssign* ast)
 }
 
 
-t_astret ZeroACAsm::visit([[maybe_unused]] const ASTVarRange* ast)
+t_astret Codegen::visit([[maybe_unused]] const ASTVarRange* ast)
 {
 	// handled in ranged loop
 	return nullptr;
@@ -273,7 +275,7 @@ t_astret ZeroACAsm::visit([[maybe_unused]] const ASTVarRange* ast)
 // constants
 // ----------------------------------------------------------------------------
 
-void ZeroACAsm::PushRealConst(t_vm_real val)
+void Codegen::PushRealConst(t_vm_real val)
 {
 	m_ostr->put(static_cast<t_vm_byte>(OpCode::PUSH));
 	// write type descriptor byte
@@ -284,7 +286,7 @@ void ZeroACAsm::PushRealConst(t_vm_real val)
 }
 
 
-void ZeroACAsm::PushIntConst(t_vm_int val)
+void Codegen::PushIntConst(t_vm_int val)
 {
 	m_ostr->put(static_cast<t_vm_byte>(OpCode::PUSH));
 	// write type descriptor byte
@@ -295,7 +297,7 @@ void ZeroACAsm::PushIntConst(t_vm_int val)
 }
 
 
-void ZeroACAsm::PushCplxConst(const t_vm_cplx& val)
+void Codegen::PushCplxConst(const t_vm_cplx& val)
 {
 	t_real real = val.real();
 	t_real imag = val.imag();
@@ -312,7 +314,7 @@ void ZeroACAsm::PushCplxConst(const t_vm_cplx& val)
 }
 
 
-void ZeroACAsm::PushBoolConst(t_vm_bool val)
+void Codegen::PushBoolConst(t_vm_bool val)
 {
 	m_ostr->put(static_cast<t_vm_byte>(OpCode::PUSH));
 	// write type descriptor byte
@@ -323,7 +325,7 @@ void ZeroACAsm::PushBoolConst(t_vm_bool val)
 }
 
 
-void ZeroACAsm::PushStrConst(const t_vm_str& val)
+void Codegen::PushStrConst(const t_vm_str& val)
 {
 	// get string constant address
 	std::streampos str_addr = m_consttab.AddConst(val);
@@ -350,7 +352,7 @@ void ZeroACAsm::PushStrConst(const t_vm_str& val)
 /**
  * push the number of elements in an array
  */
-void ZeroACAsm::PushVecSize(std::size_t size)
+void Codegen::PushVecSize(std::size_t size)
 {
 	t_vm_addr num_elems = static_cast<t_vm_addr>(size);
 	m_ostr->put(static_cast<t_vm_byte>(OpCode::PUSH));
@@ -360,7 +362,7 @@ void ZeroACAsm::PushVecSize(std::size_t size)
 }
 
 
-void ZeroACAsm::PushRealVecConst(const std::vector<t_vm_real>& vec)
+void Codegen::PushRealVecConst(const std::vector<t_vm_real>& vec)
 {
 	// push elements
 	for(t_vm_real val : vec)
@@ -373,7 +375,7 @@ void ZeroACAsm::PushRealVecConst(const std::vector<t_vm_real>& vec)
 }
 
 
-void ZeroACAsm::PushIntVecConst(const std::vector<t_vm_int>& vec)
+void Codegen::PushIntVecConst(const std::vector<t_vm_int>& vec)
 {
 	// push elements
 	for(t_vm_int val : vec)
@@ -386,7 +388,7 @@ void ZeroACAsm::PushIntVecConst(const std::vector<t_vm_int>& vec)
 }
 
 
-void ZeroACAsm::PushCplxVecConst(const std::vector<t_vm_cplx>& vec)
+void Codegen::PushCplxVecConst(const std::vector<t_vm_cplx>& vec)
 {
 	// push elements
 	for(const t_vm_cplx& val : vec)
@@ -399,7 +401,7 @@ void ZeroACAsm::PushCplxVecConst(const std::vector<t_vm_cplx>& vec)
 }
 
 
-t_astret ZeroACAsm::visit(const ASTNumConst<t_real>* ast)
+t_astret Codegen::visit(const ASTNumConst<t_real>* ast)
 {
 	t_vm_real val = static_cast<t_vm_real>(ast->GetVal());
 	PushRealConst(val);
@@ -407,7 +409,7 @@ t_astret ZeroACAsm::visit(const ASTNumConst<t_real>* ast)
 }
 
 
-t_astret ZeroACAsm::visit(const ASTNumConst<t_int>* ast)
+t_astret Codegen::visit(const ASTNumConst<t_int>* ast)
 {
 	t_vm_int val = static_cast<t_vm_int>(ast->GetVal());
 	PushIntConst(val);
@@ -415,7 +417,7 @@ t_astret ZeroACAsm::visit(const ASTNumConst<t_int>* ast)
 }
 
 
-t_astret ZeroACAsm::visit(const ASTNumConst<t_cplx>* ast)
+t_astret Codegen::visit(const ASTNumConst<t_cplx>* ast)
 {
 	t_vm_cplx val = static_cast<t_vm_cplx>(ast->GetVal());
 	PushCplxConst(val);
@@ -423,7 +425,7 @@ t_astret ZeroACAsm::visit(const ASTNumConst<t_cplx>* ast)
 }
 
 
-t_astret ZeroACAsm::visit(const ASTNumConst<bool>* ast)
+t_astret Codegen::visit(const ASTNumConst<bool>* ast)
 {
 	t_vm_bool val = static_cast<t_vm_bool>(ast->GetVal());
 	PushBoolConst(val);
@@ -431,7 +433,7 @@ t_astret ZeroACAsm::visit(const ASTNumConst<bool>* ast)
 }
 
 
-t_astret ZeroACAsm::visit(const ASTStrConst* ast)
+t_astret Codegen::visit(const ASTStrConst* ast)
 {
 	const t_str& val = ast->GetVal();
 	PushStrConst(val);
@@ -439,7 +441,7 @@ t_astret ZeroACAsm::visit(const ASTStrConst* ast)
 }
 
 
-t_astret ZeroACAsm::visit(const ASTNumConstList<t_int>*)
+t_astret Codegen::visit(const ASTNumConstList<t_int>*)
 {
 	// directly handled in grammar
 	return nullptr;

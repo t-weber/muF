@@ -5,13 +5,13 @@
  * @license see 'LICENSE' file
  */
 
-#include "asm.h"
+#include "codegen.h"
 
 
 // ----------------------------------------------------------------------------
 // conditionals
 // ----------------------------------------------------------------------------
-t_astret ZeroACAsm::visit(const ASTCond* ast)
+t_astret Codegen::visit(const ASTCond* ast)
 {
 	// condition
 	ast->GetCond()->accept(this);
@@ -76,7 +76,7 @@ t_astret ZeroACAsm::visit(const ASTCond* ast)
 }
 
 
-t_astret ZeroACAsm::visit(const ASTCases* ast)
+t_astret Codegen::visit(const ASTCases* ast)
 {
 	std::vector<std::pair<std::streampos, std::streampos>> jump_addrs;
 	jump_addrs.reserve(ast->GetCases().size());
@@ -144,7 +144,7 @@ t_astret ZeroACAsm::visit(const ASTCases* ast)
 }
 
 
-t_astret ZeroACAsm::visit(const ASTLoop* ast)
+t_astret Codegen::visit(const ASTLoop* ast)
 {
 	std::size_t loop_ident = ++m_loop_ident;
 	m_cur_loop.push_back(loop_ident);
@@ -239,7 +239,7 @@ t_astret ZeroACAsm::visit(const ASTLoop* ast)
 // ----------------------------------------------------------------------------
 // loops
 // ----------------------------------------------------------------------------
-t_astret ZeroACAsm::visit(const ASTRangedLoop* ast)
+t_astret Codegen::visit(const ASTRangedLoop* ast)
 {
 	// --------------------------------------------------------------------
 	// assign initial counter variable
@@ -389,7 +389,7 @@ t_astret ZeroACAsm::visit(const ASTRangedLoop* ast)
 }
 
 
-t_astret ZeroACAsm::visit(const ASTLoopBreak* ast)
+t_astret Codegen::visit(const ASTLoopBreak* ast)
 {
 	//if(!m_curscope.size())
 	//	throw std::runtime_error("ASTLoopBreak: Not in a function.");
@@ -416,7 +416,7 @@ t_astret ZeroACAsm::visit(const ASTLoopBreak* ast)
 }
 
 
-t_astret ZeroACAsm::visit(const ASTLoopNext* ast)
+t_astret Codegen::visit(const ASTLoopNext* ast)
 {
 	//if(!m_curscope.size())
 	//	throw std::runtime_error("ASTLoopNext: Not in a function.");
@@ -443,7 +443,7 @@ t_astret ZeroACAsm::visit(const ASTLoopNext* ast)
 }
 
 
-t_astret ZeroACAsm::visit(const ASTLabel* ast)
+t_astret Codegen::visit(const ASTLabel* ast)
 {
 	// save current stream position
 	std::streampos addr = m_ostr->tellp();
@@ -453,7 +453,7 @@ t_astret ZeroACAsm::visit(const ASTLabel* ast)
 }
 
 
-t_astret ZeroACAsm::visit(const ASTJump* ast)
+t_astret Codegen::visit(const ASTJump* ast)
 {
 	if(ast->IsComefrom())
 		throw std::runtime_error("Comefrom is not (yet) implemented...");

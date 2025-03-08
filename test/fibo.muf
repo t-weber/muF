@@ -3,7 +3,9 @@
 !
 
 
-function fibo(integer :: n) result(integer)
+function fibo(n) result(integer)
+	integer :: n
+
 	if(n <= 1) then
 		return 1
 	else
@@ -12,7 +14,9 @@ function fibo(integer :: n) result(integer)
 end function
 
 
-function fac(integer :: n) result(integer)
+function fac(n) result(integer)
+	integer :: n
+
 	if(n <= 1) then
 		return 1
 	end if

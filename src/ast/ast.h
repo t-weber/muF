@@ -391,8 +391,7 @@ public:
 	ASTArgNames() : argnames{}
 	{}
 
-	void AddArg(const t_str& argname,
-		SymbolType ty=SymbolType::UNKNOWN,
+	void AddArg(const t_str& argname, SymbolType ty=SymbolType::UNKNOWN,
 		const std::vector<std::size_t>& dims = { 1 })
 	{
 		argnames.push_front(std::make_tuple(argname, ty, dims));
@@ -402,6 +401,8 @@ public:
 	{
 		return argnames;
 	}
+
+	std::size_t GetNumArgs() const { return argnames.size(); }
 
 	std::vector<t_str> GetArgIdents() const
 	{
@@ -417,6 +418,21 @@ public:
 		for(const auto& arg : argnames)
 			ty.push_back(std::get<1>(arg));
 		return ty;
+	}
+
+	const t_str& GetArgIdent(std::size_t idx) const
+	{
+		return std::get<0>(*std::next(argnames.begin(), idx));
+	}
+
+	void SetArgType(std::size_t idx, SymbolType ty)
+	{
+		std::get<1>(*std::next(argnames.begin(), idx)) = ty;
+	}
+
+	void SetArgDims(std::size_t idx, const std::vector<std::size_t>& dims)
+	{
+		std::get<2>(*std::next(argnames.begin(), idx)) = dims;
 	}
 
 	virtual ASTType type() override { return ASTType::ArgNames; }

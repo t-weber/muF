@@ -1,7 +1,7 @@
 /**
  * 0-ac parser entry point
  * @author Tobias Weber (orcid: 0000-0002-7230-1932)
- * @date dec-2022
+ * @date feb-2025
  * @license see 'LICENSE' file
  */
 
@@ -13,7 +13,7 @@
 #include "common/ext_funcs.h"
 #include "parser/lexer.h"
 #include "parser/grammar.h"
-#include "asm.h"
+#include "codegen.h"
 
 #if USE_RECASC != 0
 	#include "parser.h"
@@ -228,7 +228,7 @@ int main(int argc, char** argv)
 		std::ostream* ostr = &ofstr;
 		ostr->precision(std::numeric_limits<t_real>::digits10);
 
-		ZeroACAsm codegen{&ctx.GetSymbols(), ostr};
+		Codegen codegen{&ctx.GetSymbols(), ostr};
 		codegen.SetDebug(debug);
 		codegen.Start();
 		auto stmts = ctx.GetStatements()->GetStatementList();
@@ -242,7 +242,8 @@ int main(int argc, char** argv)
 
 		if(show_symbols)
 		{
-			std::cout << "Writing symbol table to \"" << outprog_syms << "\"..." << std::endl;
+			std::cout << "Writing symbol table to \"" << outprog_syms
+				<< "\"..." << std::endl;
 
 			std::ofstream ostrSyms{outprog_syms};
 			//ostrSyms << "\nSymbol table:\n";

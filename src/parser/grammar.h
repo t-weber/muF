@@ -33,7 +33,10 @@ enum : std::size_t
 
 	FULL_ARGUMENTLIST,
 	ARGUMENTLIST,
+
+	FULL_IDENTLIST,
 	IDENTLIST,
+
 	TYPELIST,
 
 	FUNCTION,
@@ -62,7 +65,8 @@ public:
 			statement, statements,
 			typedecl, variables, int_constants,
 			full_argumentlist, argumentlist,
-			identlist, typelist,
+			full_identlist, identlist,
+			typelist,
 			function, opt_assign, var_range,
 			cases,
 		}};
@@ -79,6 +83,14 @@ public:
 	ParserContext& GetContext() { return m_context; }
 
 
+protected:
+	void CreateOperators();
+	void CreateVariables();
+	void CreateArrays();
+	void CreateLoops();
+	void CreateFunctions();
+
+
 private:
 #ifdef CREATE_PRODUCTION_RULES
 	// non-terminals
@@ -87,7 +99,8 @@ private:
 		statements{}, statement{},
 		typedecl{}, variables{}, int_constants{},
 		full_argumentlist{}, argumentlist{},
-		identlist{}, typelist{},
+		full_identlist{}, identlist{},
+		typelist{},
 		function{}, opt_assign{}, var_range{},
 		cases{};
 
@@ -123,6 +136,10 @@ private:
 	// semantic rules
 	lalr1::t_semanticrules rules{};
 #endif
+	// current rule semantic id number
+	lalr1::t_semantic_id semanticindex{0};
+
+	std::size_t default_string_size{128};
 };
 
 #endif

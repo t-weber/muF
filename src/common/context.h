@@ -18,6 +18,7 @@
 #include "ast/ast.h"
 
 
+
 /**
  * holds the common lexer state
  */
@@ -36,6 +37,7 @@ public:
 	void IncCurLine() { ++m_curline; }
 	std::size_t GetCurLine() const { return m_curline; }
 };
+
 
 
 /**
@@ -98,11 +100,15 @@ public:
 	/**
 	 * get the currently active scope name, ignoring the last "up" levels
 	 */
-	t_str GetScopeName(std::size_t up = 0) const
+	t_str GetScopeName(std::size_t up = 0, bool add_last_sep = true) const
 	{
 		t_str name;
 		for(std::size_t level = 0; level < m_curscope.size() - up; ++level)
-			name += m_curscope[level] + Symbol::get_scopenameseparator();
+		{
+			name += m_curscope[level];
+			if(add_last_sep || level < m_curscope.size() - up - 1)
+				name += Symbol::get_scopenameseparator();
+		}
 		return name;
 	}
 
@@ -120,7 +126,7 @@ public:
 			std::cerr << "Error in line " << GetCurLine()
 				<< ": Trying to leave scope " << name
 				<< ", but the top scope is " << curscope
-				<< ".";
+				<< "." << std::endl;
 		}
 
 		m_curscope.pop_back();
@@ -131,13 +137,48 @@ public:
 	// --------------------------------------------------------------------
 	Symbol* AddScopedSymbol(const t_str& name)
 	{
-		const t_str& scope = GetScopeName();
+		const t_str scope = GetScopeName();
+
+		// look for existing symbol
+		if(Symbol *sym = m_symbols.FindSymbol(scope + name); sym)
+		{
+			sym->ty = m_symtype;
+			sym->dims = m_symdims;
+
+			// if it's a function argument, set the type
+			if(sym->is_arg)
+			{
+				const t_str funcname = GetScopeName(0, false);
+				Symbol *func = m_symbols.FindSymbol(funcname);
+				if(!func)
+				{
+					std::cerr << "Error in line " << GetCurLine()
+						<< ": Could not find function " << funcname
+						<< "." << std::endl;
+					return nullptr;
+				}
+
+				if(sym->argidx >= func->argty.size())
+				{
+					std::cerr << "Error in line " << GetCurLine()
+						<< ": Function argument index " << sym->argidx
+						<< " out of bounds." << std::endl;
+					return nullptr;
+				}
+
+				func->argty[sym->argidx] = sym->ty;
+			}
+
+			return sym;
+		}
+
+		// add a new symbol
 		return m_symbols.AddSymbol(scope, name, m_symtype, m_symdims);
 	}
 
 	const Symbol* FindScopedSymbol(const t_str& name) const
 	{
-		const t_str& scope = GetScopeName();
+		const t_str scope = GetScopeName();
 		return m_symbols.FindSymbol(scope + name);
 	}
 

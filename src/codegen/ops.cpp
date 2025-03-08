@@ -1,11 +1,11 @@
 /**
- * zero-address code generator
+ * zero-address code generator -- operators
  * @author Tobias Weber (orcid: 0000-0002-7230-1932)
  * @date 10-july-2022
  * @license see 'LICENSE' file
  */
 
-#include "asm.h"
+#include "codegen.h"
 
 
 // ----------------------------------------------------------------------------
@@ -16,7 +16,7 @@
  * @returns [ first type cast, second type cast, operation result type ]
  */
 std::tuple<t_astret, t_astret, t_astret>
-ZeroACAsm::GetCastSymType(t_astret term1, t_astret term2)
+Codegen::GetCastSymType(t_astret term1, t_astret term2)
 {
 	if(!term1 || !term2)
 		return std::make_tuple(nullptr, nullptr, nullptr);
@@ -99,7 +99,7 @@ ZeroACAsm::GetCastSymType(t_astret term1, t_astret term2)
 /**
  * emit code to cast to given type
  */
-void ZeroACAsm::CastTo(t_astret ty_to,
+void Codegen::CastTo(t_astret ty_to,
 	const std::optional<std::streampos>& pos,
 	bool allow_array_cast)
 {
@@ -156,7 +156,7 @@ void ZeroACAsm::CastTo(t_astret ty_to,
 }
 
 
-t_astret ZeroACAsm::visit(const ASTUMinus* ast)
+t_astret Codegen::visit(const ASTUMinus* ast)
 {
 	t_astret term = ast->GetTerm()->accept(this);
 	m_ostr->put(static_cast<t_vm_byte>(OpCode::USUB));
@@ -165,7 +165,7 @@ t_astret ZeroACAsm::visit(const ASTUMinus* ast)
 }
 
 
-t_astret ZeroACAsm::visit(const ASTPlus* ast)
+t_astret Codegen::visit(const ASTPlus* ast)
 {
 	t_astret term1 = ast->GetTerm1()->accept(this);
 	std::streampos term1_pos = m_ostr->tellp();
@@ -194,7 +194,7 @@ t_astret ZeroACAsm::visit(const ASTPlus* ast)
 }
 
 
-t_astret ZeroACAsm::visit(const ASTMult* ast)
+t_astret Codegen::visit(const ASTMult* ast)
 {
 	t_astret term1 = ast->GetTerm1()->accept(this);
 	std::streampos term1_pos = m_ostr->tellp();
@@ -223,7 +223,7 @@ t_astret ZeroACAsm::visit(const ASTMult* ast)
 }
 
 
-t_astret ZeroACAsm::visit(const ASTMod* ast)
+t_astret Codegen::visit(const ASTMod* ast)
 {
 	t_astret term1 = ast->GetTerm1()->accept(this);
 	std::streampos term1_pos = m_ostr->tellp();
@@ -249,7 +249,7 @@ t_astret ZeroACAsm::visit(const ASTMod* ast)
 }
 
 
-t_astret ZeroACAsm::visit(const ASTPow* ast)
+t_astret Codegen::visit(const ASTPow* ast)
 {
 	t_astret term1 = ast->GetTerm1()->accept(this);
 	std::streampos term1_pos = m_ostr->tellp();
@@ -275,7 +275,7 @@ t_astret ZeroACAsm::visit(const ASTPow* ast)
 }
 
 
-t_astret ZeroACAsm::visit(const ASTNorm* ast)
+t_astret Codegen::visit(const ASTNorm* ast)
 {
 	t_astret term = ast->GetTerm()->accept(this);
 	CallExternal("norm");
@@ -283,7 +283,7 @@ t_astret ZeroACAsm::visit(const ASTNorm* ast)
 }
 
 
-t_astret ZeroACAsm::visit(const ASTComp* ast)
+t_astret Codegen::visit(const ASTComp* ast)
 {
 	ast->GetTerm1()->accept(this);
 	ast->GetTerm2()->accept(this);
@@ -331,7 +331,7 @@ t_astret ZeroACAsm::visit(const ASTComp* ast)
 }
 
 
-t_astret ZeroACAsm::visit(const ASTBool* ast)
+t_astret Codegen::visit(const ASTBool* ast)
 {
 	ast->GetTerm1()->accept(this);
 	if(ast->GetTerm2())

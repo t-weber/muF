@@ -6,7 +6,9 @@
 !
 ! recursive factorial
 !
-function fac_rec(integer :: n) result(integer)
+function fac_rec(n) result(integer)
+	integer :: n
+
 	if(n <= 1) then
 		return 1
 	end if
@@ -18,7 +20,9 @@ end function
 !
 ! iterative factorial
 !
-function fac(integer :: n) result(integer)
+function fac(n) result(integer)
+	integer :: n
+
 	if(n <= 1) then
 		return 1
 	end if
@@ -38,7 +42,9 @@ end function
 ! binomial coefficient
 ! see: https://en.wikipedia.org/wiki/Binomial_coefficient
 !
-function binom(integer :: n, integer :: k) result(integer)
+function binom(n, k) result(integer)
+	integer :: n, k
+
 	return fac(n) / (fac(n - k) * fac(k))
 end function
 
@@ -47,7 +53,9 @@ end function
 ! variation of a tuple without repetition
 ! see: https://de.wikipedia.org/wiki/Variation_(Kombinatorik)
 !
-function var_norep(integer :: n, integer :: k) result(integer)
+function var_norep(n, k) result(integer)
+	integer :: n, k
+
 	if(k > n) then
 		return 0
 	end if
@@ -60,7 +68,8 @@ end function
 ! variation of a tuple with repetition
 ! see: https://de.wikipedia.org/wiki/Variation_(Kombinatorik)
 !
-function var_rep(integer :: n, integer :: k) result(integer)
+function var_rep(n, k) result(integer)
+	integer :: n, k
 	return n**k
 end function
 
@@ -69,7 +78,8 @@ end function
 ! combination of a set without repetition
 ! see: https://en.wikipedia.org/wiki/Combination
 !
-function comb_norep(integer :: n, integer :: k) result(integer)
+function comb_norep(n, k) result(integer)
+	integer :: n, k
 	if(k > n) then
 		return 0
 	end if
@@ -82,7 +92,8 @@ end function
 ! combination of a set with repetition
 ! see: https://en.wikipedia.org/wiki/Combination
 !
-function comb_rep(integer :: n, integer :: k) result(integer)
+function comb_rep(n, k) result(integer)
+	integer :: n, k
 	return binom(n + k - 1, k)
 end function
 

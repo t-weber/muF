@@ -5,16 +5,17 @@
  * @license see 'LICENSE' file
  */
 
-#include "asm.h"
+#include "codegen.h"
 
 #include <sstream>
+
 
 
 //#define START_FUNC "start"  // start with the given entry-point
 #define START_FUNC ""         // no start function => directly start in global scope
 
 
-ZeroACAsm::ZeroACAsm(SymTab* syms, std::ostream* ostr)
+Codegen::Codegen(SymTab* syms, std::ostream* ostr)
 	: m_syms{syms}, m_ostr{ostr}
 {
 	// dummy symbol for real constants
@@ -67,7 +68,7 @@ ZeroACAsm::ZeroACAsm(SymTab* syms, std::ostream* ostr)
 }
 
 
-ZeroACAsm::~ZeroACAsm()
+Codegen::~Codegen()
 {
 	for(Symbol** sym : {
 		&m_real_const, &m_int_const, &m_cplx_const,
@@ -83,7 +84,7 @@ ZeroACAsm::~ZeroACAsm()
 /**
  * insert start-up code
  */
-void ZeroACAsm::Start()
+void Codegen::Start()
 {
 	// create global stack frame
 	t_vm_int global_framesize = static_cast<t_vm_int>(GetStackFrameSize(nullptr));
@@ -144,7 +145,7 @@ void ZeroACAsm::Start()
 /**
  * insert missing addresses and finalising code
  */
-void ZeroACAsm::Finish()
+void Codegen::Finish()
 {
 	// remove global stack frame
 	t_vm_int global_framesize = static_cast<t_vm_int>(GetStackFrameSize(nullptr));

@@ -49,8 +49,10 @@ include_directories(
 
 
 add_executable(parsergen
-	src/parser/parsergen.cpp
-	src/parser/grammar.cpp
+	src/parser/parsergen.cpp src/parser/grammar.cpp
+	src/parser/func.cpp src/parser/loops.cpp
+	src/parser/ops.cpp src/parser/var.cpp
+	src/parser/arr.cpp
 )
 
 target_compile_definitions(parsergen
@@ -72,14 +74,19 @@ if(EXISTS "${CMAKE_BINARY_DIR}/parser.cpp")
 
 	add_executable(compile
 		src/codegen/main.cpp
-		${CMAKE_BINARY_DIR}/parser.cpp ${CMAKE_BINARY_DIR}/parser.h
-		src/parser/grammar.cpp src/parser/grammar.h
-		src/parser/lexer.cpp src/parser/lexer.h
-		src/codegen/asm.cpp src/codegen/asm.h
+		src/codegen/codegen.cpp src/codegen/codegen.h
 		src/codegen/var.cpp src/codegen/arr.cpp
 		src/codegen/func.cpp src/codegen/ops.cpp
 		src/codegen/loops.cpp
 		src/codegen/consttab.cpp src/codegen/consttab.h
+
+		src/parser/lexer.cpp src/parser/lexer.h
+		${CMAKE_BINARY_DIR}/parser.cpp ${CMAKE_BINARY_DIR}/parser.h
+		src/parser/grammar.cpp src/parser/grammar.h
+		src/parser/func.cpp src/parser/loops.cpp
+		src/parser/ops.cpp src/parser/var.cpp
+		src/parser/arr.cpp
+
 		src/common/sym.cpp src/common/sym.h
 		src/ast/ast.h
 		src/ast/printast.cpp src/ast/printast.h
@@ -102,14 +109,17 @@ elseif(EXISTS "${CMAKE_BINARY_DIR}/parser.tab")
 
 	add_executable(compile
 		src/codegen/main.cpp
-		src/parser/grammar.cpp src/parser/grammar.h
-		src/parser/lexer.cpp src/parser/lexer.h
-		src/codegen/asm.cpp src/codegen/asm.h
-		src/codegen/arr.cpp
-		src/codegen/func.cpp
-		src/codegen/ops.cpp
-		src/codegen/var.cpp
+		src/codegen/codegen.cpp src/codegen/codegen.h
+		src/codegen/var.cpp src/codegen/arr.cpp
+		src/codegen/func.cpp src/codegen/ops.cpp
 		src/codegen/consttab.cpp src/codegen/consttab.h
+
+		src/parser/lexer.cpp src/parser/lexer.h
+		src/parser/grammar.cpp src/parser/grammar.h
+		src/parser/func.cpp src/parser/loops.cpp
+		src/parser/ops.cpp src/parser/var.cpp
+		src/parser/arr.cpp
+
 		src/common/sym.cpp src/common/sym.h
 		src/ast/ast.h
 		src/ast/printast.cpp src/ast/printast.h
@@ -135,8 +145,8 @@ endif()
 # vm
 # -----------------------------------------------------------------------------
 add_executable(vm
-	src/vm/main.cpp src/vm/types.h
 	src/common/types.h
+	src/vm/main.cpp src/vm/types.h
 	src/vm/opcodes.h src/vm/vm.h
 	src/vm/ops.h src/vm/mem.h
 	src/vm/vm.cpp src/vm/run.cpp

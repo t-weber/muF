@@ -1,7 +1,7 @@
 /**
  * muF compiler generator
  * @author Tobias Weber (orcid: 0000-0002-7230-1932)
- * @date dec-2022
+ * @date feb-2025
  * @license see 'LICENSE' file
  */
 

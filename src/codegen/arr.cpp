@@ -1,17 +1,17 @@
 /**
- * zero-address code generator
+ * zero-address code generator -- array access
  * @author Tobias Weber (orcid: 0000-0002-7230-1932)
  * @date 10-july-2022
  * @license see 'LICENSE' file
  */
 
-#include "asm.h"
+#include "codegen.h"
 
 
 // ----------------------------------------------------------------------------
 // arrays
 // ----------------------------------------------------------------------------
-std::pair<Symbol*, Symbol*> ZeroACAsm::GetArrayTypeConst(SymbolType ty) const
+std::pair<Symbol*, Symbol*> Codegen::GetArrayTypeConst(SymbolType ty) const
 {
 	Symbol *arr_ty = nullptr;
 	Symbol *arr_elem_ty = nullptr;
@@ -42,7 +42,7 @@ std::pair<Symbol*, Symbol*> ZeroACAsm::GetArrayTypeConst(SymbolType ty) const
 }
 
 
-t_astret ZeroACAsm::visit(const ASTArrayAccess* ast)
+t_astret Codegen::visit(const ASTArrayAccess* ast)
 {
 	t_astret term = ast->GetTerm()->accept(this);
 
@@ -129,7 +129,7 @@ t_astret ZeroACAsm::visit(const ASTArrayAccess* ast)
 }
 
 
-t_astret ZeroACAsm::visit(const ASTArrayAssign* ast)
+t_astret Codegen::visit(const ASTArrayAssign* ast)
 {
 	// get variable from symbol table
 	const t_str& varname = ast->GetIdent();
@@ -231,7 +231,7 @@ t_astret ZeroACAsm::visit(const ASTArrayAssign* ast)
 }
 
 
-t_astret ZeroACAsm::visit(const ASTExprList* ast)
+t_astret Codegen::visit(const ASTExprList* ast)
 {
 	t_astret sym_ret = nullptr;
 	const bool is_arr = ast->IsArray();

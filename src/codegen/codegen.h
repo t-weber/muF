@@ -5,8 +5,8 @@
  * @license see 'LICENSE' file
  */
 
-#ifndef __ZEROACASM_H__
-#define __ZEROACASM_H__
+#ifndef __CODEGEN_H__
+#define __CODEGEN_H__
 
 #include "ast/ast.h"
 #include "consttab.h"
@@ -20,14 +20,14 @@
  * zero-address code generation
  * (the return value is only used for type information for casting)
  */
-class ZeroACAsm : public ASTVisitor
+class Codegen : public ASTVisitor
 {
 public:
-	ZeroACAsm(SymTab* syms, std::ostream* ostr = &std::cout);
-	virtual ~ZeroACAsm();
+	Codegen(SymTab* syms, std::ostream* ostr = &std::cout);
+	virtual ~Codegen();
 
-	ZeroACAsm(const ZeroACAsm&) = delete;
-	const ZeroACAsm& operator=(const ZeroACAsm&) = delete;
+	Codegen(const Codegen&) = delete;
+	const Codegen& operator=(const Codegen&) = delete;
 
 	virtual t_astret visit(const ASTUMinus* ast) override;
 	virtual t_astret visit(const ASTPlus* ast) override;

@@ -58,6 +58,8 @@ struct Symbol
 	std::vector<std::size_t> dims{ 1 };
 
 	// for functions
+	bool is_arg{ false };             // symbol is a function argument
+	std::size_t argidx{ 0 };          // argument index
 	std::vector<SymbolType> argty{};
 	SymbolType retty = SymbolType::VOID;
 	std::vector<std::size_t> retdims{ 1 };
@@ -67,11 +69,9 @@ struct Symbol
 
 	bool is_tmp{false};               // temporary or declared variable?
 	bool is_external{false};          // link to external variable or function?
-	bool is_arg{false};               // symbol is a function argument
 	bool is_global{false};            // symbol is global
 	std::optional<t_int> addr{};      // optional address of function or variable
 	std::optional<t_int> end_addr{};  // optional address of function
-	std::size_t argidx{0};            // optional argument index
 
 	mutable std::size_t refcnt{0};    // number of reference to this symbol
 
