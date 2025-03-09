@@ -6,35 +6,33 @@
 !
 ! recursive factorial
 !
-function fac_rec(n) result(integer)
+function fac_rec(n) result(res)
 	integer :: n
+	integer :: res = 1
 
 	if(n <= 1) then
-		return 1
+		return
 	end if
 
-	return n*fac(n - 1)
+	res = n*fac(n - 1)
 end function
 
 
 !
 ! iterative factorial
 !
-function fac(n) result(integer)
+function fac(n) result(res)
 	integer :: n
+	integer :: res = 1
 
 	if(n <= 1) then
-		return 1
+		return
 	end if
 
-	integer :: res = 1
 	integer :: i = 1
-
 	do i = 1, n
 		res = res * i
 	end do
-
-	return res
 end function
 
 
@@ -42,10 +40,11 @@ end function
 ! binomial coefficient
 ! see: https://en.wikipedia.org/wiki/Binomial_coefficient
 !
-function binom(n, k) result(integer)
+function binom(n, k) result(res)
 	integer :: n, k
+	integer :: res
 
-	return fac(n) / (fac(n - k) * fac(k))
+	res = fac(n) / (fac(n - k) * fac(k))
 end function
 
 
@@ -53,14 +52,15 @@ end function
 ! variation of a tuple without repetition
 ! see: https://de.wikipedia.org/wiki/Variation_(Kombinatorik)
 !
-function var_norep(n, k) result(integer)
+function var_norep(n, k) result(res)
 	integer :: n, k
+	integer :: res = 0
 
 	if(k > n) then
-		return 0
+		return
 	end if
 
-	return fac(n) / fac(n - k)
+	res = fac(n) / fac(n - k)
 end function
 
 
@@ -68,9 +68,11 @@ end function
 ! variation of a tuple with repetition
 ! see: https://de.wikipedia.org/wiki/Variation_(Kombinatorik)
 !
-function var_rep(n, k) result(integer)
+function var_rep(n, k) result(res)
 	integer :: n, k
-	return n**k
+	integer :: res
+
+	res = n**k
 end function
 
 
@@ -78,13 +80,15 @@ end function
 ! combination of a set without repetition
 ! see: https://en.wikipedia.org/wiki/Combination
 !
-function comb_norep(n, k) result(integer)
+function comb_norep(n, k) result(res)
 	integer :: n, k
+	integer :: res = 0
+
 	if(k > n) then
-		return 0
+		return
 	end if
 
-	return binom(n, k)
+	res = binom(n, k)
 end function
 
 
@@ -92,9 +96,11 @@ end function
 ! combination of a set with repetition
 ! see: https://en.wikipedia.org/wiki/Combination
 !
-function comb_rep(n, k) result(integer)
+function comb_rep(n, k) result(res)
 	integer :: n, k
-	return binom(n + k - 1, k)
+	integer :: res
+
+	res = binom(n + k - 1, k)
 end function
 
 

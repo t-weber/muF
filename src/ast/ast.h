@@ -507,19 +507,18 @@ class ASTReturn : public ASTAcceptor<ASTReturn>
 {
 public:
 	ASTReturn(const std::shared_ptr<ASTExprList>& rets = nullptr,
-		bool multi_return = false)
-		: rets{rets}, multi_return{multi_return}
+		bool only_jump_to_func_end = true)
+		: rets{rets}, only_jump_to_func_end{only_jump_to_func_end}
 	{}
 
+	bool OnlyJumpToFuncEnd() const { return only_jump_to_func_end; }
 	const std::shared_ptr<ASTExprList> GetRets() const { return rets; }
-
-	bool IsMultiReturn() const { return multi_return; }
 
 	virtual ASTType type() override { return ASTType::Return; }
 
 private:
 	std::shared_ptr<ASTExprList> rets{};
-	bool multi_return{ false };
+	bool only_jump_to_func_end{ true };
 };
 
 

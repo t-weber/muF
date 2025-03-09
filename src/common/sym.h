@@ -59,7 +59,9 @@ struct Symbol
 
 	// for functions
 	bool is_arg{ false };             // symbol is a function argument
+	bool is_ret{ false };             // symbol is a function return value
 	std::size_t argidx{ 0 };          // argument index
+	std::size_t retidx{ 0 };          // return value index
 	std::vector<SymbolType> argty{};
 	SymbolType retty = SymbolType::VOID;
 	std::vector<std::size_t> retdims{ 1 };

@@ -115,6 +115,8 @@ protected:
 	void PushIntVecConst(const std::vector<t_vm_int>& vec);
 	void PushCplxVecConst(const std::vector<t_vm_cplx>& vec);
 
+	t_astret PushVar(const t_str& varname);
+
 	void AssignVar(t_astret sym);
 	void CallExternal(const t_str& funcname);
 
@@ -142,7 +144,7 @@ private:
 	// stream positions where addresses need to be patched in
 	std::vector<std::tuple<t_str, std::streampos, t_vm_addr, const AST*>>
 		m_func_comefroms{};
-	std::vector<std::streampos> m_endfunc_comefroms{};
+	std::vector<std::streampos> m_pushret_comefroms{}, m_endfunc_comefroms{};
 	std::vector<std::tuple<std::streampos, std::streampos>> m_const_addrs{};
 
 	// currently active loops in function

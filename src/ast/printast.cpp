@@ -186,32 +186,39 @@ t_astret ASTPrinter::visit(const ASTFunc* ast)
 
 t_astret ASTPrinter::visit(const ASTReturn* ast)
 {
-	const auto& retvals = ast->GetRets()->GetList();
-	std::size_t numRets = retvals.size();
-
-	if(numRets == 0)
+	if(ast->OnlyJumpToFuncEnd())
 	{
 		(*m_ostr) << "<Return />\n";
 	}
-	else if(numRets == 1)
+	else
 	{
-		(*m_ostr) << "<Return>\n";
-		(*retvals.begin())->accept(this);
-		(*m_ostr) << "</Return>\n";
-	}
-	else if(numRets > 1)
-	{
-		(*m_ostr) << "<MultiReturn>\n";
-		std::size_t elemnr = 0;
-		for(const auto& elem : retvals)
-		{
-			(*m_ostr) << "<val_" << elemnr << ">\n";
-			elem->accept(this);
-			(*m_ostr) << "</val_" << elemnr << ">\n";
+		const auto& retvals = ast->GetRets()->GetList();
+		std::size_t numRets = retvals.size();
 
-			++elemnr;
+		if(numRets == 0)
+		{
+			(*m_ostr) << "<Return />\n";
 		}
-		(*m_ostr) << "</MultiReturn>\n";
+		else if(numRets == 1)
+		{
+			(*m_ostr) << "<Return>\n";
+			(*retvals.begin())->accept(this);
+			(*m_ostr) << "</Return>\n";
+		}
+		else if(numRets > 1)
+		{
+			(*m_ostr) << "<MultiReturn>\n";
+			std::size_t elemnr = 0;
+			for(const auto& elem : retvals)
+			{
+				(*m_ostr) << "<val_" << elemnr << ">\n";
+				elem->accept(this);
+				(*m_ostr) << "</val_" << elemnr << ">\n";
+
+				++elemnr;
+			}
+			(*m_ostr) << "</MultiReturn>\n";
+		}
 	}
 
 	return nullptr;

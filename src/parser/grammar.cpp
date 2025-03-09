@@ -22,9 +22,7 @@ void Grammar::CreateGrammar()
 	int_constants = std::make_shared<lalr1::NonTerminal>(INT_CONSTANTS, "int_constants");
 	full_identlist = std::make_shared<lalr1::NonTerminal>(FULL_IDENTLIST, "full_identlist");
 	identlist = std::make_shared<lalr1::NonTerminal>(IDENTLIST, "identlist");
-	typelist = std::make_shared<lalr1::NonTerminal>(TYPELIST, "typelist");
 	function = std::make_shared<lalr1::NonTerminal>(FUNCTION, "function");
-	typedecl = std::make_shared<lalr1::NonTerminal>(TYPEDECL, "typedecl");
 	opt_assign = std::make_shared<lalr1::NonTerminal>(OPT_ASSIGN, "opt_assign");
 	var_range = std::make_shared<lalr1::NonTerminal>(VAR_RANGE, "var_range");
 	cases = std::make_shared<lalr1::NonTerminal>(CASES, "cases");

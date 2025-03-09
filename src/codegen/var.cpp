@@ -192,10 +192,11 @@ t_astret Codegen::visit(const ASTVarDecl* ast)
 }
 
 
-t_astret Codegen::visit(const ASTVar* ast)
+/**
+ * generate instructions to push a variable onto the stack
+ */
+t_astret Codegen::PushVar(const t_str& varname)
 {
-	const t_str& varname = ast->GetIdent();
-
 	// get variable from symbol table
 	t_astret sym = GetSym(varname);
 	if(!sym)
@@ -216,6 +217,12 @@ t_astret Codegen::visit(const ASTVar* ast)
 		m_ostr->put(static_cast<t_vm_byte>(OpCode::RDMEM));
 
 	return sym;
+}
+
+
+t_astret Codegen::visit(const ASTVar* ast)
+{
+	return PushVar(ast->GetIdent());
 }
 
 

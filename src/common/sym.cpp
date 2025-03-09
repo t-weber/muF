@@ -67,7 +67,7 @@ Symbol* SymTab::AddFunc(const t_str& scope,
 	const t_str& name, SymbolType retty,
 	const std::vector<SymbolType>& argtypes,
 	const std::vector<std::size_t>* retdims,
-	const std::vector<SymbolType>* multirettypes,
+	const std::vector<SymbolType>* rettypes,
 	bool is_external)
 {
 	Symbol sym{.name = name,
@@ -81,9 +81,9 @@ Symbol* SymTab::AddFunc(const t_str& scope,
 	if(retdims)
 		sym.retdims = *retdims;
 
-	if(multirettypes)
+	if(rettypes)
 	{
-		for(SymbolType ty : *multirettypes)
+		for(SymbolType ty : *rettypes)
 		{
 			auto retsym = std::make_shared<Symbol>();
 			retsym->ty = ty;
@@ -101,9 +101,9 @@ Symbol* SymTab::AddExtFunc(const t_str& scope,
 	SymbolType retty,
 	const std::vector<SymbolType>& argtypes,
 	const std::vector<std::size_t>* retdims,
-	const std::vector<SymbolType>* multirettypes)
+	const std::vector<SymbolType>* rettypes)
 {
-	Symbol *sym = AddFunc(scope, name, retty, argtypes, retdims, multirettypes, true);
+	Symbol *sym = AddFunc(scope, name, retty, argtypes, retdims, rettypes, true);
 	sym->ext_name = extfunc_name;
 	return sym;
 }
@@ -181,6 +181,8 @@ std::ostream& operator<<(std::ostream& ostr, const SymTab& tab)
 			ty += " (global)";
 		if(sym.is_arg)
 			ty += " (arg " + std::to_string(sym.argidx) + ")";
+		if(sym.is_ret)
+			ty += " (ret " + std::to_string(sym.retidx) + ")";
 		if(sym.is_tmp)
 			ty += " (tmp)";
 

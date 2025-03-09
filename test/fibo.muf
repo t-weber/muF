@@ -3,25 +3,28 @@
 !
 
 
-function fibo(n) result(integer)
+function fibo(n) result(m)
 	integer :: n
+	integer :: m
 
 	if(n <= 1) then
-		return 1
+		m = 1
 	else
-		return fibo(n - 1) + fibo(n - 2)
+		m = fibo(n - 1) + fibo(n - 2)
 	end if
 end function
 
 
-function fac(n) result(integer)
+function fac(n) result(m)
 	integer :: n
+	integer :: m
 
 	if(n <= 1) then
-		return 1
+		m = 1
+		return
 	end if
 
-	return n*fac(n - 1)
+	m = n*fac(n - 1)
 end function
 
 

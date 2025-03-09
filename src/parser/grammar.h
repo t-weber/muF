@@ -34,11 +34,8 @@ enum : std::size_t
 	FULL_IDENTLIST,
 	IDENTLIST,
 
-	TYPELIST,
-
 	FUNCTION,
 
-	TYPEDECL,
 	OPT_ASSIGN,
 
 	VAR_RANGE,
@@ -60,9 +57,8 @@ public:
 			start,
 			expression, expressions,
 			statement, statements,
-			typedecl, variables, int_constants,
+			variables, int_constants,
 			full_identlist, identlist,
-			typelist,
 			function, opt_assign, var_range,
 			cases,
 		}};
@@ -93,9 +89,8 @@ private:
 	lalr1::NonTerminalPtr start{},
 		expressions{}, expression{},
 		statements{}, statement{},
-		typedecl{}, variables{}, int_constants{},
+		variables{}, int_constants{},
 		full_identlist{}, identlist{},
-		typelist{},
 		function{}, opt_assign{}, var_range{},
 		cases{};
 

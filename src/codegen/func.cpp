@@ -60,7 +60,9 @@ t_astret Codegen::visit(const ASTFunc* ast)
 	m_ostr->put(static_cast<t_vm_byte>(OpCode::JMP));
 
 	auto argnames = ast->GetArgs();
-	t_vm_int num_args = static_cast<t_vm_int>(argnames.size());
+	auto retnames = ast->GetRets();
+	const t_vm_int num_args = static_cast<t_vm_int>(argnames.size());
+	//const t_vm_int num_rets = static_cast<t_vm_int>(retnames.size());
 
 	// function arguments
 	std::size_t argidx = 0;
@@ -95,20 +97,28 @@ t_astret Codegen::visit(const ASTFunc* ast)
 	// function statement block
 	ast->GetStatements()->accept(this);
 
+	// end of function, but before pusing the return values
+	std::streampos pushret_streampos = m_ostr->tellp();
+
+	// push return values
+	for(const auto& [retname, rettype, dims] : retnames)
+		PushVar(retname);
+
+	// end of function before return instruction
 	std::streampos ret_streampos = m_ostr->tellp();
 
-	// push stack frame size
+	// push stack frame size for returning
 	t_vm_int framesize = static_cast<t_vm_int>(GetStackFrameSize(func));
 	m_ostr->put(static_cast<t_vm_byte>(OpCode::PUSH));
 	m_ostr->put(static_cast<t_vm_byte>(VMType::INT));
 	m_ostr->write(reinterpret_cast<const char*>(&framesize), vm_type_size<VMType::INT, false>);
 
-	// push number of arguments
+	// push number of arguments for returning
 	m_ostr->put(static_cast<t_vm_byte>(OpCode::PUSH));
 	m_ostr->put(static_cast<t_vm_byte>(VMType::INT));
 	m_ostr->write(reinterpret_cast<const char*>(&num_args), vm_type_size<VMType::INT, false>);
 
-	// return
+	// return instruction
 	m_ostr->put(static_cast<t_vm_byte>(OpCode::RET));
 
 	// end-of-function jump address
@@ -116,6 +126,16 @@ t_astret Codegen::visit(const ASTFunc* ast)
 	func->end_addr = end_func_streampos;
 
 	// fill in any saved, unset end-of-function jump addresses
+	for(std::streampos pos : m_pushret_comefroms)
+	{
+		t_vm_addr to_skip = pushret_streampos - pos;
+		// already skipped over address and jmp instruction
+		to_skip -= vm_type_size<VMType::ADDR_IP, true>;
+		m_ostr->seekp(pos);
+		m_ostr->write(reinterpret_cast<const char*>(&to_skip), vm_type_size<VMType::ADDR_IP, false>);
+	}
+	m_pushret_comefroms.clear();
+
 	for(std::streampos pos : m_endfunc_comefroms)
 	{
 		t_vm_addr to_skip = ret_streampos - pos;
@@ -236,27 +256,54 @@ t_astret Codegen::visit(const ASTReturn* ast)
 	if(!func)
 		throw std::runtime_error("ASTReturn: Function \"" + cur_func + "\" is not in symbol table.");*/
 
-	t_astret sym_ret = nullptr;
-
-	// return value(s)
-	for(const auto& retast : ast->GetRets()->GetList())
+	// don't push any return values and just jump before the end of the function
+	if(ast->OnlyJumpToFuncEnd())
 	{
-		t_astret sym = retast->accept(this);
-		if(!sym_ret)
-			sym_ret = sym;
+		if(ast->GetRets())
+		{
+			throw std::runtime_error(
+				"ASTReturn: Given return values are not handled here,"
+				" but automatically pushed at the end of the function.");
+		}
+
+		// write jump address to before the end of the function
+		m_ostr->put(static_cast<t_vm_byte>(OpCode::PUSH)); // push jump address
+		m_ostr->put(static_cast<t_vm_byte>(VMType::ADDR_IP));
+		m_pushret_comefroms.push_back(m_ostr->tellp());
+		t_vm_addr dummy_addr = 0;
+		m_ostr->write(reinterpret_cast<const char*>(&dummy_addr), vm_type_size<VMType::ADDR_IP, false>);
+
+		// jump before the end of the function
+		m_ostr->put(static_cast<t_vm_byte>(OpCode::JMP));
 	}
 
-	// write jump address to the end of the function
-	m_ostr->put(static_cast<t_vm_byte>(OpCode::PUSH)); // push jump address
-	m_ostr->put(static_cast<t_vm_byte>(VMType::ADDR_IP));
-	m_endfunc_comefroms.push_back(m_ostr->tellp());
-	t_vm_addr dummy_addr = 0;
-	m_ostr->write(reinterpret_cast<const char*>(&dummy_addr), vm_type_size<VMType::ADDR_IP, false>);
+	// explicitly push return values and jump to the end of the function
+	else
+	{
+		t_astret sym_ret = nullptr;
 
-	// jump to the end of the function
-	m_ostr->put(static_cast<t_vm_byte>(OpCode::JMP));
+		// push return value(s) on stack
+		for(const auto& retast : ast->GetRets()->GetList())
+		{
+			t_astret sym = retast->accept(this);
+			if(!sym_ret)
+				sym_ret = sym;
+		}
 
-	return sym_ret;
+		// write jump address to the end of the function
+		m_ostr->put(static_cast<t_vm_byte>(OpCode::PUSH)); // push jump address
+		m_ostr->put(static_cast<t_vm_byte>(VMType::ADDR_IP));
+		m_endfunc_comefroms.push_back(m_ostr->tellp());
+		t_vm_addr dummy_addr = 0;
+		m_ostr->write(reinterpret_cast<const char*>(&dummy_addr), vm_type_size<VMType::ADDR_IP, false>);
+
+		// jump to the end of the function
+		m_ostr->put(static_cast<t_vm_byte>(OpCode::JMP));
+
+		return sym_ret;
+	}
+
+	return nullptr;
 }
 
 

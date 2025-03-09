@@ -15,7 +15,8 @@ void Grammar::CreateLoops()
 	// --------------------------------------------------------------------------------
 	// conditional
 #ifdef CREATE_PRODUCTION_RULES
-	statement->AddRule({ keyword_if, expression, keyword_then, statement, keyword_end, keyword_if }, semanticindex);
+	statement->AddRule({ keyword_if, expression, keyword_then,
+		statements, keyword_end, keyword_if }, semanticindex);
 #endif
 #ifdef CREATE_SEMANTIC_RULES
 	rules.emplace(std::make_pair(semanticindex,
@@ -33,7 +34,8 @@ void Grammar::CreateLoops()
 
 	// conditional
 #ifdef CREATE_PRODUCTION_RULES
-	statement->AddRule({ keyword_if, expression, keyword_then, statement, keyword_else, statement, keyword_end, keyword_if }, semanticindex);
+	statement->AddRule({ keyword_if, expression, keyword_then,
+		statements, keyword_else, statements, keyword_end, keyword_if }, semanticindex);
 #endif
 #ifdef CREATE_SEMANTIC_RULES
 	rules.emplace(std::make_pair(semanticindex,
@@ -73,7 +75,9 @@ void Grammar::CreateLoops()
 
 	// do while loop
 #ifdef CREATE_PRODUCTION_RULES
-	statement->AddRule({ keyword_do, keyword_while, bracket_open, expression, bracket_close, statements, keyword_end, keyword_do }, semanticindex);
+	statement->AddRule({ keyword_do, keyword_while,
+		bracket_open, expression, bracket_close,
+		statements, keyword_end, keyword_do }, semanticindex);
 #endif
 #ifdef CREATE_SEMANTIC_RULES
 	rules.emplace(std::make_pair(semanticindex,
