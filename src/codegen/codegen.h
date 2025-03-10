@@ -80,7 +80,7 @@ public:
 	// ------------------------------------------------------------------------
 
 	void Start();
-	void Finish();
+	std::streampos Finish();
 
 	void SetDebug(bool b) { m_debug = b; }
 

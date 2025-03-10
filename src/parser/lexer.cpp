@@ -18,12 +18,6 @@
 using namespace lalr1;
 
 
-template<template<std::size_t, class...> class t_func, class t_params, std::size_t ...seq>
-constexpr void constexpr_loop(const std::index_sequence<seq...>&, const t_params& params)
-{
-	( (std::apply(t_func<seq>{}, params)), ... );
-}
-
 
 Lexer::Lexer(std::istream* istr) : m_istr{istr}
 {
@@ -470,6 +464,16 @@ t_lexer_match Lexer::GetNextToken(std::size_t* _line)
 	}
 
 	return longest_lexer_matching[0];
+}
+
+
+/**
+ * apply a function for all the indices in a sequence
+ */
+template<template<std::size_t, class...> class t_func, class t_params, std::size_t ...seq>
+constexpr void constexpr_loop(const std::index_sequence<seq...>&, const t_params& params)
+{
+	( (std::apply(t_func<seq>{}, params)), ... );
 }
 
 

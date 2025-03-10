@@ -145,7 +145,7 @@ void Codegen::Start()
 /**
  * insert missing addresses and finalising code
  */
-void Codegen::Finish()
+std::streampos Codegen::Finish()
 {
 	// remove global stack frame
 	t_vm_int global_framesize = static_cast<t_vm_int>(GetStackFrameSize(nullptr));
@@ -233,4 +233,5 @@ void Codegen::Finish()
 
 	// seek to end of stream
 	m_ostr->seekp(0, std::ios_base::end);
+	return m_ostr->tellp();
 }

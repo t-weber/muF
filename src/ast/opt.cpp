@@ -8,6 +8,9 @@
 #include "opt.h"
 #include "common/helpers.h"
 
+#include <variant>
+#include <utility>
+
 
 
 ASTOpt::ASTOpt()
@@ -24,7 +27,7 @@ ASTPtr ASTOpt::OptConsts(ASTPtr ast)
 	if(!ast)
 		return nullptr;
 
-	// perform constant operation
+	// perform constant operations
 	auto perform_op = [this]<class t_ast, class t_val>(auto _ast) -> ASTPtr
 	{
 		if(!_ast)
@@ -73,52 +76,60 @@ ASTPtr ASTOpt::OptConsts(ASTPtr ast)
 		return term1;
 	};
 
+
+	// loop perform_op over the given types
+	using t_types = std::variant<t_int, t_real, t_cplx>;
+	auto type_seq = std::make_index_sequence<std::variant_size_v<t_types>>();
+
+	auto perform_op_loop = [perform_op]<class t_ast, std::size_t ...seq>(
+		ASTPtr ast, const std::index_sequence<seq...>&) -> ASTPtr
+	{
+		ASTPtr replacement = nullptr;
+
+		auto op_func = [perform_op, &replacement]<class t_val>(ASTPtr ast)
+		{
+			if(replacement)  // replacement already found?
+				return;
+			replacement = perform_op.template operator()<t_ast, t_val>(ast);
+		};
+
+		( (op_func.template operator()<std::variant_alternative_t<seq, t_types>>(ast)), ...);
+		return replacement;
+	};
+
+
 	if(ast->type() == ASTType::Plus)
 	{
-		if(auto replacement = perform_op.template operator()<ASTPlus, t_int>(ast))
+		if(ASTPtr replacement = perform_op_loop.template operator()<ASTPlus>(ast, type_seq))
 			return replacement;
-		else if(auto replacement = perform_op.template operator()<ASTPlus, t_real>(ast))
-			return replacement;
-		else if(auto replacement = perform_op.template operator()<ASTPlus, t_cplx>(ast))
-			return replacement;
-		else
+
+		// string concatenation
+		auto astplus = std::dynamic_pointer_cast<ASTPlus>(ast);
+		if(astplus->GetTerm1()->type() == ASTType::StrConst &&
+			astplus->GetTerm2()->type() == ASTType::StrConst &&
+			!astplus->IsInverted())
 		{
-			// string concatenation
-			auto astplus = std::dynamic_pointer_cast<ASTPlus>(ast);
-			if(astplus->GetTerm1()->type() == ASTType::StrConst &&
-				astplus->GetTerm2()->type() == ASTType::StrConst &&
-				!astplus->IsInverted())
-			{
-				auto term1 = std::dynamic_pointer_cast<ASTStrConst>(astplus->GetTerm1());
-				auto term2 = std::dynamic_pointer_cast<ASTStrConst>(astplus->GetTerm2());
-				term1->SetVal(term1->GetVal() + term2->GetVal());
-				return term1;
-			}
+			auto term1 = std::dynamic_pointer_cast<ASTStrConst>(astplus->GetTerm1());
+			auto term2 = std::dynamic_pointer_cast<ASTStrConst>(astplus->GetTerm2());
+			term1->SetVal(term1->GetVal() + term2->GetVal());
+			return term1;
 		}
 	}
 	else if(ast->type() == ASTType::Mult)
 	{
-		if(auto replacement = perform_op.template operator()<ASTMult, t_int>(ast))
-			return replacement;
-		else if(auto replacement = perform_op.template operator()<ASTMult, t_real>(ast))
-			return replacement;
-		else if(auto replacement = perform_op.template operator()<ASTMult, t_cplx>(ast))
-			return replacement;
-	}
-	else if(ast->type() == ASTType::Mod)
-	{
-		if(auto replacement = perform_op.template operator()<ASTMod, t_int>(ast))
-			return replacement;
-		else if(auto replacement = perform_op.template operator()<ASTMod, t_real>(ast))
+		if(ASTPtr replacement = perform_op_loop.template operator()<ASTMult>(ast, type_seq))
 			return replacement;
 	}
 	else if(ast->type() == ASTType::Pow)
 	{
-		if(auto replacement = perform_op.template operator()<ASTPow, t_int>(ast))
+		if(ASTPtr replacement = perform_op_loop.template operator()<ASTPow>(ast, type_seq))
 			return replacement;
-		else if(auto replacement = perform_op.template operator()<ASTPow, t_real>(ast))
+	}
+	else if(ast->type() == ASTType::Mod)
+	{
+		if(ASTPtr replacement = perform_op.template operator()<ASTMod, t_int>(ast))
 			return replacement;
-		else if(auto replacement = perform_op.template operator()<ASTPow, t_cplx>(ast))
+		else if(ASTPtr replacement = perform_op.template operator()<ASTMod, t_real>(ast))
 			return replacement;
 	}
 

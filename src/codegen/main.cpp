@@ -65,19 +65,19 @@ int main(int argc, char** argv)
 		// get program arguments
 		// --------------------------------------------------------------------
 		std::vector<std::string> progs;
+		bool opt = false;
 		bool show_symbols = false;
 		bool show_ast = false;
 		bool debug = false;
-		bool opt = false;
 		std::string outprog;
 
 		args::options_description arg_descr("Compiler arguments");
 		arg_descr.add_options()
 			("out,o", args::value(&outprog), "compiled program output")
+			("opt,O", args::bool_switch(&opt), "optimise code")
 			("symbols,s", args::bool_switch(&show_symbols), "output symbol table")
 			("ast,a", args::bool_switch(&show_ast), "output syntax tree")
 			("debug,d", args::bool_switch(&debug), "output debug infos")
-			("opt,O", args::bool_switch(&opt), "optimise code")
 			("program", args::value<decltype(progs)>(&progs), "input program to compile");
 
 		args::positional_options_description posarg_descr;
@@ -198,6 +198,24 @@ int main(int argc, char** argv)
 			std::cerr << "Parser reports failure." << std::endl;
 			return -1;
 		}
+
+		if(opt)
+		{
+			std::cout << "Optimising AST..." << std::endl;
+
+			ASTOpt astopt;
+			auto stmts = ctx.GetStatements()->GetStatementList();
+			for(auto iter = stmts.begin(); iter != stmts.end(); ++iter)
+				(*iter)->accept(&astopt);
+
+			if(astopt.GetConstOpts())
+			{
+				std::cout << astopt.GetConstOpts()
+					<< " constant expression(s) optimised."
+					<< std::endl;
+			}
+		}
+
 		auto [parse_time, parse_time_unit] = get_elapsed_time<
 			t_real, t_timepoint>(parse_start_time);
 
@@ -216,23 +234,6 @@ int main(int argc, char** argv)
 				ostrAST << "\n";
 			}
 			ostrAST << "</ast>" << std::endl;
-		}
-
-		if(opt)
-		{
-			std::cout << "Optimising AST..." << std::endl;
-
-			ASTOpt astopt;
-			auto stmts = ctx.GetStatements()->GetStatementList();
-			for(auto iter = stmts.begin(); iter != stmts.end(); ++iter)
-				(*iter)->accept(&astopt);
-
-			if(astopt.GetConstOpts())
-			{
-				std::cout << astopt.GetConstOpts()
-					<< " constant expression(s) optimised."
-					<< std::endl;
-			}
 		}
 		// --------------------------------------------------------------------
 
@@ -253,7 +254,8 @@ int main(int argc, char** argv)
 		auto stmts = ctx.GetStatements()->GetStatementList();
 		for(auto iter = stmts.begin(); iter != stmts.end(); ++iter)
 			(*iter)->accept(&codegen);
-		codegen.Finish();
+		std::streampos streampos = codegen.Finish();
+		std::cout << "Generated " << streampos << " bytes of bitcode." << std::endl;
 		if(debug)
 			std::cout << std::endl;
 		// --------------------------------------------------------------------
