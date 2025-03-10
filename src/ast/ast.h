@@ -21,74 +21,34 @@
 
 
 class AST;
-class ASTUMinus;
-class ASTPlus;
-class ASTMult;
-class ASTMod;
-class ASTPow;
-class ASTNorm;
+class ASTStmts; class ASTExprList;
+class ASTUMinus; class ASTPlus; class ASTMult; class ASTMod;
+class ASTPow; class ASTNorm;
+class ASTVarDecl; class ASTVar; class ASTTypeDecl;
+class ASTFunc; class ASTReturn; class ASTCall; class ASTArgNames;
+class ASTVarRange; class ASTAssign;
+class ASTArrayAssign; class ASTArrayAccess;
+class ASTCond; class ASTCases; class ASTComp; class ASTBool;
+class ASTLoop; class ASTRangedLoop; class ASTLoopBreak; class ASTLoopNext;
+class ASTJump; class ASTLabel;
 class ASTStrConst;
-class ASTVar;
-class ASTStmts;
-class ASTVarDecl;
-class ASTArgNames;
-class ASTTypeDecl;
-class ASTFunc;
-class ASTReturn;
-class ASTCall;
-class ASTAssign;
-class ASTVarRange;
-class ASTArrayAssign;
-class ASTArrayAccess;
-class ASTComp;
-class ASTBool;
-class ASTCond;
-class ASTCases;
-class ASTLoop;
-class ASTRangedLoop;
-class ASTLoopBreak;
-class ASTLoopNext;
-class ASTExprList;
-class ASTJump;
-class ASTLabel;
 template<class> class ASTNumConst;
 template<class> class ASTNumConstList;
 
 
 enum class ASTType
 {
-	UMinus,
-	Plus,
-	Mult,
-	Mod,
-	Pow,
-	Norm,
-	StrConst,
-	Var,
-	Stmts,
-	VarDecl,
-	ArgNames,
-	TypeDecl,
-	Func,
-	Return,
-	Call,
-	Assign,
-	VarRange,
-	ArrayAssign,
-	ArrayAccess,
-	Comp,
-	Bool,
-	Cond,
-	Cases,
-	Loop,
-	RangedLoop,
-	LoopBreak,
-	LoopNext,
-	ExprList,
-	Jump,
-	Label,
-	NumConst,
-	NumConstList,
+	Stmts, ExprList,
+	UMinus, Plus, Mult, Mod,
+	Pow, Norm,
+	VarDecl, Var, TypeDecl,
+	Func, Return, Call, ArgNames,
+	VarRange, Assign,
+	ArrayAssign, ArrayAccess,
+	Cond, Cases, Comp, Bool,
+	Loop, RangedLoop, LoopBreak, LoopNext,
+	Jump, Label,
+	StrConst, NumConst, NumConstList,
 };
 
 
@@ -97,7 +57,7 @@ using t_astret = Symbol*;
 
 
 /**
- * ast visitor
+ * constant ast visitor
  */
 class ASTVisitor
 {
@@ -153,6 +113,62 @@ public:
 
 
 /**
+ * mutable ast visitor
+ */
+class ASTMutableVisitor
+{
+public:
+	virtual ~ASTMutableVisitor() {}
+
+	virtual t_astret visit(ASTUMinus* ast) = 0;
+	virtual t_astret visit(ASTPlus* ast) = 0;
+	virtual t_astret visit(ASTMult* ast) = 0;
+	virtual t_astret visit(ASTMod* ast) = 0;
+	virtual t_astret visit(ASTPow* ast) = 0;
+	virtual t_astret visit(ASTNorm* ast) = 0;
+
+	virtual t_astret visit(ASTVarDecl* ast) = 0;
+	virtual t_astret visit(ASTVar* ast) = 0;
+	virtual t_astret visit(ASTAssign* ast) = 0;
+	virtual t_astret visit(ASTVarRange* ast) = 0;
+
+	virtual t_astret visit(ASTArrayAssign* ast) = 0;
+	virtual t_astret visit(ASTArrayAccess* ast) = 0;
+
+	virtual t_astret visit(ASTNumConst<t_real>* ast) = 0;
+	virtual t_astret visit(ASTNumConst<t_int>* ast) = 0;
+	virtual t_astret visit(ASTNumConst<t_cplx>* ast) = 0;
+	virtual t_astret visit(ASTNumConst<bool>* ast) = 0;
+
+	virtual t_astret visit(ASTNumConstList<t_int>* ast) = 0;
+
+	virtual t_astret visit(ASTStrConst* ast) = 0;
+
+	virtual t_astret visit(ASTFunc* ast) = 0;
+	virtual t_astret visit(ASTCall* ast) = 0;
+	virtual t_astret visit(ASTReturn* ast) = 0;
+	virtual t_astret visit(ASTStmts* ast) = 0;
+
+	virtual t_astret visit(ASTCond* ast) = 0;
+	virtual t_astret visit(ASTCases* ast) = 0;
+	virtual t_astret visit(ASTLoop* ast) = 0;
+	virtual t_astret visit(ASTRangedLoop* ast) = 0;
+	virtual t_astret visit(ASTLoopBreak* ast) = 0;
+	virtual t_astret visit(ASTLoopNext* ast) = 0;
+
+	virtual t_astret visit(ASTComp* ast) = 0;
+	virtual t_astret visit(ASTBool* ast) = 0;
+	virtual t_astret visit(ASTExprList* ast) = 0;
+
+	virtual t_astret visit(ASTLabel* ast) = 0;
+	virtual t_astret visit(ASTJump* ast) = 0;
+
+	virtual t_astret visit(ASTArgNames* ast) = 0;
+	virtual t_astret visit(ASTTypeDecl* ast) = 0;
+};
+
+
+/**
  * ast node base
  */
 class AST : public lalr1::ASTBase
@@ -161,6 +177,7 @@ public:
 	virtual ~AST() = default;
 
 	virtual t_astret accept(ASTVisitor* visitor) const = 0;
+	virtual t_astret accept(ASTMutableVisitor* visitor) = 0;
 	virtual ASTType type() = 0;
 
 	// TODO: either also add this to derived ast classes or use terminal override value in lexer
@@ -180,6 +197,12 @@ public:
 		const t_ast_sub *sub = static_cast<const t_ast_sub*>(this);
 		return visitor->visit(sub);
 	}
+
+	virtual t_astret accept(ASTMutableVisitor* visitor) override
+	{
+		t_ast_sub *sub = static_cast<t_ast_sub*>(this);
+		return visitor->visit(sub);
+	}
 };
 
 
@@ -190,6 +213,7 @@ public:
 	{}
 
 	const ASTPtr GetTerm() const { return term; }
+	void SetTerm(const ASTPtr term) { this->term = term; }
 
 	virtual ASTType type() override { return ASTType::UMinus; }
 
@@ -208,6 +232,9 @@ public:
 	const ASTPtr GetTerm1() const { return term1; }
 	const ASTPtr GetTerm2() const { return term2; }
 	bool IsInverted() const { return inverted; }
+
+	void SetTerm1(const ASTPtr term) { this->term1 = term; }
+	void SetTerm2(const ASTPtr term) { this->term2 = term; }
 
 	virtual ASTType type() override { return ASTType::Plus; }
 
@@ -228,6 +255,9 @@ public:
 	const ASTPtr GetTerm2() const { return term2; }
 	bool IsInverted() const { return inverted; }
 
+	void SetTerm1(const ASTPtr term) { this->term1 = term; }
+	void SetTerm2(const ASTPtr term) { this->term2 = term; }
+
 	virtual ASTType type() override { return ASTType::Mult; }
 
 private:
@@ -246,6 +276,9 @@ public:
 	const ASTPtr GetTerm1() const { return term1; }
 	const ASTPtr GetTerm2() const { return term2; }
 
+	void SetTerm1(const ASTPtr term) { this->term1 = term; }
+	void SetTerm2(const ASTPtr term) { this->term2 = term; }
+
 	virtual ASTType type() override { return ASTType::Mod; }
 
 private:
@@ -263,6 +296,9 @@ public:
 	const ASTPtr GetTerm1() const { return term1; }
 	const ASTPtr GetTerm2() const { return term2; }
 
+	void SetTerm1(const ASTPtr term) { this->term1 = term; }
+	void SetTerm2(const ASTPtr term) { this->term2 = term; }
+
 	virtual ASTType type() override { return ASTType::Pow; }
 
 private:
@@ -277,6 +313,7 @@ public:
 	{}
 
 	const ASTPtr GetTerm() const { return term; }
+	void SetTerm(const ASTPtr term) { this->term = term; }
 
 	virtual ASTType type() override { return ASTType::Norm; }
 
@@ -342,15 +379,8 @@ public:
 	ASTStmts() : stmts{}
 	{}
 
-	void AddStatement(ASTPtr stmt)
-	{
-		stmts.push_front(stmt);
-	}
-
-	const std::list<ASTPtr>& GetStatementList() const
-	{
-		return stmts;
-	}
+	void AddStatement(ASTPtr stmt) { stmts.push_front(stmt); }
+	const std::list<ASTPtr>& GetStatementList() const { return stmts; }
 
 	virtual ASTType type() override { return ASTType::Stmts; }
 
@@ -374,6 +404,7 @@ public:
 	const std::list<t_str>& GetVariables() const { return vars; }
 
 	const std::shared_ptr<ASTAssign> GetAssignment() const { return optAssign; }
+	void SetAssignment(const std::shared_ptr<ASTAssign> term) { this->optAssign = term; }
 
 	virtual ASTType type() override { return ASTType::VarDecl; }
 
@@ -528,33 +559,17 @@ public:
 	ASTExprList()
 	{}
 
-	void AddExpr(ASTPtr expr)
-	{
-		exprs.push_front(expr);
-	}
+	void AddExpr(ASTPtr expr) { exprs.push_front(expr); }
 
-	const std::list<ASTPtr>& GetList() const
-	{
-		return exprs;
-	}
+	const std::list<ASTPtr>& GetList() const { return exprs; }
+	std::list<ASTPtr>& GetList() { return exprs; }
 
 	/**
 	 * specialised use as an array
 	 */
-	void SetArrayType(SymbolType ty = SymbolType::REAL_ARRAY)
-	{
-		m_array_type = ty;
-	}
-
-	SymbolType GetArrayType() const
-	{
-		return m_array_type;
-	}
-
-	bool IsArray() const
-	{
-		return m_array_type != SymbolType::VOID;
-	}
+	void SetArrayType(SymbolType ty = SymbolType::REAL_ARRAY) { m_array_type = ty; }
+	SymbolType GetArrayType() const { return m_array_type; }
+	bool IsArray() const { return m_array_type != SymbolType::VOID; }
 
 	virtual ASTType type() override { return ASTType::ExprList; }
 
@@ -577,6 +592,7 @@ public:
 
 	const t_str& GetIdent() const { return ident; }
 	const std::list<ASTPtr>& GetArgumentList() const { return args->GetList(); }
+	std::list<ASTPtr>& GetArgumentList() { return args->GetList(); }
 
 	virtual ASTType type() override { return ASTType::Call; }
 
@@ -602,7 +618,9 @@ public:
 
 	const std::vector<t_str>& GetIdents() const { return idents; }
 	const t_str& GetIdent() const { return GetIdents()[0]; }
+
 	const ASTPtr GetExpr() const { return expr; }
+	void SetExpr(const ASTPtr expr) { this->expr = expr; }
 
 	bool IsMultiAssign() const { return idents.size() > 1; }
 	bool IsNullAssign() const { return idents.size() == 0; }
@@ -658,6 +676,9 @@ public:
 
 	const ASTPtr GetTerm1() const { return term1; }
 	const ASTPtr GetTerm2() const { return term2; }
+	void SetTerm1(const ASTPtr term) { this->term1 = term; }
+	void SetTerm2(const ASTPtr term) { this->term2 = term; }
+
 	CompOp GetOp() const { return op; }
 
 	virtual ASTType type() override { return ASTType::Comp; }
@@ -688,6 +709,9 @@ public:
 
 	const ASTPtr GetTerm1() const { return term1; }
 	const ASTPtr GetTerm2() const { return term2; }
+	void SetTerm1(const ASTPtr term) { this->term1 = term; }
+	void SetTerm2(const ASTPtr term) { this->term2 = term; }
+
 	BoolOp GetOp() const { return op; }
 
 	virtual ASTType type() override { return ASTType::Bool; }
@@ -828,9 +852,12 @@ public:
 	{}
 
 	const ASTPtr GetTerm() const { return term; }
+	void SetTerm(const ASTPtr term) { this->term = term; }
 
 	const ASTPtr GetNum1() const { return num1; }
 	const ASTPtr GetNum2() const { return num2; }
+	void SetNum1(const ASTPtr term) { this->num1 = term; }
+	void SetNum2(const ASTPtr term) { this->num2 = term; }
 
 	bool IsRanged12() const { return ranged12; }
 
@@ -853,10 +880,14 @@ public:
 	{}
 
 	const t_str& GetIdent() const { return ident; }
+
 	const ASTPtr GetExpr() const { return expr; }
+	void SetExpr(const ASTPtr expr) { this->expr = expr; }
 
 	const ASTPtr GetNum1() const { return num1; }
 	const ASTPtr GetNum2() const { return num2; }
+	void SetNum1(const ASTPtr term) { this->num1 = term; }
+	void SetNum2(const ASTPtr term) { this->num2 = term; }
 
 	bool IsRanged12() const { return ranged12; }
 
@@ -875,10 +906,11 @@ template<class t_num>
 class ASTNumConst : public ASTAcceptor<ASTNumConst<t_num>>
 {
 public:
-	ASTNumConst(t_num val) : val{val}
+	ASTNumConst(const t_num& val) : val{val}
 	{}
 
-	t_num GetVal() const { return val; }
+	const t_num& GetVal() const { return val; }
+	void SetVal(const t_num& val) { this->val = val; }
 
 	virtual ASTType type() override { return ASTType::NumConst; }
 
@@ -913,6 +945,7 @@ public:
 	{}
 
 	const t_str& GetVal() const { return val; }
+	void SetVal(const t_str& val) { this->val = val; }
 
 	virtual ASTType type() override { return ASTType::StrConst; }
 

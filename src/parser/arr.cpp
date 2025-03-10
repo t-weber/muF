@@ -7,8 +7,6 @@
 
 #include "grammar.h"
 
-#define DEFAULT_STRING_SIZE 128
-
 
 void Grammar::CreateArrays()
 {

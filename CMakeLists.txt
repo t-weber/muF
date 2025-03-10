@@ -89,7 +89,8 @@ if(EXISTS "${CMAKE_BINARY_DIR}/parser.cpp")
 
 		src/common/sym.cpp src/common/sym.h
 		src/ast/ast.h
-		src/ast/printast.cpp src/ast/printast.h
+		src/ast/opt.cpp src/ast/opt.h
+		src/ast/print.cpp src/ast/print.h
 	)
 
 	target_compile_definitions(compile
@@ -122,7 +123,8 @@ elseif(EXISTS "${CMAKE_BINARY_DIR}/parser.tab")
 
 		src/common/sym.cpp src/common/sym.h
 		src/ast/ast.h
-		src/ast/printast.cpp src/ast/printast.h
+		src/ast/opt.cpp src/ast/opt.h
+		src/ast/print.cpp src/ast/print.h
 	)
 
 	target_compile_definitions(compile

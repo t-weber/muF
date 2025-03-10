@@ -27,7 +27,8 @@
 #include <cmath>
 
 #include "opcodes.h"
-#include "helpers.h"
+#include "common/helpers.h"
+
 
 
 class VM

@@ -6,8 +6,8 @@
  */
 
 #include "ast/ast.h"
-#include "ast/printast.h"
-#include "ast/semantics.h"
+#include "ast/opt.h"
+#include "ast/print.h"
 #include "common/helpers.h"
 #include "common/version.h"
 #include "common/ext_funcs.h"
@@ -68,6 +68,7 @@ int main(int argc, char** argv)
 		bool show_symbols = false;
 		bool show_ast = false;
 		bool debug = false;
+		bool opt = false;
 		std::string outprog;
 
 		args::options_description arg_descr("Compiler arguments");
@@ -76,6 +77,7 @@ int main(int argc, char** argv)
 			("symbols,s", args::bool_switch(&show_symbols), "output symbol table")
 			("ast,a", args::bool_switch(&show_ast), "output syntax tree")
 			("debug,d", args::bool_switch(&debug), "output debug infos")
+			("opt,O", args::bool_switch(&opt), "optimise code")
 			("program", args::value<decltype(progs)>(&progs), "input program to compile");
 
 		args::positional_options_description posarg_descr;
@@ -214,6 +216,23 @@ int main(int argc, char** argv)
 				ostrAST << "\n";
 			}
 			ostrAST << "</ast>" << std::endl;
+		}
+
+		if(opt)
+		{
+			std::cout << "Optimising AST..." << std::endl;
+
+			ASTOpt astopt;
+			auto stmts = ctx.GetStatements()->GetStatementList();
+			for(auto iter = stmts.begin(); iter != stmts.end(); ++iter)
+				(*iter)->accept(&astopt);
+
+			if(astopt.GetConstOpts())
+			{
+				std::cout << astopt.GetConstOpts()
+					<< " constant expression(s) optimised."
+					<< std::endl;
+			}
 		}
 		// --------------------------------------------------------------------
 

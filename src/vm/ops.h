@@ -8,7 +8,6 @@
 #ifndef __0ACVM_OPS_H__
 #define __0ACVM_OPS_H__
 
-
 #include <type_traits>
 #include <variant>
 #include <sstream>

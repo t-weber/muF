@@ -14,7 +14,6 @@
 #include "lalr1/options.h"
 #include "lexer.h"
 #include "ast/ast.h"
-#include "ast/printast.h"
 
 #include <unordered_map>
 #include <iostream>

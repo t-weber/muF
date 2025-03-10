@@ -13,6 +13,7 @@
 #include <cstring>
 
 
+
 VM::VM(t_addr memsize) : m_memsize{memsize}
 {
 	m_mem.reset(new t_byte[m_memsize]);
