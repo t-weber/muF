@@ -67,7 +67,10 @@ public:
 	// ------------------------------------------------------------------------
 
 
-	std::size_t GetConstOpts() const { return m_const_opts; }
+	std::tuple<std::size_t, std::size_t> GetConstOpts() const
+	{
+		return std::make_tuple(m_arith_opts, m_logic_opts);
+	}
 
 
 protected:
@@ -75,7 +78,8 @@ protected:
 
 
 private:
-	std::size_t m_const_opts{0};  // number of constant expression optimisations performed
+	std::size_t m_arith_opts{0};  // number of constant arithmetic expression optimisations performed
+	std::size_t m_logic_opts{0};   // number of logical arithmetic expression optimisations performed
 };
 
 

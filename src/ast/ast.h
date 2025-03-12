@@ -733,6 +733,8 @@ public:
 	{}
 
 	const ASTPtr GetCond() const { return cond; }
+	void SetCond(const ASTPtr term) { this->cond = term; }
+
 	const ASTPtr GetIf() const { return if_stmt; }
 	const ASTPtr GetElse() const { return else_stmt; }
 	bool HasElse() const { return else_stmt != nullptr; }
@@ -764,6 +766,7 @@ public:
 	}
 
 	const t_cases& GetCases() const { return cases; }
+	t_cases& GetCases() { return cases; }
 
 	void SetDefaultCase(ASTPtr stmts) { default_stmts = stmts; }
 	const ASTPtr GetDefaultCase() const { return default_stmts; }
@@ -785,6 +788,8 @@ public:
 	{}
 
 	const ASTPtr GetCond() const { return cond; }
+	void SetCond(const ASTPtr term) { this->cond = term; }
+
 	const ASTPtr GetLoopStmt() const { return stmt; }
 
 	virtual ASTType type() override { return ASTType::Loop; }

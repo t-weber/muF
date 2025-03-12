@@ -41,6 +41,7 @@ ASTPtr ASTOpt::OptConsts(ASTPtr ast)
 
 		if constexpr(std::is_same_v<t_ast, ASTPlus>)
 		{
+			++m_arith_opts;
 			if(ast->IsInverted())
 				term1->SetVal(term1->GetVal() - term2->GetVal());
 			else
@@ -48,6 +49,7 @@ ASTPtr ASTOpt::OptConsts(ASTPtr ast)
 		}
 		else if constexpr(std::is_same_v<t_ast, ASTMult>)
 		{
+			++m_arith_opts;
 			if(ast->IsInverted())
 				term1->SetVal(term1->GetVal() / term2->GetVal());
 			else
@@ -55,15 +57,50 @@ ASTPtr ASTOpt::OptConsts(ASTPtr ast)
 		}
 		else if constexpr(std::is_same_v<t_ast, ASTMod> && std::is_integral_v<t_val>)
 		{
+			++m_arith_opts;
 			term1->SetVal(term1->GetVal() % term2->GetVal());
 		}
 		else if constexpr(std::is_same_v<t_ast, ASTMod> && std::is_floating_point_v<t_val>)
 		{
+			++m_arith_opts;
 			term1->SetVal(std::fmod(term1->GetVal(), term2->GetVal()));
 		}
 		else if constexpr(std::is_same_v<t_ast, ASTPow>)
 		{
+			++m_arith_opts;
 			term1->SetVal(pow<t_val>(term1->GetVal(), term2->GetVal()));
+		}
+		else if constexpr(std::is_same_v<t_ast, ASTComp>)
+		{
+			++m_logic_opts;
+			if(ast->GetOp() == ASTComp::EQU)
+				return std::make_shared<ASTNumConst<bool>>(term1->GetVal() == term2->GetVal());
+			else if(ast->GetOp() == ASTComp::NEQ)
+				return std::make_shared<ASTNumConst<bool>>(term1->GetVal() != term2->GetVal());
+			else if(ast->GetOp() == ASTComp::GT)
+				return std::make_shared<ASTNumConst<bool>>(term1->GetVal() > term2->GetVal());
+			else if(ast->GetOp() == ASTComp::LT)
+				return std::make_shared<ASTNumConst<bool>>(term1->GetVal() < term2->GetVal());
+			else if(ast->GetOp() == ASTComp::GEQ)
+				return std::make_shared<ASTNumConst<bool>>(term1->GetVal() >= term2->GetVal());
+			else if(ast->GetOp() == ASTComp::LEQ)
+				return std::make_shared<ASTNumConst<bool>>(term1->GetVal() <= term2->GetVal());
+			else
+				--m_logic_opts;  // unknown logical operation
+		}
+		else if constexpr(std::is_same_v<t_ast, ASTBool>)
+		{
+			++m_logic_opts;
+			if(ast->GetOp() == ASTBool::AND)
+				return std::make_shared<ASTNumConst<bool>>(term1->GetVal() && term2->GetVal());
+			else if(ast->GetOp() == ASTBool::OR)
+				return std::make_shared<ASTNumConst<bool>>(term1->GetVal() || term2->GetVal());
+			else if(ast->GetOp() == ASTBool::XOR)
+				return std::make_shared<ASTNumConst<bool>>(term1->GetVal() ^ term2->GetVal());
+			else if(ast->GetOp() == ASTBool::NOT)
+				return std::make_shared<ASTNumConst<bool>>(!term1->GetVal());
+			else
+				--m_logic_opts;  // unknown logical operation
 		}
 		else
 		{
@@ -72,20 +109,14 @@ ASTPtr ASTOpt::OptConsts(ASTPtr ast)
 		}
 
 		// return replacement node
-		++m_const_opts;
 		return term1;
 	};
 
 
 	// loop perform_op over the given types
-	using t_types = std::variant<t_int, t_real, t_cplx>;
-	auto type_seq = std::make_index_sequence<std::variant_size_v<t_types>>();
-
-	auto perform_op_loop = [perform_op]<class t_ast, std::size_t ...seq>(
-		ASTPtr ast, const std::index_sequence<seq...>&) -> ASTPtr
+	auto perform_op_loop = [perform_op]<class t_ast, class ...t_vals>(ASTPtr ast) -> ASTPtr
 	{
 		ASTPtr replacement = nullptr;
-
 		auto op_func = [perform_op, &replacement]<class t_val>(ASTPtr ast)
 		{
 			if(replacement)  // replacement already found?
@@ -93,14 +124,14 @@ ASTPtr ASTOpt::OptConsts(ASTPtr ast)
 			replacement = perform_op.template operator()<t_ast, t_val>(ast);
 		};
 
-		( (op_func.template operator()<std::variant_alternative_t<seq, t_types>>(ast)), ...);
+		( (op_func.template operator()<t_vals>(ast)), ... );
 		return replacement;
 	};
 
 
 	if(ast->type() == ASTType::Plus)
 	{
-		if(ASTPtr replacement = perform_op_loop.template operator()<ASTPlus>(ast, type_seq))
+		if(ASTPtr replacement = perform_op_loop.template operator()<ASTPlus, t_int, t_real, t_cplx>(ast))
 			return replacement;
 
 		// string concatenation
@@ -109,6 +140,7 @@ ASTPtr ASTOpt::OptConsts(ASTPtr ast)
 			astplus->GetTerm2()->type() == ASTType::StrConst &&
 			!astplus->IsInverted())
 		{
+			++m_arith_opts;
 			auto term1 = std::dynamic_pointer_cast<ASTStrConst>(astplus->GetTerm1());
 			auto term2 = std::dynamic_pointer_cast<ASTStrConst>(astplus->GetTerm2());
 			term1->SetVal(term1->GetVal() + term2->GetVal());
@@ -117,19 +149,42 @@ ASTPtr ASTOpt::OptConsts(ASTPtr ast)
 	}
 	else if(ast->type() == ASTType::Mult)
 	{
-		if(ASTPtr replacement = perform_op_loop.template operator()<ASTMult>(ast, type_seq))
-			return replacement;
-	}
-	else if(ast->type() == ASTType::Pow)
-	{
-		if(ASTPtr replacement = perform_op_loop.template operator()<ASTPow>(ast, type_seq))
+		if(ASTPtr replacement = perform_op_loop.template operator()<ASTMult, t_int, t_real, t_cplx>(ast))
 			return replacement;
 	}
 	else if(ast->type() == ASTType::Mod)
 	{
-		if(ASTPtr replacement = perform_op.template operator()<ASTMod, t_int>(ast))
+		if(ASTPtr replacement = perform_op_loop.template operator()<ASTMod, t_int, t_real>(ast))
 			return replacement;
-		else if(ASTPtr replacement = perform_op.template operator()<ASTMod, t_real>(ast))
+	}
+	else if(ast->type() == ASTType::Pow)
+	{
+		if(ASTPtr replacement = perform_op_loop.template operator()<ASTPow, t_int, t_real, t_cplx>(ast))
+			return replacement;
+	}
+	else if(ast->type() == ASTType::Comp)
+	{
+		if(ASTPtr replacement = perform_op_loop.template operator()<ASTComp, t_int, t_real>(ast))
+			return replacement;
+
+		// string comparison
+		auto astcmp = std::dynamic_pointer_cast<ASTComp>(ast);
+		if(astcmp->GetTerm1()->type() == ASTType::StrConst &&
+			astcmp->GetTerm2()->type() == ASTType::StrConst &&
+			(astcmp->GetOp() == ASTComp::EQU || astcmp->GetOp() == ASTComp::NEQ))
+		{
+			++m_logic_opts;
+			auto term1 = std::dynamic_pointer_cast<ASTStrConst>(astcmp->GetTerm1());
+			auto term2 = std::dynamic_pointer_cast<ASTStrConst>(astcmp->GetTerm2());
+			if(astcmp->GetOp() == ASTComp::EQU)
+				return std::make_shared<ASTNumConst<bool>>(term1->GetVal() == term2->GetVal());
+			else
+				return std::make_shared<ASTNumConst<bool>>(term1->GetVal() != term2->GetVal());
+		}
+	}
+	else if(ast->type() == ASTType::Bool)
+	{
+		if(ASTPtr replacement = perform_op_loop.template operator()<ASTBool, t_int>(ast))
 			return replacement;
 	}
 
@@ -359,11 +414,10 @@ t_astret ASTOpt::visit(ASTComp* ast)
 	ast->GetTerm1()->accept(this);
 	ast->GetTerm2()->accept(this);
 
-	// TODO
-	/*if(ASTPtr newterm = OptComp(ast->GetTerm1()); newterm)
+	if(ASTPtr newterm = OptConsts(ast->GetTerm1()); newterm)
 		ast->SetTerm1(newterm);
-	if(ASTPtr newterm = OptComp(ast->GetTerm2()); newterm)
-		ast->SetTerm2(newterm);*/
+	if(ASTPtr newterm = OptConsts(ast->GetTerm2()); newterm)
+		ast->SetTerm2(newterm);
 
 	return nullptr;
 }
@@ -375,11 +429,10 @@ t_astret ASTOpt::visit(ASTBool* ast)
 	if(ast->GetTerm2())
 		ast->GetTerm2()->accept(this);
 
-	// TODO
-	/*if(ASTPtr newterm = OptBool(ast->GetTerm1()); newterm)
+	if(ASTPtr newterm = OptConsts(ast->GetTerm1()); newterm)
 		ast->SetTerm1(newterm);
-	if(ASTPtr newterm = OptBool(ast->GetTerm2()); newterm)
-		ast->SetTerm2(newterm);*/
+	if(ASTPtr newterm = OptConsts(ast->GetTerm2()); newterm)
+		ast->SetTerm2(newterm);
 
 	return nullptr;
 }
@@ -389,9 +442,11 @@ t_astret ASTOpt::visit(ASTCond* ast)
 {
 	ast->GetCond()->accept(this);
 	ast->GetIf()->accept(this);
-
 	if(ast->GetElse())
 		ast->GetElse()->accept(this);
+
+	if(ASTPtr newterm = OptConsts(ast->GetCond()); newterm)
+		ast->SetCond(newterm);
 
 	return nullptr;
 }
@@ -401,10 +456,15 @@ t_astret ASTOpt::visit(ASTCases* ast)
 {
 	ast->GetExpr()->accept(this);
 
-	for(auto& [ cond, stmts ] : ast->GetCases())
+	typename ASTCases::t_cases& cases = ast->GetCases();
+	for(auto iter = cases.begin(); iter != cases.end(); ++iter)
 	{
-		cond->accept(this);
-		stmts->accept(this);
+		iter->first->accept(this);  // condition
+		iter->second->accept(this); // statement
+
+		// optimise condition
+		if(ASTPtr newcase = OptConsts(iter->first); newcase)
+			iter->first = newcase;
 	}
 
 	if(ast->GetDefaultCase())
@@ -418,6 +478,9 @@ t_astret ASTOpt::visit(ASTLoop* ast)
 {
 	ast->GetCond()->accept(this);
 	ast->GetLoopStmt()->accept(this);
+
+	if(ASTPtr newterm = OptConsts(ast->GetCond()); newterm)
+		ast->SetCond(newterm);
 
 	return nullptr;
 }

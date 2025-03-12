@@ -208,10 +208,10 @@ int main(int argc, char** argv)
 			for(auto iter = stmts.begin(); iter != stmts.end(); ++iter)
 				(*iter)->accept(&astopt);
 
-			if(astopt.GetConstOpts())
+			if(auto [arith_opts, logic_opts] = astopt.GetConstOpts(); arith_opts || logic_opts)
 			{
-				std::cout << astopt.GetConstOpts()
-					<< " constant expression(s) optimised."
+				std::cout << arith_opts << " arithmetic and "
+					<< logic_opts << " logical constant expression(s) optimised."
 					<< std::endl;
 			}
 		}
