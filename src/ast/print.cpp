@@ -565,6 +565,15 @@ t_astret ASTPrinter::visit(const ASTNumConst<t_cplx>* ast)
 }
 
 
+t_astret ASTPrinter::visit(const ASTNumConst<t_quat>* ast)
+{
+	using namespace m_ops;
+	(*m_ostr) << "<Const type=\"quaternion\" val=\"" << ast->GetVal() << "\" />\n";
+
+	return nullptr;
+}
+
+
 t_astret ASTPrinter::visit(const ASTNumConst<bool>* ast)
 {
 	(*m_ostr) << "<Const type=\"bool\" val=\"" << std::boolalpha

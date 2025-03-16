@@ -47,6 +47,7 @@ public:
 	virtual t_astret visit(const ASTNumConst<t_real>* ast) override;
 	virtual t_astret visit(const ASTNumConst<t_int>* ast) override;
 	virtual t_astret visit(const ASTNumConst<t_cplx>* ast) override;
+	virtual t_astret visit(const ASTNumConst<t_quat>* ast) override;
 	virtual t_astret visit(const ASTNumConst<bool>* ast) override;
 
 	virtual t_astret visit(const ASTNumConstList<t_int>* ast) override;
@@ -90,10 +91,10 @@ protected:
 	t_astret GetSym(const t_str& name) const;
 
 	// finds the size of the symbol for the stack frame
-	std::size_t GetSymSize(const Symbol* sym) const;
+	std::size_t GetSymSize(const SymbolPtr sym) const;
 
 	// finds the size of the local function variables for the stack frame
-	std::size_t GetStackFrameSize(const Symbol* func) const;
+	std::size_t GetStackFrameSize(const SymbolPtr func) const;
 
 	// returns common type of a binary operation
 	std::tuple<t_astret, t_astret, t_astret>
@@ -108,20 +109,23 @@ protected:
 	void PushRealConst(t_vm_real);
 	void PushIntConst(t_vm_int);
 	void PushCplxConst(const t_vm_cplx&);
+	void PushQuatConst(const t_vm_quat&);
 	void PushBoolConst(t_vm_bool);
 	void PushStrConst(const t_vm_str& str);
 	void PushVecSize(std::size_t size);
 	void PushRealVecConst(const std::vector<t_vm_real>& vec);
 	void PushIntVecConst(const std::vector<t_vm_int>& vec);
 	void PushCplxVecConst(const std::vector<t_vm_cplx>& vec);
+	void PushQuatVecConst(const std::vector<t_vm_quat>& vec);
 
 	t_astret PushVar(const t_str& varname);
 
 	void AssignVar(t_astret sym);
 	void CallExternal(const t_str& funcname);
 
-	Symbol* GetTypeConst(SymbolType ty) const;
-	std::pair<Symbol*, Symbol*> GetArrayTypeConst(SymbolType ty) const;
+	bool IsArray(SymbolType ty) const;
+	SymbolPtr GetTypeConst(SymbolType ty) const;
+	std::pair<SymbolPtr, SymbolPtr> GetArrayTypeConst(SymbolType ty) const;
 
 
 private:
@@ -158,9 +162,10 @@ private:
 	std::vector<std::pair<t_str, std::streampos>> m_goto_comefroms{};
 
 	// dummy symbols for constants
-	Symbol *m_real_const{}, *m_int_const{}, *m_cplx_const{};
-	Symbol *m_real_array_const{}, *m_int_array_const{}, *m_cplx_array_const{};
-	Symbol *m_bool_const{}, *m_str_const{};
+	SymbolPtr m_real_const{}, m_int_const{}, m_cplx_const{}, m_quat_const{};
+	SymbolPtr m_real_array_const{}, m_int_array_const{};
+	SymbolPtr m_cplx_array_const{}, m_quat_array_const{};
+	SymbolPtr m_bool_const{}, m_str_const{};
 
 	bool m_debug{false};
 };

@@ -147,13 +147,12 @@ endif()
 # vm
 # -----------------------------------------------------------------------------
 add_executable(vm
-	src/common/types.h
+	src/common/types.h src/vm/mem.h
 	src/vm/main.cpp src/vm/types.h
 	src/vm/opcodes.h src/vm/vm.h
-	src/vm/ops.h src/vm/mem.h
+	src/vm/ops.cpp src/vm/ops.h
 	src/vm/vm.cpp src/vm/run.cpp
-	src/vm/extfuncs.cpp
-	src/vm/memdump.cpp
+	src/vm/extfuncs.cpp src/vm/memdump.cpp
 )
 
 target_link_libraries(vm ${Boost_LIBRARIES}

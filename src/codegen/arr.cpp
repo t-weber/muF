@@ -11,10 +11,26 @@
 // ----------------------------------------------------------------------------
 // arrays
 // ----------------------------------------------------------------------------
-std::pair<Symbol*, Symbol*> Codegen::GetArrayTypeConst(SymbolType ty) const
+bool Codegen::IsArray(SymbolType ty) const
 {
-	Symbol *arr_ty = nullptr;
-	Symbol *arr_elem_ty = nullptr;
+	switch(ty)
+	{
+		case SymbolType::REAL_ARRAY:
+		case SymbolType::INT_ARRAY:
+		case SymbolType::CPLX_ARRAY:
+			return true;
+		default:
+			return false;
+	}
+
+	return false;
+}
+
+
+std::pair<SymbolPtr, SymbolPtr>
+Codegen::GetArrayTypeConst(SymbolType ty) const
+{
+	SymbolPtr arr_ty, arr_elem_ty;
 
 	switch(ty)
 	{
@@ -156,7 +172,7 @@ t_astret Codegen::visit(const ASTArrayAssign* ast)
 	// single-element array assignment
 	if(!ranged12 && num1 && !num2)
 	{
-		Symbol *elem_sym_type = nullptr;
+		SymbolPtr elem_sym_type;
 		if(auto [arr_ty, arr_elem_ty] = GetArrayTypeConst(sym->ty); arr_elem_ty)
 			elem_sym_type = arr_elem_ty;
 
@@ -240,6 +256,7 @@ t_astret Codegen::visit(const ASTExprList* ast)
 	auto [arr_ty, arr_elem_ty] = GetArrayTypeConst(arr_sym_ty);
 	if(!arr_ty || !arr_elem_ty)
 	{
+		// default to real array if undetermined
 		arr_ty = m_real_array_const;
 		arr_elem_ty = m_real_const;
 	}
@@ -276,7 +293,10 @@ t_astret Codegen::visit(const ASTExprList* ast)
 			m_ostr->put(static_cast<t_vm_byte>(OpCode::MAKECPLXARR));
 		else
 			 throw std::runtime_error("ASTExprList: Invalid array type.");
-		sym_ret = arr_ty;
+
+		sym_ret = std::make_shared<Symbol>(*arr_ty);
+		sym_ret->dims.resize(1);
+		sym_ret->dims[0] = num_elems;
 	}
 
 	return sym_ret;

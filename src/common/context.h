@@ -135,12 +135,12 @@ public:
 
 
 	// --------------------------------------------------------------------
-	Symbol* AddScopedSymbol(const t_str& name)
+	SymbolPtr AddScopedSymbol(const t_str& name)
 	{
 		const t_str scope = GetScopeName();
 
 		// look for existing symbol
-		if(Symbol *sym = m_symbols.FindSymbol(scope + name); sym)
+		if(SymbolPtr sym = m_symbols.FindSymbol(scope + name); sym)
 		{
 			sym->ty = m_symtype;
 			sym->dims = m_symdims;
@@ -149,7 +149,7 @@ public:
 			if(sym->is_arg)
 			{
 				const t_str funcname = GetScopeName(0, false);
-				Symbol *func = m_symbols.FindSymbol(funcname);
+				SymbolPtr func = m_symbols.FindSymbol(funcname);
 				if(!func)
 				{
 					std::cerr << "Error in line " << GetCurLine()
@@ -176,13 +176,18 @@ public:
 		return m_symbols.AddSymbol(scope, name, m_symtype, m_symdims);
 	}
 
-	const Symbol* FindScopedSymbol(const t_str& name) const
+	const SymbolPtr FindScopedSymbol(const t_str& name) const
 	{
 		const t_str scope = GetScopeName();
 		return m_symbols.FindSymbol(scope + name);
 	}
 
-	const Symbol* FindGlobalSymbol(const t_str& name) const
+	const SymbolPtr FindGlobalSymbol(const t_str& name) const
+	{
+		return m_symbols.FindSymbol(name);
+	}
+
+	SymbolPtr FindGlobalSymbol(const t_str& name)
 	{
 		return m_symbols.FindSymbol(name);
 	}

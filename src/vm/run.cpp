@@ -137,6 +137,10 @@ bool VM::Run()
 				{
 					ReadArrayElem<t_vec_cplx>(arr, idx);
 				}
+				else if(arr.index() == m_quatarridx)
+				{
+					ReadArrayElem<t_vec_quat>(arr, idx);
+				}
 				else if(arr.index() == m_stridx)
 				{
 					// gets string element as substring
@@ -172,6 +176,10 @@ bool VM::Run()
 				else if(arr.index() == m_cplxarridx)
 				{
 					ReadArrayElemRange<t_vec_cplx>(arr, idx1, idx2);
+				}
+				else if(arr.index() == m_quatarridx)
+				{
+					ReadArrayElemRange<t_vec_quat>(arr, idx1, idx2);
 				}
 				else if(arr.index() == m_stridx)
 				{
@@ -214,6 +222,8 @@ bool VM::Run()
 					WriteArrayElem<t_vec_int>(addr, data, idx);
 				else if(ty == VMType::CPLXARR)
 					WriteArrayElem<t_vec_cplx>(addr, data, idx);
+				else if(ty == VMType::QUATARR)
+					WriteArrayElem<t_vec_quat>(addr, data, idx);
 				else
 					throw std::runtime_error("Cannot index non-array type.");
 
@@ -249,6 +259,12 @@ bool VM::Run()
 				else if(ty == VMType::CPLXARR)
 				{
 					WriteArrayElemRange<t_vec_cplx>(addr, data, idx1, idx2);
+				}
+
+				// lhs variable is a quaternion array
+				else if(ty == VMType::QUATARR)
+				{
+					WriteArrayElemRange<t_vec_quat>(addr, data, idx1, idx2);
 				}
 
 				// lhs variable is a string
@@ -318,6 +334,13 @@ bool VM::Run()
 				PushData(t_data{std::in_place_index<m_cplxarridx>, vec});
 				break;
 			}
+
+			case OpCode::MAKEQUATARR:  // create a quaternion array out of the elements on the stack
+			{
+				t_vec_quat vec = PopArray<t_vec_quat>(false);
+				PushData(t_data{std::in_place_index<m_quatarridx>, vec});
+				break;
+			}
 			// ----------------------------------------------------
 
 			// ----------------------------------------------------
@@ -343,6 +366,11 @@ bool VM::Run()
 					result = t_data{std::in_place_index<m_cplxidx>,
 						-std::get<m_cplxidx>(val)};
 				}
+				else if(val.index() == m_quatidx)
+				{
+					result = t_data{std::in_place_index<m_quatidx>,
+						-std::get<m_quatidx>(val)};
+				}
 				else if(val.index() == m_realarridx)
 				{
 					using namespace m_ops;
@@ -360,6 +388,12 @@ bool VM::Run()
 					using namespace m_ops;
 					result = t_data{std::in_place_index<m_cplxarridx>,
 						-std::get<m_cplxarridx>(val)};
+				}
+				else if(val.index() == m_quatarridx)
+				{
+					using namespace m_ops;
+					result = t_data{std::in_place_index<m_quatarridx>,
+						-std::get<m_quatarridx>(val)};
 				}
 				else
 				{
@@ -404,6 +438,12 @@ bool VM::Run()
 			case OpCode::POW:
 			{
 				OpArithmetic<'^'>();
+				break;
+			}
+
+			case OpCode::MATMUL:
+			{
+				OpMatrixMultiplication();
 				break;
 			}
 			// ----------------------------------------------------

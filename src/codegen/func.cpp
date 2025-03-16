@@ -11,9 +11,9 @@
 /**
  * finds the size of the local function variables for the stack frame
  */
-std::size_t Codegen::GetStackFrameSize(const Symbol* func) const
+std::size_t Codegen::GetStackFrameSize(const SymbolPtr func) const
 {
-	std::vector<const Symbol*> syms;
+	std::vector<SymbolPtr> syms;
 	if(func)
 	{
 		// local symbols of a function
@@ -29,7 +29,7 @@ std::size_t Codegen::GetStackFrameSize(const Symbol* func) const
 	std::size_t needed_size = 0;
 
 	//for(const auto symty : func->argty)
-	for(const Symbol* sym : syms)
+	for(const SymbolPtr& sym : syms)
 	{
 		// ignore functions
 		if(sym->ty == SymbolType::FUNC)

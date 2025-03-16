@@ -19,66 +19,69 @@ Codegen::Codegen(SymTab* syms, std::ostream* ostr)
 	: m_syms{syms}, m_ostr{ostr}
 {
 	// dummy symbol for real constants
-	m_real_const = new Symbol();
+	m_real_const = std::make_shared<Symbol>();
 	m_real_const->ty = SymbolType::REAL;
 	m_real_const->is_tmp = true;
 	m_real_const->name = "<real>";
 
 	// dummy symbol for int constants
-	m_int_const = new Symbol();
+	m_int_const = std::make_shared<Symbol>();
 	m_int_const->ty = SymbolType::INT;
 	m_int_const->is_tmp = true;
 	m_int_const->name = "<integer>";
 
 	// dummy symbol for complex constants
-	m_cplx_const = new Symbol();
+	m_cplx_const = std::make_shared<Symbol>();
 	m_cplx_const->ty = SymbolType::CPLX;
 	m_cplx_const->is_tmp = true;
 	m_cplx_const->name = "<complex>";
 
+	// dummy symbol for quaternion constants
+	m_quat_const = std::make_shared<Symbol>();
+	m_quat_const->ty = SymbolType::QUAT;
+	m_quat_const->is_tmp = true;
+	m_quat_const->name = "<quaternion>";
+
 	// dummy symbol for bool constants
-	m_bool_const = new Symbol();
+	m_bool_const = std::make_shared<Symbol>();
 	m_bool_const->ty = SymbolType::BOOL;
 	m_bool_const->is_tmp = true;
 	m_bool_const->name = "<bool>";
 
 	// dummy symbol for string constants
-	m_str_const = new Symbol();
+	m_str_const = std::make_shared<Symbol>();
 	m_str_const->ty = SymbolType::STRING;
 	m_str_const->is_tmp = true;
 	m_str_const->name = "<string>";
 
 	// dummy symbol for real array constants
-	m_real_array_const = new Symbol();
+	m_real_array_const = std::make_shared<Symbol>();
 	m_real_array_const->ty = SymbolType::REAL_ARRAY;
 	m_real_array_const->is_tmp = true;
 	m_real_array_const->name = "<array_real>";
 
 	// dummy symbol for int array constants
-	m_int_array_const = new Symbol();
+	m_int_array_const = std::make_shared<Symbol>();
 	m_int_array_const->ty = SymbolType::INT_ARRAY;
 	m_int_array_const->is_tmp = true;
 	m_int_array_const->name = "<array_integer>";
 
 	// dummy symbol for complex array constants
-	m_cplx_array_const = new Symbol();
+	m_cplx_array_const = std::make_shared<Symbol>();
 	m_cplx_array_const->ty = SymbolType::CPLX_ARRAY;
 	m_cplx_array_const->is_tmp = true;
 	m_cplx_array_const->name = "<array_complex>";
+
+	// dummy symbol for quaternion array constants
+	m_quat_array_const = std::make_shared<Symbol>();
+	m_quat_array_const->ty = SymbolType::QUAT_ARRAY;
+	m_quat_array_const->is_tmp = true;
+	m_quat_array_const->name = "<array_quaternion>";
 }
 
 
 Codegen::~Codegen()
-{
-	for(Symbol** sym : {
-		&m_real_const, &m_int_const, &m_cplx_const,
-		&m_real_array_const, &m_int_array_const, &m_cplx_array_const,
-		&m_bool_const, &m_str_const, })
-	{
-		delete *sym;
-		*sym = nullptr;
-	}
-}
+{ }
 
 
 /**

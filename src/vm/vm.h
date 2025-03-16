@@ -38,10 +38,12 @@ public:
 	using t_real = ::t_vm_real;
 	using t_int = ::t_vm_int;
 	using t_cplx = ::t_vm_cplx;
+	using t_quat = ::t_vm_quat;
 
 	using t_vec_real = ::t_vm_vec_real;
 	using t_vec_int = ::t_vm_vec_int;
 	using t_vec_cplx = ::t_vm_vec_cplx;
+	using t_vec_quat = ::t_vm_vec_quat;
 
 	using t_addr = ::t_vm_addr;
 	using t_byte = ::t_vm_byte;
@@ -55,7 +57,8 @@ public:
 	using t_data = std::variant<
 		std::monostate /*prevents default-construction of first type (t_real)*/,
 		t_real /*1*/, t_int /*2*/, t_cplx /*3*/, t_bool /*4*/, t_addr /*5*/,
-		t_vec_real /*6*/, t_vec_int /*7*/, t_vec_cplx /*8*/, t_str /*9*/>;
+		t_vec_real /*6*/, t_vec_int /*7*/, t_vec_cplx /*8*/, t_str /*9*/,
+		t_quat /*10*/, t_vec_quat /*11*/>;
 
 	// use variant type indices and std::in_place_index instead of direct types
 	// because two types might be identical (e.g. t_int and t_addr)
@@ -68,6 +71,8 @@ public:
 	static constexpr const std::size_t m_intarridx = 7;
 	static constexpr const std::size_t m_cplxarridx = 8;
 	static constexpr const std::size_t m_stridx = 9;
+	static constexpr const std::size_t m_quatidx = 10;
+	static constexpr const std::size_t m_quatarridx = 11;
 
 	// data type sizes
 	static constexpr const t_addr m_bytesize = sizeof(t_byte);
@@ -88,11 +93,13 @@ public:
 		static_assert(std::is_same_v<std::decay_t<t_ty>, t_real> ||
 			std::is_same_v<std::decay_t<t_ty>, t_int> ||
 			std::is_same_v<std::decay_t<t_ty>, t_cplx> ||
+			std::is_same_v<std::decay_t<t_ty>, t_quat> ||
 			std::is_same_v<std::decay_t<t_ty>, t_bool> ||
 			std::is_same_v<std::decay_t<t_ty>, t_addr> ||
 			std::is_same_v<std::decay_t<t_ty>, t_vec_real> ||
 			std::is_same_v<std::decay_t<t_ty>, t_vec_int> ||
 			std::is_same_v<std::decay_t<t_ty>, t_vec_cplx> ||
+			std::is_same_v<std::decay_t<t_ty>, t_vec_quat> ||
 			std::is_same_v<std::decay_t<t_ty>, t_str>,
 			"GetDataTypeIndex: Data type not yet implemented.");
 
@@ -102,6 +109,8 @@ public:
 			return m_intidx;
 		else if constexpr(std::is_same_v<std::decay_t<t_ty>, t_cplx>)
 			return m_cplxidx;
+		else if constexpr(std::is_same_v<std::decay_t<t_ty>, t_quat>)
+			return m_quatidx;
 		else if constexpr(std::is_same_v<std::decay_t<t_ty>, t_bool>)
 			return m_boolidx;
 		else if constexpr(std::is_same_v<std::decay_t<t_ty>, t_addr>)
@@ -112,6 +121,8 @@ public:
 			return m_intarridx;
 		else if constexpr(std::is_same_v<std::decay_t<t_ty>, t_vec_cplx>)
 			return m_cplxarridx;
+		else if constexpr(std::is_same_v<std::decay_t<t_ty>, t_vec_quat>)
+			return m_quatarridx;
 		else if constexpr(std::is_same_v<std::decay_t<t_ty>, t_str>)
 			return m_stridx;
 
@@ -128,6 +139,7 @@ public:
 		static_assert(std::is_same_v<std::decay_t<t_ty>, t_real> ||
 			std::is_same_v<std::decay_t<t_ty>, t_int> ||
 			std::is_same_v<std::decay_t<t_ty>, t_cplx> ||
+			std::is_same_v<std::decay_t<t_ty>, t_quat> ||
 			std::is_same_v<std::decay_t<t_ty>, t_bool> ||
 			std::is_same_v<std::decay_t<t_ty>, t_addr>,
 			"GetDataTypeSize: Data type not yet implemented.");
@@ -138,6 +150,8 @@ public:
 			return sizeof(t_int);
 		else if constexpr(std::is_same_v<std::decay_t<t_ty>, t_cplx>)
 			return 2*sizeof(t_real);
+		else if constexpr(std::is_same_v<std::decay_t<t_ty>, t_quat>)
+			return 4*sizeof(t_real);
 		else if constexpr(std::is_same_v<std::decay_t<t_ty>, t_bool>)
 			return sizeof(t_bool);
 		else if constexpr(std::is_same_v<std::decay_t<t_ty>, t_addr>)
@@ -155,7 +169,8 @@ public:
 	{
 		static_assert(std::is_same_v<std::decay_t<t_ty>, t_real> ||
 			std::is_same_v<std::decay_t<t_ty>, t_int> ||
-			std::is_same_v<std::decay_t<t_ty>, t_cplx>,
+			std::is_same_v<std::decay_t<t_ty>, t_cplx> ||
+			std::is_same_v<std::decay_t<t_ty>, t_quat>,
 			"GetArraySymbolType: Data type not yet implemented.");
 
 		if constexpr(std::is_same_v<std::decay_t<t_ty>, t_real>)
@@ -164,6 +179,8 @@ public:
 			return VMType::INTARR;
 		else if constexpr(std::is_same_v<std::decay_t<t_ty>, t_cplx>)
 			return VMType::CPLXARR;
+		else if constexpr(std::is_same_v<std::decay_t<t_ty>, t_quat>)
+			return VMType::QUATARR;
 
 		return VMType::UNKNOWN;
 	}
@@ -379,6 +396,9 @@ protected:
 
 	// arithmetic operation
 	template<char op> void OpArithmetic();
+
+	// matrix multiplication
+	void OpMatrixMultiplication();
 
 	// logical operation
 	template<char op> void OpLogical();

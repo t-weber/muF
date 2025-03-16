@@ -353,6 +353,22 @@ t_val VM::ReadMemRaw(typename VM::t_addr addr) const
 		return t_cplx{*real, *imag};
 	}
 
+	// quaternion type
+	else if constexpr(std::is_same_v<std::decay_t<t_val>, t_quat>)
+	{
+		CheckMemoryBounds(addr, GetDataTypeSize<t_quat>());
+		const t_real* real = reinterpret_cast<t_real*>(
+			&m_mem[addr]);
+		const t_real* imag1 = reinterpret_cast<t_real*>(
+			&m_mem[addr + GetDataTypeSize<t_real>()]);
+		const t_real* imag2 = reinterpret_cast<t_real*>(
+			&m_mem[addr + GetDataTypeSize<t_real>()]);
+		const t_real* imag3 = reinterpret_cast<t_real*>(
+			&m_mem[addr + GetDataTypeSize<t_real>()]);
+
+		return t_quat{*real, *imag1, *imag2, *imag3};
+	}
+
 	// real array type
 	else if constexpr(std::is_same_v<std::decay_t<t_val>, t_vec_real>)
 	{
@@ -369,6 +385,12 @@ t_val VM::ReadMemRaw(typename VM::t_addr addr) const
 	else if constexpr(std::is_same_v<std::decay_t<t_val>, t_vec_cplx>)
 	{
 		return ReadArrayRaw<t_vec_cplx>(addr);
+	}
+
+	// quaterion array type
+	else if constexpr(std::is_same_v<std::decay_t<t_val>, t_vec_quat>)
+	{
+		return ReadArrayRaw<t_vec_quat>(addr);
 	}
 
 	// primitive types
@@ -413,10 +435,40 @@ void VM::WriteMemRaw(typename VM::t_addr addr, const t_val& val)
 		*(begin + 1) = val.imag();
 	}
 
+	// quaternion type
+	else if constexpr(std::is_same_v<std::decay_t<t_val>, t_quat>)
+	{
+		CheckMemoryBounds(addr, GetDataTypeSize<t_quat>());
+
+		t_real* begin = reinterpret_cast<t_real*>(&m_mem[addr]);
+		*(begin + 0) = val.real();
+		*(begin + 1) = val.imag1();
+		*(begin + 2) = val.imag2();
+		*(begin + 3) = val.imag3();
+	}
+
 	// real array type
 	else if constexpr(std::is_same_v<std::decay_t<t_val>, t_vec_real>)
 	{
-		WriteArray(addr, val, true);
+		WriteArray<t_vec_real>(addr, val, true);
+	}
+
+	// int array type
+	else if constexpr(std::is_same_v<std::decay_t<t_val>, t_vec_int>)
+	{
+		WriteArray<t_vec_int>(addr, val, true);
+	}
+
+	// complex array type
+	else if constexpr(std::is_same_v<std::decay_t<t_val>, t_vec_cplx>)
+	{
+		WriteArray<t_vec_cplx>(addr, val, true);
+	}
+
+	// quaternion array type
+	else if constexpr(std::is_same_v<std::decay_t<t_val>, t_vec_quat>)
+	{
+		WriteArray<t_vec_quat>(addr, val, true);
 	}
 
 	// primitive types

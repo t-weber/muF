@@ -21,11 +21,13 @@ t_str Symbol::get_type_name(SymbolType ty)
 		case SymbolType::REAL: return "real";
 		case SymbolType::INT: return "integer";
 		case SymbolType::CPLX: return "complex";
+		case SymbolType::QUAT: return "quaternion";
 		case SymbolType::BOOL: return "bool";
 
 		case SymbolType::REAL_ARRAY: return "real_array";
 		case SymbolType::INT_ARRAY: return "integer_array";
 		case SymbolType::CPLX_ARRAY: return "complex_array";
+		case SymbolType::QUAT_ARRAY: return "quaternion_array";
 
 		case SymbolType::STRING: return "string";
 
@@ -47,39 +49,47 @@ const t_str& Symbol::get_scopenameseparator()
 }
 
 
-Symbol* SymTab::AddSymbol(const t_str& scope,
+SymbolPtr SymTab::AddSymbol(const t_str& scope,
 	const t_str& name, SymbolType ty,
 	const std::vector<std::size_t>& dims,
 	bool is_temp)
 {
-	Symbol sym{.name = name,
-		.scoped_name = scope + name,
-		.scope_name = scope,
-		.ty = ty, .dims = dims, .elems = {},
-		.is_tmp = is_temp, .refcnt = 0};
+	SymbolPtr sym = std::make_shared<Symbol>();
 
-	auto pair = m_syms.insert_or_assign(sym.scoped_name, sym);
-	return &pair.first->second;
+	sym->name = name;
+	sym->scoped_name = scope + name;
+	sym->scope_name = scope;
+	sym->ty = ty;
+	sym->dims = dims;
+	sym->elems = {};
+	sym->is_tmp = is_temp;
+	sym->refcnt = 0;
+
+	auto pair = m_syms.insert_or_assign(sym->scoped_name, sym);
+	return pair.first->second;
 }
 
 
-Symbol* SymTab::AddFunc(const t_str& scope,
+SymbolPtr SymTab::AddFunc(const t_str& scope,
 	const t_str& name, SymbolType retty,
 	const std::vector<SymbolType>& argtypes,
 	const std::vector<std::size_t>* retdims,
 	const std::vector<SymbolType>* rettypes,
 	bool is_external)
 {
-	Symbol sym{.name = name,
-		.scoped_name = scope + name,
-		.scope_name = scope,
-		.ty = SymbolType::FUNC,
-		.argty = argtypes, .retty = retty,
-		.is_external = is_external,
-		.refcnt = 0};
+	SymbolPtr sym = std::make_shared<Symbol>();
+
+	sym->name = name;
+	sym->scoped_name = scope + name;
+	sym->scope_name = scope;
+	sym->ty = SymbolType::FUNC;
+	sym->argty = argtypes;
+	sym->retty = retty;
+	sym->is_external = is_external;
+	sym->refcnt = 0;
 
 	if(retdims)
-		sym.retdims = *retdims;
+		sym->retdims = *retdims;
 
 	if(rettypes)
 	{
@@ -87,65 +97,60 @@ Symbol* SymTab::AddFunc(const t_str& scope,
 		{
 			auto retsym = std::make_shared<Symbol>();
 			retsym->ty = ty;
-			sym.elems.emplace_back(retsym);
+			sym->elems.emplace_back(retsym);
 		}
 	}
 
-	auto pair = m_syms.insert_or_assign(sym.scoped_name, sym);
-	return &pair.first->second;
+	auto pair = m_syms.insert_or_assign(sym->scoped_name, sym);
+	return pair.first->second;
 }
 
 
-Symbol* SymTab::AddExtFunc(const t_str& scope,
+SymbolPtr SymTab::AddExtFunc(const t_str& scope,
 	const t_str& name, const t_str& extfunc_name,
 	SymbolType retty,
 	const std::vector<SymbolType>& argtypes,
 	const std::vector<std::size_t>* retdims,
 	const std::vector<SymbolType>* rettypes)
 {
-	Symbol *sym = AddFunc(scope, name, retty, argtypes, retdims, rettypes, true);
+	SymbolPtr sym =
+		AddFunc(scope, name, retty, argtypes, retdims, rettypes, true);
 	sym->ext_name = extfunc_name;
 	return sym;
 }
 
 
-Symbol* SymTab::FindSymbol(const t_str& name)
+SymbolPtr SymTab::FindSymbol(const t_str& name) const
 {
 	auto iter = m_syms.find(name);
 	if(iter == m_syms.end())
 		return nullptr;
-	return &iter->second;
+	return iter->second;
 }
 
 
-const Symbol* SymTab::FindSymbol(const t_str& name) const
-{
-	return const_cast<SymTab*>(this)->FindSymbol(name);
-}
-
-
-std::vector<const Symbol*> SymTab::FindSymbolsWithSameScope(
+std::vector<SymbolPtr> SymTab::FindSymbolsWithSameScope(
 	const t_str& scope, bool no_args) const
 {
-	std::vector<const Symbol*> syms;
+	std::vector<SymbolPtr> syms;
 
 	for(const auto& [name, sym] : m_syms)
 	{
-		//if(sym.addr)
-		//	std::cout << name << ": " << *sym.addr << std::endl;
+		//if(sym->addr)
+		//	std::cout << name << ": " << *sym->addr << std::endl;
 
-		if(no_args && sym.is_arg)
+		if(no_args && sym->is_arg)
 			continue;
 
-		if(sym.scope_name == scope)
-			syms.push_back(&sym);
+		if(sym->scope_name == scope)
+			syms.push_back(sym);
 	}
 
 	return syms;
 }
 
 
-const std::unordered_map<t_str, Symbol>& SymTab::GetSymbols() const
+const std::unordered_map<t_str, SymbolPtr>& SymTab::GetSymbols() const
 {
 	return m_syms;
 }
@@ -172,7 +177,7 @@ std::ostream& operator<<(std::ostream& ostr, const SymTab& tab)
 
 	for(const auto& pair : tab.m_syms)
 	{
-		const Symbol& sym = pair.second;
+		const Symbol& sym = *pair.second;
 
 		std::string ty = Symbol::get_type_name(sym.ty);
 		if(sym.is_external)

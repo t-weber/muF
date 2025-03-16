@@ -36,8 +36,8 @@ public:
 
 	virtual t_astret visit(ASTLoop* ast) override;
 	virtual t_astret visit(ASTRangedLoop* ast) override;
-        virtual t_astret visit(ASTLoopBreak* ast) override;
-        virtual t_astret visit(ASTLoopNext* ast) override;
+	virtual t_astret visit(ASTLoopBreak* ast) override;
+	virtual t_astret visit(ASTLoopNext* ast) override;
 
 	virtual t_astret visit(ASTCond* ast) override;
 	virtual t_astret visit(ASTCases* ast) override;
@@ -56,6 +56,7 @@ public:
 	virtual t_astret visit(ASTNumConst<t_real>* ast) override;
 	virtual t_astret visit(ASTNumConst<t_int>* ast) override;
 	virtual t_astret visit(ASTNumConst<t_cplx>* ast) override;
+	virtual t_astret visit(ASTNumConst<t_quat>* ast) override;
 	virtual t_astret visit(ASTNumConst<bool>* ast) override;
 	virtual t_astret visit(ASTNumConstList<t_int>* ast) override;
 

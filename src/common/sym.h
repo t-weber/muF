@@ -32,12 +32,15 @@ enum class SymbolType
 	REAL,
 	INT,
 	CPLX,
+	QUAT,
+
 	BOOL,
 	STRING,
 
 	REAL_ARRAY,
 	INT_ARRAY,
 	CPLX_ARRAY,
+	QUAT_ARRAY,
 
 	COMP,     // compound
 	FUNC,     // function pointer
@@ -49,19 +52,19 @@ enum class SymbolType
 
 struct Symbol
 {
-	t_str name{};                     // local symbol identifier
-	t_str scoped_name{};              // full identifier with scope prefixes
-	t_str scope_name{};               // scope prefixes
-	std::optional<t_str> ext_name{};  // name of external symbol (if different from internal name)
+	t_str name{};                       // local symbol identifier
+	t_str scoped_name{};                // full identifier with scope prefixes
+	t_str scope_name{};                 // scope prefixes
+	std::optional<t_str> ext_name{};    // name of external symbol (if different from internal name)
 
-	SymbolType ty { SymbolType::VOID };
-	std::vector<std::size_t> dims{ 1 };
+	SymbolType ty{ SymbolType::VOID };  // symbol type
+	std::vector<std::size_t> dims{ 1 }; // array dimensions
 
 	// for functions
-	bool is_arg{ false };             // symbol is a function argument
-	bool is_ret{ false };             // symbol is a function return value
-	std::size_t argidx{ 0 };          // argument index
-	std::size_t retidx{ 0 };          // return value index
+	bool is_arg{ false };               // symbol is a function argument
+	bool is_ret{ false };               // symbol is a function return value
+	std::size_t argidx{ 0 };            // argument index
+	std::size_t retidx{ 0 };            // return value index
 	std::vector<SymbolType> argty{};
 	SymbolType retty = SymbolType::VOID;
 	std::vector<std::size_t> retdims{ 1 };
@@ -69,13 +72,13 @@ struct Symbol
 	// for compound type
 	std::vector<SymbolPtr> elems{};
 
-	bool is_tmp{false};               // temporary or declared variable?
-	bool is_external{false};          // link to external variable or function?
-	bool is_global{false};            // symbol is global
-	std::optional<t_int> addr{};      // optional address of function or variable
-	std::optional<t_int> end_addr{};  // optional address of function
+	bool is_tmp{false};                 // temporary or declared variable?
+	bool is_external{false};            // link to external variable or function?
+	bool is_global{false};              // symbol is global
+	std::optional<t_int> addr{};        // optional address of function or variable
+	std::optional<t_int> end_addr{};    // optional address of function
 
-	mutable std::size_t refcnt{0};    // number of reference to this symbol
+	mutable std::size_t refcnt{ 0 };    // number of reference to this symbol
 
 	/**
 	 * get total element count for arrays
@@ -103,37 +106,37 @@ struct Symbol
 class SymTab
 {
 public:
-	Symbol* AddSymbol(const t_str& scope,
+	SymbolPtr AddSymbol(const t_str& scope,
 		const t_str& name, SymbolType ty,
 		const std::vector<std::size_t>& dims,
 		bool is_temp = false);
 
-	Symbol* AddFunc(const t_str& scope,
+	SymbolPtr AddFunc(const t_str& scope,
 		const t_str& name, SymbolType retty,
 		const std::vector<SymbolType>& argtypes,
 		const std::vector<std::size_t>* retdims = nullptr,
 		const std::vector<SymbolType>* multirettypes = nullptr,
 		bool is_external = false);
 
-	Symbol* AddExtFunc(const t_str& scope,
+	SymbolPtr AddExtFunc(const t_str& scope,
 		const t_str& name, const t_str& extfunc_name,
 		SymbolType retty,
 		const std::vector<SymbolType>& argtypes,
 		const std::vector<std::size_t>* retdims = nullptr,
 		const std::vector<SymbolType>* multirettypes = nullptr);
 
-	Symbol* FindSymbol(const t_str& name);
-	const Symbol* FindSymbol(const t_str& name) const;
+	SymbolPtr FindSymbol(const t_str& name) const;
 
-	std::vector<const Symbol*> FindSymbolsWithSameScope(
+	std::vector<SymbolPtr> FindSymbolsWithSameScope(
 		const t_str& scope, bool no_args = true) const;
 
-	const std::unordered_map<t_str, Symbol>& GetSymbols() const;
+	const std::unordered_map<t_str, SymbolPtr>& GetSymbols() const;
 
 	friend std::ostream& operator<<(std::ostream& ostr, const SymTab& tab);
 
+
 private:
-	std::unordered_map<t_str, Symbol> m_syms{};
+	std::unordered_map<t_str, SymbolPtr> m_syms{};
 };
 
 

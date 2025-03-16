@@ -26,7 +26,7 @@ void Grammar::CreateFunctions()
 		for(std::size_t idx = 0; idx < args->GetNumArgs(); ++idx)
 		{
 			const t_str& ident = args->GetArgIdent(idx);
-			const Symbol *sym = m_context.FindScopedSymbol(ident);
+			const SymbolPtr sym = m_context.FindScopedSymbol(ident);
 			if(!sym || !sym->is_arg)
 			{
 				std::cerr << "Cannot find argument symbol \""
@@ -44,7 +44,7 @@ void Grammar::CreateFunctions()
 		for(std::size_t idx = 0; idx < args->GetNumArgs(); ++idx)
 		{
 			const t_str& ident = args->GetArgIdent(idx);
-			const Symbol *sym = m_context.FindScopedSymbol(ident);
+			const SymbolPtr sym = m_context.FindScopedSymbol(ident);
 			if(!sym || !sym->is_ret)
 			{
 				std::cerr << "Cannot find return symbol \""
@@ -75,7 +75,8 @@ void Grammar::CreateFunctions()
 			std::size_t argidx = 0;
 			for(const auto& arg : funcargs->GetArgs())
 			{
-				Symbol *sym = m_context.AddScopedSymbol(std::get<0>(arg));
+				SymbolPtr sym =
+					m_context.AddScopedSymbol(std::get<0>(arg));
 				sym->is_arg = true;
 				sym->argidx = argidx;
 				//sym->ty = std::get<1>(arg);
@@ -134,7 +135,8 @@ void Grammar::CreateFunctions()
 			std::size_t argidx = 0;
 			for(const auto& arg : funcargs->GetArgs())
 			{
-				Symbol *sym = m_context.AddScopedSymbol(std::get<0>(arg));
+				SymbolPtr sym =
+					m_context.AddScopedSymbol(std::get<0>(arg));
 				sym->is_arg = true;
 				sym->argidx = argidx;
 				//sym->ty = std::get<1>(arg);
@@ -146,7 +148,8 @@ void Grammar::CreateFunctions()
 			std::size_t retidx = 0;
 			for(const auto& arg : retargs->GetArgs())
 			{
-				Symbol *sym = m_context.AddScopedSymbol(std::get<0>(arg));
+				SymbolPtr sym =
+					m_context.AddScopedSymbol(std::get<0>(arg));
 				sym->is_ret = true;
 				sym->retidx = retidx;
 				//sym->ty = std::get<1>(arg);
@@ -199,7 +202,7 @@ void Grammar::CreateFunctions()
 
 		auto identnode = std::dynamic_pointer_cast<ASTStrConst>(args[0]);
 		const t_str& funcname = identnode->GetVal();
-		const Symbol* sym = m_context.GetSymbols().FindSymbol(funcname);
+		const SymbolPtr sym = m_context.GetSymbols().FindSymbol(funcname);
 
 		if(sym && sym->ty == SymbolType::FUNC)
 		{
@@ -230,7 +233,7 @@ void Grammar::CreateFunctions()
 
 		auto identnode = std::dynamic_pointer_cast<ASTStrConst>(args[0]);
 		const t_str& funcname = identnode->GetVal();
-		const Symbol* sym = m_context.GetSymbols().FindSymbol(funcname);
+		const SymbolPtr sym = m_context.GetSymbols().FindSymbol(funcname);
 
 		if(sym && sym->ty == SymbolType::FUNC)
 		{

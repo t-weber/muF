@@ -67,6 +67,7 @@ void Grammar::CreateGrammar()
 	type_sep = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::TYPESEP), "::");
 	real_decl = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::REALDECL), "real_decl");
 	cplx_decl = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::CPLXDECL), "cplx_decl");
+	quat_decl = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::QUATDECL), "quat_decl");
 	int_decl = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::INTDECL), "integer_decl");
 	bool_decl = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::BOOLDECL), "bool_decl");
 	str_decl = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::STRINGDECL), "string_decl");

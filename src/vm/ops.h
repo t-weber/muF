@@ -15,6 +15,8 @@
 #include <cstring>
 #include <cmath>
 
+#include "types.h"
+
 
 /**
  * cast from one variable type to the other

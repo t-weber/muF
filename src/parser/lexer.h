@@ -44,6 +44,7 @@ enum class Token : lalr1::t_symbol_id
 	INTDECL     = 2012,
 	BOOLDECL    = 2013,
 	STRINGDECL  = 2014,
+	QUATDECL    = 2015,
 
 	// logical operators
 	EQU         = 3000,

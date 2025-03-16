@@ -18,7 +18,7 @@ t_astret Codegen::GetSym(const t_str& name) const
 		scoped_name += scope + Symbol::get_scopenameseparator();
 	scoped_name += name;
 
-	Symbol* sym = nullptr;
+	SymbolPtr sym;
 	if(m_syms)
 	{
 		sym = m_syms->FindSymbol(scoped_name);
@@ -38,7 +38,7 @@ t_astret Codegen::GetSym(const t_str& name) const
 }
 
 
-Symbol* Codegen::GetTypeConst(SymbolType ty) const
+SymbolPtr Codegen::GetTypeConst(SymbolType ty) const
 {
 	switch(ty)
 	{
@@ -48,12 +48,16 @@ Symbol* Codegen::GetTypeConst(SymbolType ty) const
 			return m_int_const;
 		case SymbolType::CPLX:
 			return m_cplx_const;
+		case SymbolType::QUAT:
+			return m_quat_const;
 		case SymbolType::REAL_ARRAY:
 			return m_real_array_const;
 		case SymbolType::INT_ARRAY:
 			return m_int_array_const;
 		case SymbolType::CPLX_ARRAY:
 			return m_cplx_array_const;
+		case SymbolType::QUAT_ARRAY:
+			return m_quat_array_const;
 		case SymbolType::BOOL:
 			return m_bool_const;
 		case SymbolType::STRING:
@@ -61,6 +65,7 @@ Symbol* Codegen::GetTypeConst(SymbolType ty) const
 		default:
 			return nullptr;
 	}
+
 	return nullptr;
 }
 
@@ -68,7 +73,7 @@ Symbol* Codegen::GetTypeConst(SymbolType ty) const
 /**
  * finds the size of the symbol for the stack frame
  */
-std::size_t Codegen::GetSymSize(const Symbol* sym) const
+std::size_t Codegen::GetSymSize(const SymbolPtr sym) const
 {
 	if(sym->ty == SymbolType::REAL)
 		return vm_type_size<VMType::REAL, true>;
@@ -76,12 +81,16 @@ std::size_t Codegen::GetSymSize(const Symbol* sym) const
 		return vm_type_size<VMType::INT, true>;
 	else if(sym->ty == SymbolType::CPLX)
 		return vm_type_size<VMType::CPLX, true>;
+	else if(sym->ty == SymbolType::QUAT)
+		return vm_type_size<VMType::QUAT, true>;
 	else if(sym->ty == SymbolType::REAL_ARRAY)
 		return get_vm_vec_real_size(sym->get_total_size(), true, true);
 	else if(sym->ty == SymbolType::INT_ARRAY)
 		return get_vm_vec_int_size(sym->get_total_size(), true, true);
 	else if(sym->ty == SymbolType::CPLX_ARRAY)
 		return get_vm_vec_cplx_size(sym->get_total_size(), true, true);
+	else if(sym->ty == SymbolType::QUAT_ARRAY)
+		return get_vm_vec_quat_size(sym->get_total_size(), true, true);
 	else if(sym->ty == SymbolType::BOOL)
 		return vm_type_size<VMType::BOOL, true>;
 	else if(sym->ty == SymbolType::STRING)
@@ -152,6 +161,11 @@ t_astret Codegen::visit(const ASTVarDecl* ast)
 			else if(sym->ty == SymbolType::CPLX)
 			{
 				PushCplxConst(t_vm_cplx(0, 0));
+				AssignVar(sym);
+			}
+			else if(sym->ty == SymbolType::QUAT)
+			{
+				PushQuatConst(t_vm_quat(0, 0, 0, 0));
 				AssignVar(sym);
 			}
 			else if(sym->ty == SymbolType::BOOL)
@@ -321,6 +335,29 @@ void Codegen::PushCplxConst(const t_vm_cplx& val)
 }
 
 
+void Codegen::PushQuatConst(const t_vm_quat& val)
+{
+	t_real real = val.real();
+	t_real imag1 = val.imag1();
+	t_real imag2 = val.imag2();
+	t_real imag3 = val.imag3();
+
+	m_ostr->put(static_cast<t_vm_byte>(OpCode::PUSH));
+	// write type descriptor byte
+	m_ostr->put(static_cast<t_vm_byte>(VMType::QUAT));
+
+	// write value components
+	m_ostr->write(reinterpret_cast<const char*>(&real),
+		vm_type_size<VMType::REAL, false>);
+	m_ostr->write(reinterpret_cast<const char*>(&imag1),
+		vm_type_size<VMType::REAL, false>);
+	m_ostr->write(reinterpret_cast<const char*>(&imag2),
+		vm_type_size<VMType::REAL, false>);
+	m_ostr->write(reinterpret_cast<const char*>(&imag3),
+		vm_type_size<VMType::REAL, false>);
+}
+
+
 void Codegen::PushBoolConst(t_vm_bool val)
 {
 	m_ostr->put(static_cast<t_vm_byte>(OpCode::PUSH));
@@ -408,6 +445,19 @@ void Codegen::PushCplxVecConst(const std::vector<t_vm_cplx>& vec)
 }
 
 
+void Codegen::PushQuatVecConst(const std::vector<t_vm_quat>& vec)
+{
+	// push elements
+	for(const t_vm_quat& val : vec)
+		PushQuatConst(val);
+
+	// push number of elements
+	PushVecSize(vec.size());
+
+	m_ostr->put(static_cast<t_vm_byte>(OpCode::MAKEQUATARR));
+}
+
+
 t_astret Codegen::visit(const ASTNumConst<t_real>* ast)
 {
 	t_vm_real val = static_cast<t_vm_real>(ast->GetVal());
@@ -426,9 +476,19 @@ t_astret Codegen::visit(const ASTNumConst<t_int>* ast)
 
 t_astret Codegen::visit(const ASTNumConst<t_cplx>* ast)
 {
-	t_vm_cplx val = static_cast<t_vm_cplx>(ast->GetVal());
+	//t_vm_cplx val = static_cast<t_vm_cplx>(ast->GetVal());
+	const t_vm_cplx& val = ast->GetVal();
 	PushCplxConst(val);
 	return m_cplx_const;
+}
+
+
+t_astret Codegen::visit(const ASTNumConst<t_quat>* ast)
+{
+	//t_vm_quat val = static_cast<t_vm_quat>(ast->GetVal());
+	const t_vm_quat& val = ast->GetVal();
+	PushQuatConst(val);
+	return m_quat_const;
 }
 
 

@@ -187,6 +187,11 @@ Lexer::GetMatchingTokens(const std::string& str, std::size_t line)
 		matches.emplace_back(std::make_tuple(
 			static_cast<t_symbol_id>(Token::CPLXDECL), str, line));
 	}
+	else if(str == "quaternion")
+	{
+		matches.emplace_back(std::make_tuple(
+			static_cast<t_symbol_id>(Token::QUATDECL), str, line));
+	}
 	else if(str == "string")
 	{
 		matches.emplace_back(std::make_tuple(

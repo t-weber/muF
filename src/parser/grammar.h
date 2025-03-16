@@ -117,7 +117,7 @@ private:
 	lalr1::TerminalPtr keyword_goto{}, keyword_comefrom{};
 	lalr1::TerminalPtr type_sep{};
 	lalr1::TerminalPtr real_decl{}, cplx_decl{}, int_decl{}, bool_decl{};
-	lalr1::TerminalPtr str_decl{};
+	lalr1::TerminalPtr str_decl{}, quat_decl{};
 #endif
 
 	ParserContext m_context{};

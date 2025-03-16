@@ -547,6 +547,12 @@ t_astret ASTOpt::visit([[maybe_unused]] ASTNumConst<t_cplx>* ast)
 }
 
 
+t_astret ASTOpt::visit([[maybe_unused]] ASTNumConst<t_quat>* ast)
+{
+	return nullptr;
+}
+
+
 t_astret ASTOpt::visit([[maybe_unused]] ASTNumConst<bool>* ast)
 {
 	return nullptr;

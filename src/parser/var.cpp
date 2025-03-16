@@ -182,6 +182,24 @@ void Grammar::CreateVariables()
 #endif
 	++semanticindex;
 
+	// quaternion declaration
+#ifdef CREATE_PRODUCTION_RULES
+	statement->AddRule({ quat_decl, type_sep, variables/*, stmt_end*/ }, semanticindex);
+#endif
+#ifdef CREATE_SEMANTIC_RULES
+	rules.emplace(std::make_pair(semanticindex,
+	[this](bool full_match, const lalr1::t_semanticargs& args, [[maybe_unused]] lalr1::t_astbaseptr retval) -> lalr1::t_astbaseptr
+	{
+		if(args.size() == 1)
+			m_context.SetSymType(SymbolType::QUAT);
+
+		if(!full_match)
+			return nullptr;
+		return args[2];
+	}));
+#endif
+	++semanticindex;
+
 	// bool declaration
 #ifdef CREATE_PRODUCTION_RULES
 	statement->AddRule({ bool_decl, type_sep, variables/*, stmt_end*/ }, semanticindex);
@@ -278,6 +296,35 @@ void Grammar::CreateVariables()
 				dims.push_back(static_cast<std::size_t>(dim));
 
 			m_context.SetSymType(SymbolType::CPLX_ARRAY);
+			m_context.SetSymDims(dims);
+		}
+
+		if(!full_match)
+			return nullptr;
+		return args[7];
+	}));
+#endif
+	++semanticindex;
+
+	// quaternion array declaration
+#ifdef CREATE_PRODUCTION_RULES
+	statement->AddRule({ quat_decl, comma,
+		keyword_dim, bracket_open, sym_int, bracket_close,
+		type_sep, variables/*, stmt_end*/ }, semanticindex);
+#endif
+#ifdef CREATE_SEMANTIC_RULES
+	rules.emplace(std::make_pair(semanticindex,
+	[this](bool full_match, const lalr1::t_semanticargs& args, [[maybe_unused]] lalr1::t_astbaseptr retval) -> lalr1::t_astbaseptr
+	{
+		if(args.size() == 6)
+		{
+			auto dim_node = std::dynamic_pointer_cast<ASTNumConstList<t_int>>(args[4]);
+			std::vector<std::size_t> dims;
+			dims.reserve(dim_node->GetSize());
+			for(t_int dim : dim_node->GetValues())
+				dims.push_back(static_cast<std::size_t>(dim));
+
+			m_context.SetSymType(SymbolType::QUAT_ARRAY);
 			m_context.SetSymDims(dims);
 		}
 
@@ -500,6 +547,29 @@ void Grammar::CreateVariables()
 #endif
 	++semanticindex;
 
+	// expression -> ( real, real, real, real ) [quaternion constant]
+#ifdef CREATE_PRODUCTION_RULES
+	expression->AddRule({ bracket_open,
+		sym_real, comma, sym_real, comma, sym_real, comma, sym_real,
+		bracket_close }, semanticindex);
+#endif
+#ifdef CREATE_SEMANTIC_RULES
+	rules.emplace(std::make_pair(semanticindex,
+	[](bool full_match, const lalr1::t_semanticargs& args, [[maybe_unused]] lalr1::t_astbaseptr retval) -> lalr1::t_astbaseptr
+	{
+		if(!full_match)
+			return nullptr;
+
+		auto real_node = std::dynamic_pointer_cast<ASTNumConst<t_real>>(args[1]);
+		auto imag1_node = std::dynamic_pointer_cast<ASTNumConst<t_real>>(args[3]);
+		auto imag2_node = std::dynamic_pointer_cast<ASTNumConst<t_real>>(args[5]);
+		auto imag3_node = std::dynamic_pointer_cast<ASTNumConst<t_real>>(args[7]);
+		const t_quat num{real_node->GetVal(), imag1_node->GetVal(), imag2_node->GetVal(), imag3_node->GetVal()};
+		return std::make_shared<ASTNumConst<t_quat>>(num);
+	}));
+#endif
+	++semanticindex;
+
 	// expression -> bool
 #ifdef CREATE_PRODUCTION_RULES
 	expression->AddRule({ sym_bool }, semanticindex);
@@ -566,7 +636,7 @@ void Grammar::CreateVariables()
 		else
 		{
 			// try finding local symbol
-			const Symbol* sym = m_context.FindScopedSymbol(identstr);
+			SymbolPtr sym = m_context.FindScopedSymbol(identstr);
 
 			// try finding global symbol
 			if(!sym)

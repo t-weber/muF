@@ -185,9 +185,9 @@ t_astret Codegen::visit(const ASTPlus* ast)
 		CastTo(second_ty, term2_pos);
 	common_type = res_ty;
 
-	if(ast->IsInverted())
+	if(ast->IsInverted())  // subtraction
 		m_ostr->put(static_cast<t_vm_byte>(OpCode::SUB));
-	else
+	else                   // addition
 		m_ostr->put(static_cast<t_vm_byte>(OpCode::ADD));
 
 	return common_type;
@@ -214,10 +214,83 @@ t_astret Codegen::visit(const ASTMult* ast)
 		CastTo(second_ty, term2_pos);
 	common_type = res_ty;
 
+	// division
 	if(ast->IsInverted())
+	{
+		if(term2 && IsArray(term2->ty))
+			throw std::runtime_error("ASTMult: Cannot divide by array.");
+
 		m_ostr->put(static_cast<t_vm_byte>(OpCode::DIV));
+	}
+	// multiplication
 	else
-		m_ostr->put(static_cast<t_vm_byte>(OpCode::MUL));
+	{
+		bool mat_mult = false;
+		t_vm_int M1_rows = 0, M1_cols = 0;
+		t_vm_int M2_rows = 0, M2_cols = 0;
+
+		// matrix-vector multiplication
+		if(common_type && IsArray(common_type->ty) &&
+			term1->dims.size() == 2 && term2->dims.size() == 1)
+		{
+			mat_mult = true;
+			M1_rows = term1->dims[0];
+			M1_cols = term1->dims[1];
+			M2_rows = term2->dims[0];
+			M2_cols = 1;
+		}
+		// vector-matrix multiplication
+		else if(common_type && IsArray(common_type->ty) &&
+			term1->dims.size() == 1 && term2->dims.size() == 2)
+		{
+			mat_mult = true;
+			M1_rows = 1;
+			M1_cols = term1->dims[0];
+			M2_rows = term2->dims[0];
+			M2_cols = term2->dims[1];
+		}
+		// matrix-matrix multiplication
+		else if(common_type && IsArray(common_type->ty) &&
+			term1->dims.size() == 2 && term2->dims.size() == 2)
+		{
+			mat_mult = true;
+			M1_rows = term1->dims[0];
+			M1_cols = term1->dims[1];
+			M2_rows = term2->dims[0];
+			M2_cols = term2->dims[1];
+		}
+
+		// matrix multiplication
+		if(mat_mult)
+		{
+			// push first matrix sizes
+			m_ostr->put(static_cast<t_vm_byte>(OpCode::PUSH));
+			m_ostr->put(static_cast<t_vm_byte>(VMType::INT));
+			m_ostr->write(reinterpret_cast<const char*>(&M1_rows),
+				vm_type_size<VMType::INT, false>);
+			m_ostr->put(static_cast<t_vm_byte>(OpCode::PUSH));
+			m_ostr->put(static_cast<t_vm_byte>(VMType::INT));
+			m_ostr->write(reinterpret_cast<const char*>(&M1_cols),
+				vm_type_size<VMType::INT, false>);
+
+			// push second matrix sizes
+			m_ostr->put(static_cast<t_vm_byte>(OpCode::PUSH));
+			m_ostr->put(static_cast<t_vm_byte>(VMType::INT));
+			m_ostr->write(reinterpret_cast<const char*>(&M2_rows),
+				vm_type_size<VMType::INT, false>);
+			m_ostr->put(static_cast<t_vm_byte>(OpCode::PUSH));
+			m_ostr->put(static_cast<t_vm_byte>(VMType::INT));
+			m_ostr->write(reinterpret_cast<const char*>(&M2_cols),
+				vm_type_size<VMType::INT, false>);
+
+			m_ostr->put(static_cast<t_vm_byte>(OpCode::MATMUL));
+		}
+		// scalar multiplication
+		else
+		{
+			m_ostr->put(static_cast<t_vm_byte>(OpCode::MUL));
+		}
+	}
 
 	return common_type;
 }
@@ -291,40 +364,26 @@ t_astret Codegen::visit(const ASTComp* ast)
 	switch(ast->GetOp())
 	{
 		case ASTComp::EQU:
-		{
 			m_ostr->put(static_cast<t_vm_byte>(OpCode::EQU));
 			break;
-		}
 		case ASTComp::NEQ:
-		{
 			m_ostr->put(static_cast<t_vm_byte>(OpCode::NEQU));
 			break;
-		}
 		case ASTComp::GT:
-		{
 			m_ostr->put(static_cast<t_vm_byte>(OpCode::GT));
 			break;
-		}
 		case ASTComp::LT:
-		{
 			m_ostr->put(static_cast<t_vm_byte>(OpCode::LT));
 			break;
-		}
 		case ASTComp::GEQ:
-		{
 			m_ostr->put(static_cast<t_vm_byte>(OpCode::GEQU));
 			break;
-		}
 		case ASTComp::LEQ:
-		{
 			m_ostr->put(static_cast<t_vm_byte>(OpCode::LEQU));
 			break;
-		}
 		default:
-		{
 			throw std::runtime_error("ASTComp: Invalid operation.");
 			break;
-		}
 	}
 
 	return nullptr;
@@ -340,30 +399,20 @@ t_astret Codegen::visit(const ASTBool* ast)
 	switch(ast->GetOp())
 	{
 		case ASTBool::XOR:
-		{
 			m_ostr->put(static_cast<t_vm_byte>(OpCode::XOR));
 			break;
-		}
 		case ASTBool::OR:
-		{
 			m_ostr->put(static_cast<t_vm_byte>(OpCode::OR));
 			break;
-		}
 		case ASTBool::AND:
-		{
 			m_ostr->put(static_cast<t_vm_byte>(OpCode::AND));
 			break;
-		}
 		case ASTBool::NOT:
-		{
 			m_ostr->put(static_cast<t_vm_byte>(OpCode::NOT));
 			break;
-		}
 		default:
-		{
 			throw std::runtime_error("ASTBool: Invalid operation.");
 			break;
-		}
 	}
 
 	return nullptr;

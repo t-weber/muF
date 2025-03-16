@@ -53,7 +53,7 @@ enum class ASTType
 
 
 using ASTPtr = std::shared_ptr<AST>;
-using t_astret = Symbol*;
+using t_astret = std::shared_ptr<Symbol>;
 
 
 /**
@@ -82,6 +82,7 @@ public:
 	virtual t_astret visit(const ASTNumConst<t_real>* ast) = 0;
 	virtual t_astret visit(const ASTNumConst<t_int>* ast) = 0;
 	virtual t_astret visit(const ASTNumConst<t_cplx>* ast) = 0;
+	virtual t_astret visit(const ASTNumConst<t_quat>* ast) = 0;
 	virtual t_astret visit(const ASTNumConst<bool>* ast) = 0;
 
 	virtual t_astret visit(const ASTNumConstList<t_int>* ast) = 0;
@@ -138,6 +139,7 @@ public:
 	virtual t_astret visit(ASTNumConst<t_real>* ast) = 0;
 	virtual t_astret visit(ASTNumConst<t_int>* ast) = 0;
 	virtual t_astret visit(ASTNumConst<t_cplx>* ast) = 0;
+	virtual t_astret visit(ASTNumConst<t_quat>* ast) = 0;
 	virtual t_astret visit(ASTNumConst<bool>* ast) = 0;
 
 	virtual t_astret visit(ASTNumConstList<t_int>* ast) = 0;
