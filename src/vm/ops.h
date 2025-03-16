@@ -90,7 +90,7 @@ void VM::OpCast()
 		if constexpr(std::is_same_v<std::decay_t<t_to>, t_cplx>)
 			return;  // don't need to cast to the same type
 
-		t_cplx val = std::get<m_cplxidx>(data);
+		const t_cplx& val = std::get<m_cplxidx>(data);
 
 		// convert to string
 		if constexpr(std::is_same_v<std::decay_t<t_to>, t_str>)
@@ -106,6 +106,48 @@ void VM::OpCast()
 			std::ostringstream ostr;
 			ostr.precision(m_prec);
 			ostr << "(" << real << ", " << imag << ")";
+			PopData();
+			PushData(t_data{std::in_place_index<m_stridx>, ostr.str()});
+		}
+
+		// convert to primitive type
+		else
+		{
+			std::ostringstream msg;
+			msg << "Invalid cast from complex to "
+				<< GetDataTypeName(toidx) << ".";
+			throw std::runtime_error(msg.str());
+		}
+	}
+
+	// casting from quaternion
+	else if(data.index() == m_quatidx)
+	{
+		if constexpr(std::is_same_v<std::decay_t<t_to>, t_quat>)
+			return;  // don't need to cast to the same type
+
+		const t_quat& val = std::get<m_quatidx>(data);
+
+		// convert to string
+		if constexpr(std::is_same_v<std::decay_t<t_to>, t_str>)
+		{
+			t_real real = val.real();
+			t_real imag1 = val.imag1();
+			t_real imag2 = val.imag2();
+			t_real imag3 = val.imag3();
+
+			if(m::equals_0<t_real>(real, m_eps))
+				real = t_real(0);
+			if(m::equals_0<t_real>(imag1, m_eps))
+				imag1 = t_real(0);
+			if(m::equals_0<t_real>(imag2, m_eps))
+				imag2 = t_real(0);
+			if(m::equals_0<t_real>(imag3, m_eps))
+				imag3 = t_real(0);
+
+			std::ostringstream ostr;
+			ostr.precision(m_prec);
+			ostr << "(" << real << ", " << imag1 << ", " << imag2 << ", " << imag3 << ")";
 			PopData();
 			PushData(t_data{std::in_place_index<m_stridx>, ostr.str()});
 		}
@@ -150,6 +192,8 @@ void VM::OpCast()
 	// casting from string
 	else if(data.index() == m_stridx)
 	{
+		using namespace m_ops;
+
 		if constexpr(std::is_same_v<std::decay_t<t_to>, t_str>)
 			return;  // don't need to cast to the same type
 
@@ -178,6 +222,12 @@ void VM::OpCast()
 	{
 		OpCastFromArray<t_to, t_vec_cplx>(data);
 	}
+
+	// casting from quaternion array
+	else if(data.index() == m_quatarridx)
+	{
+		OpCastFromArray<t_to, t_vec_quat>(data);
+	}
 }
 
 
@@ -203,6 +253,8 @@ void VM::OpCastFromArray(const t_data& data)
 		ostr << "[ ";
 		for(std::size_t i = 0; i < val.size(); ++i)
 		{
+			using namespace m_ops;
+
 			t_elem elem = val[i];
 			if(m::equals_0<t_elem>(elem, m_eps))
 				elem = t_elem{};
@@ -284,7 +336,28 @@ void VM::OpCastToArray(t_addr size)
 		// casting to complex vector
 		if constexpr(std::is_same_v<std::decay_t<t_elem>, t_cplx>)
 		{
-			t_elem val = std::get<m_cplxidx>(data);
+			const t_elem& val = std::get<m_cplxidx>(data);
+			PopData();
+
+			// set every element of the array to the int value
+			t_vec_to vec = m::create<t_vec_to>(size);
+			for(t_addr i = 0; i < size; ++i)
+				vec[i] = val;
+			PushData(t_data{std::in_place_index<vec_idx>, vec});
+		}
+		else
+		{
+			throw_err();
+		}
+	}
+
+	// casting from quaternion scalar
+	else if(data.index() == m_quatidx)
+	{
+		// casting to quaternion vector
+		if constexpr(std::is_same_v<std::decay_t<t_elem>, t_quat>)
+		{
+			const t_elem& val = std::get<m_quatidx>(data);
 			PopData();
 
 			// set every element of the array to the int value
@@ -325,7 +398,8 @@ t_val VM::OpArithmeticSameType(const t_val& val1, const t_val& val2)
 	// array operators
 	else if constexpr(std::is_same_v<std::decay_t<t_val>, t_vec_real> ||
 		std::is_same_v<std::decay_t<t_val>, t_vec_int> ||
-		std::is_same_v<std::decay_t<t_val>, t_vec_cplx>)
+		std::is_same_v<std::decay_t<t_val>, t_vec_cplx> ||
+		std::is_same_v<std::decay_t<t_val>, t_vec_quat>)
 	{
 		if constexpr(op == '+')
 			result = val1 + val2;
@@ -350,7 +424,7 @@ t_val VM::OpArithmeticSameType(const t_val& val1, const t_val& val2)
 		else if constexpr(op == '%' && std::is_floating_point_v<t_val>)
 			result = std::fmod(val1, val2);
 		else if constexpr(op == '^' /*&& std::is_floating_point_v<t_val>*/)
-			result = pow<t_val>(val1, val2);
+			result = power<t_val, t_val>(val1, val2);
 	}
 
 	// complex operators
@@ -365,7 +439,20 @@ t_val VM::OpArithmeticSameType(const t_val& val1, const t_val& val2)
 		else if constexpr(op == '/')
 			result = val1 / val2;
 		else if constexpr(op == '^')
-			result = pow<t_val>(val1, val2);
+			result = power<t_val, t_val>(val1, val2);
+	}
+
+	// quaternion operators
+	else if constexpr(std::is_same_v<std::decay_t<t_val>, t_quat>)
+	{
+		if constexpr(op == '+')
+			result = val1 + val2;
+		else if constexpr(op == '-')
+			result = val1 - val2;
+		else if constexpr(op == '*')
+			result = val1 * val2;
+		else if constexpr(op == '/')
+			result = val1 / val2;
 	}
 
 	return result;
@@ -380,28 +467,27 @@ void VM::OpArithmetic()
 {
 	t_data val2 = PopData();
 	t_data val1 = PopData();
-	t_data result;
+	std::optional<t_data> result;
 
 	auto dot_prod = []<class t_vec>(const t_data& val1, const t_data& val2)
-		-> std::pair<bool, t_data>
+		-> std::optional<t_data>
 	{
 		using t_elem = typename t_vec::value_type;
 		constexpr const std::size_t vec_idx = GetDataTypeIndex<t_vec>();
 		constexpr const std::size_t elem_type_idx = GetDataTypeIndex<t_elem>();
 
 		if(val1.index() != vec_idx || val2.index() != vec_idx || op != '*')
-			return std::make_pair(false, t_data{});
+			return std::nullopt;
 
 		const t_vec& vec1 = std::get<vec_idx>(val1);
 		const t_vec& vec2 = std::get<vec_idx>(val2);
 
 		t_elem dot = m::inner<t_vec>(vec1, vec2);
-		return std::make_pair(true,
-			t_data{std::in_place_index<elem_type_idx>, std::move(dot)});
+		return t_data{std::in_place_index<elem_type_idx>, std::move(dot)};
 	};
 
 	auto scale_vec = []<class t_vec>(const t_data& val1, const t_data& val2)
-		-> std::pair<bool, t_data>
+		-> std::optional<t_data>
 	{
 		using t_elem = typename t_vec::value_type;
 		constexpr const std::size_t vec_idx = GetDataTypeIndex<t_vec>();
@@ -414,8 +500,7 @@ void VM::OpArithmetic()
 			const t_vec& vec = std::get<vec_idx>(val1);
 			const t_elem& s = std::get<elem_idx>(val2);
 
-			t_data res = t_data{std::in_place_index<vec_idx>, s * vec};
-			return std::make_pair(true, std::move(res));
+			return t_data{std::in_place_index<vec_idx>, vec * s};
 		}
 
 		// vec / scalar
@@ -425,8 +510,7 @@ void VM::OpArithmetic()
 			const t_vec& vec = std::get<vec_idx>(val1);
 			const t_elem& s = std::get<elem_idx>(val2);
 
-			t_data res = t_data{std::in_place_index<vec_idx>, vec / s};
-			return std::make_pair(true, std::move(res));
+			return t_data{std::in_place_index<vec_idx>, vec / s};
 		}
 
 		// scalar * vec
@@ -436,84 +520,147 @@ void VM::OpArithmetic()
 			const t_vec& vec = std::get<vec_idx>(val2);
 			const t_elem& s = std::get<elem_idx>(val1);
 
-			t_data res = t_data{std::in_place_index<vec_idx>, s * vec};
-			return std::make_pair(true, std::move(res));
+			return t_data{std::in_place_index<vec_idx>, vec * s};
 		}
 
-		return std::make_pair(false, t_data{});
+		return std::nullopt;
 	};
 
-	// real vector dot product
-	if(auto [ ok, res ] = dot_prod.template operator()<t_vec_real>(val1, val2); ok)
-		result = std::move(res);
+	if constexpr(op == '*')
+	{
+		// real vector dot product
+		if(auto res = dot_prod.template operator()<t_vec_real>(val1, val2); res)
+			result = std::move(res);
 
-	// int vector dot product
-	else if(auto [ ok, res ] = dot_prod.template operator()<t_vec_int>(val1, val2); ok)
-		result = std::move(res);
+		// int vector dot product
+		else if(auto res = dot_prod.template operator()<t_vec_int>(val1, val2); res)
+			result = std::move(res);
 
-	// complex vector dot product
-	else if(auto [ ok, res ] = dot_prod.template operator()<t_vec_cplx>(val1, val2); ok)
-		result = std::move(res);
+		// complex vector dot product
+		else if(auto res = dot_prod.template operator()<t_vec_cplx>(val1, val2); res)
+			result = std::move(res);
 
-	// scale real vector
-	else if(auto [ ok, res ] = scale_vec.template operator()<t_vec_real>(val1, val2); ok)
-		result = std::move(res);
+		// quaternion vector dot product
+		else if(auto res = dot_prod.template operator()<t_vec_quat>(val1, val2); res)
+			result = std::move(res);
 
-	// scale int vector
-	else if(auto [ ok, res ] = scale_vec.template operator()<t_vec_int>(val1, val2); ok)
-		result = std::move(res);
+		// scale real vector
+		else if(auto res = scale_vec.template operator()<t_vec_real>(val1, val2); res)
+			result = std::move(res);
 
-	// scale complex vector
-	else if(auto [ ok, res ] = scale_vec.template operator()<t_vec_cplx>(val1, val2); ok)
-		result = std::move(res);
+		// scale int vector
+		else if(auto res = scale_vec.template operator()<t_vec_int>(val1, val2); res)
+			result = std::move(res);
 
-	// same-type operations
-	else if(val1.index() == val2.index())
+		// scale complex vector
+		else if(auto res = scale_vec.template operator()<t_vec_cplx>(val1, val2); res)
+			result = std::move(res);
+
+		// scale quaternion vector
+		else if(auto res = scale_vec.template operator()<t_vec_quat>(val1, val2); res)
+			result = std::move(res);
+
+		// quaternion * vector -> vector
+		else if(val1.index() == m_quatidx && val2.index() == m_realarridx)
+		{
+			using namespace m_ops;
+			result = t_data{std::in_place_index<m_realarridx>,
+				std::get<m_quatidx>(val1) *
+				std::get<m_realarridx>(val2)};
+		}
+	}
+
+	else if constexpr(op == '^')
+	{
+		// quaternion power
+		if(val1.index() == m_quatidx && val2.index() == m_realidx)
+		{
+			result = t_data{std::in_place_index<m_quatidx>,
+				power<t_quat, t_real>(
+					std::get<m_quatidx>(val1),
+					std::get<m_realidx>(val2))};
+		}
+
+		// quaternion power
+		else if(val1.index() == m_quatidx && val2.index() == m_intidx)
+		{
+			result = t_data{std::in_place_index<m_quatidx>,
+				power<t_quat, t_real>(
+					std::get<m_quatidx>(val1),
+					static_cast<t_real>(std::get<m_intidx>(val2)))};
+		}
+	}
+
+	// check same-type operations if result has not yet been found
+	if(!result && val1.index() == val2.index())
 	{
 		if(val1.index() == m_realidx)
 		{
 			result = t_data{std::in_place_index<m_realidx>,
 				OpArithmeticSameType<t_real, op>(
-					std::get<m_realidx>(val1), std::get<m_realidx>(val2))};
+					std::get<m_realidx>(val1),
+					std::get<m_realidx>(val2))};
 		}
 		else if(val1.index() == m_intidx)
 		{
 			result = t_data{std::in_place_index<m_intidx>,
 				OpArithmeticSameType<t_int, op>(
-					std::get<m_intidx>(val1), std::get<m_intidx>(val2))};
+					std::get<m_intidx>(val1),
+					std::get<m_intidx>(val2))};
 		}
 		else if(val1.index() == m_cplxidx)
 		{
 			result = t_data{std::in_place_index<m_cplxidx>,
 				OpArithmeticSameType<t_cplx, op>(
-					std::get<m_cplxidx>(val1), std::get<m_cplxidx>(val2))};
+					std::get<m_cplxidx>(val1),
+					std::get<m_cplxidx>(val2))};
+		}
+		else if(val1.index() == m_quatidx)
+		{
+			result = t_data{std::in_place_index<m_quatidx>,
+				OpArithmeticSameType<t_quat, op>(
+					std::get<m_quatidx>(val1),
+					std::get<m_quatidx>(val2))};
 		}
 		else if(val1.index() == m_stridx)
 		{
 			result = t_data{std::in_place_index<m_stridx>,
 				OpArithmeticSameType<t_str, op>(
-					std::get<m_stridx>(val1), std::get<m_stridx>(val2))};
+					std::get<m_stridx>(val1),
+					std::get<m_stridx>(val2))};
 		}
 		else if(val1.index() == m_realarridx)
 		{
 			result = t_data{std::in_place_index<m_realarridx>,
 				OpArithmeticSameType<t_vec_real, op>(
-					std::get<m_realarridx>(val1), std::get<m_realarridx>(val2))};
+					std::get<m_realarridx>(val1),
+					std::get<m_realarridx>(val2))};
 		}
 		else if(val1.index() == m_intarridx)
 		{
 			result = t_data{std::in_place_index<m_intarridx>,
 				OpArithmeticSameType<t_vec_int, op>(
-					std::get<m_intarridx>(val1), std::get<m_intarridx>(val2))};
+					std::get<m_intarridx>(val1),
+					std::get<m_intarridx>(val2))};
 		}
 		else if(val1.index() == m_cplxarridx)
 		{
 			result = t_data{std::in_place_index<m_cplxarridx>,
 				OpArithmeticSameType<t_vec_cplx, op>(
-					std::get<m_cplxarridx>(val1), std::get<m_cplxarridx>(val2))};
+					std::get<m_cplxarridx>(val1),
+					std::get<m_cplxarridx>(val2))};
+		}
+		else if(val1.index() == m_quatarridx)
+		{
+			result = t_data{std::in_place_index<m_quatarridx>,
+				OpArithmeticSameType<t_vec_quat, op>(
+					std::get<m_quatarridx>(val1),
+					std::get<m_quatarridx>(val2))};
 		}
 	}
-	else
+
+	// no result found?
+	if(!result)
 	{
 		std::ostringstream err;
 		err << "Unknown arithmetic operation. "
@@ -522,7 +669,7 @@ void VM::OpArithmetic()
 		throw std::runtime_error(err.str());
 	}
 
-	PushData(result);
+	PushData(*result);
 }
 
 

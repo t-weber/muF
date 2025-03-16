@@ -162,7 +162,8 @@ private:
 	std::vector<std::pair<t_str, std::streampos>> m_goto_comefroms{};
 
 	// dummy symbols for constants
-	SymbolPtr m_real_const{}, m_int_const{}, m_cplx_const{}, m_quat_const{};
+	SymbolPtr m_real_const{}, m_int_const{};
+	SymbolPtr m_cplx_const{}, m_quat_const{};
 	SymbolPtr m_real_array_const{}, m_int_array_const{};
 	SymbolPtr m_cplx_array_const{}, m_quat_array_const{};
 	SymbolPtr m_bool_const{}, m_str_const{};

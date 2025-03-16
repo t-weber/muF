@@ -599,6 +599,12 @@ bool VM::Run()
 				break;
 			}
 
+			case OpCode::TOQ: // converts value to t_quat
+			{
+				OpCast<m_quatidx>();
+				break;
+			}
+
 			case OpCode::TOB: // converts value to t_bool
 			{
 				OpCast<m_boolidx>();
@@ -629,6 +635,13 @@ bool VM::Run()
 			{
 				t_addr vec_size = PopAddress();
 				OpCastToArray<t_vec_cplx>(vec_size);
+				break;
+			}
+
+			case OpCode::TOQUATARR: // converts value to t_vec_quat
+			{
+				t_addr vec_size = PopAddress();
+				OpCastToArray<t_vec_quat>(vec_size);
 				break;
 			}
 			// ----------------------------------------------------

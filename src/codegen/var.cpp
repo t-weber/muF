@@ -196,6 +196,12 @@ t_astret Codegen::visit(const ASTVarDecl* ast)
 				PushCplxVecConst(vec);
 				AssignVar(sym);
 			}
+			else if(sym->ty == SymbolType::QUAT_ARRAY)
+			{
+				std::vector<t_vm_quat> vec(sym->get_total_size());
+				PushQuatVecConst(vec);
+				AssignVar(sym);
+			}
 		}
 
 		if(!sym_ret)

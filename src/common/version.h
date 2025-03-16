@@ -8,7 +8,7 @@
 #ifndef __MUF_VER_H__
 #define __MUF_VER_H__
 
-#define MUF_VER "0.2"
+#define MUF_VER "0.3"
 #define VM_VER  "0.6"
 
 #endif

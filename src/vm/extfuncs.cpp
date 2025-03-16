@@ -104,7 +104,7 @@ VM::t_data VM::CallExternal(const t_str& func_name)
 	{
 		retval = t_data{std::in_place_index<m_realidx>, m_eps};
 	}
-	else if(func_name == "to_str" || func_name == "flt_to_str" || func_name == "int_to_str")
+	else if(func_name == "to_str")
 	{
 		OpCast<m_stridx>();
 	}

@@ -14,37 +14,44 @@
 #include <cmath>
 
 #include "mathlibs/matrix_concepts.h"
+#include "mathlibs/matrix_algos.h"
 
 
 
 /**
  * val1 ** val2
  */
-template<class t_val>
-t_val pow(t_val val1, t_val val2)
+template<class t_val1, class t_val2>
+t_val1 power(const t_val1& val1, const t_val2& val2)
 {
-	if constexpr(std::is_floating_point_v<t_val>)
+	if constexpr(std::is_floating_point_v<t_val1>)
 	{
 		return std::pow(val1, val2);
 	}
-	else if(m::is_complex<t_val>)
+	else if constexpr(m::is_complex<t_val1>)
 	{
 		return std::pow(val1, val2);
 	}
-	else if constexpr(std::is_integral_v<t_val>)
+	else if constexpr(m::is_quat<t_val1> && m::is_scalar<t_val2>)
+	{
+		using t_val = typename t_quat::value_type;
+		using t_vec = m::vec<t_val>;
+		return m::pow<t_quat, t_vec>(val1, val2);
+	}
+	else if constexpr(std::is_integral_v<t_val1>)
 	{
 		if(val2 == 0)
 			return 1;
 		else if(val2 < 0)
 			return 0;
 
-		t_val result = val1;
-		for(t_val i = 1; i < val2; ++i)
+		t_val1 result = val1;
+		for(t_val1 i = 1; i < val2; ++i)
 			result *= val1;
 		return result;
 	}
 
-	return t_val{};
+	return t_val1{};
 }
 
 

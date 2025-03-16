@@ -92,6 +92,10 @@ Codegen::GetCastSymType(t_astret term1, t_astret term2)
 	else if(ty1 == SymbolType::REAL && ty2 == SymbolType::CPLX_ARRAY)
 		return std::make_tuple(m_cplx_const, nullptr, term2);
 
+	// no casts between quaternion-vector product
+	else if(ty1 == SymbolType::QUAT && ty2 == SymbolType::REAL_ARRAY)
+		return std::make_tuple(nullptr, nullptr, term2);
+
 	return std::make_tuple(nullptr, term1, term1);
 }
 
@@ -115,6 +119,8 @@ void Codegen::CastTo(t_astret ty_to,
 		op = static_cast<t_vm_byte>(OpCode::TOI);
 	else if(ty_to->ty == SymbolType::CPLX)
 		op = static_cast<t_vm_byte>(OpCode::TOC);
+	else if(ty_to->ty == SymbolType::QUAT)
+		op = static_cast<t_vm_byte>(OpCode::TOQ);
 	else if(ty_to->ty == SymbolType::STRING)
 		op = static_cast<t_vm_byte>(OpCode::TOS);
 	else if(ty_to->ty == SymbolType::BOOL)
@@ -132,6 +138,11 @@ void Codegen::CastTo(t_astret ty_to,
 	else if(ty_to->ty == SymbolType::CPLX_ARRAY && allow_array_cast)
 	{
 		op = static_cast<t_vm_byte>(OpCode::TOCPLXARR);
+		to_arr = true;
+	}
+	else if(ty_to->ty == SymbolType::QUAT_ARRAY && allow_array_cast)
+	{
+		op = static_cast<t_vm_byte>(OpCode::TOQUATARR);
 		to_arr = true;
 	}
 

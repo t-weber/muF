@@ -38,13 +38,15 @@ enum class OpCode : t_vm_byte
 	TOR         = 0x31,  // cast to real
 	TOI         = 0x32,  // cast to int
 	TOC         = 0x33,  // cast to complex
-	TOB         = 0x34,  // cast to bool
-	TOS         = 0x35,  // cast to string
+	TOQ         = 0x34,  // cast to quaternion
+	TOB         = 0x35,  // cast to bool
+	TOS         = 0x36,  // cast to string
 
 	// array conversions
 	TOREALARR   = 0x41,  // cast to real array
 	TOINTARR    = 0x42,  // cast to int array
 	TOCPLXARR   = 0x43,  // cast to complex array
+	TOQUATARR   = 0x44,  // cast to quaternion array
 
 	// jumps
 	JMP         = 0x50,  // unconditional jump
@@ -124,12 +126,14 @@ constexpr t_str get_vm_opcode_name(OpCode op)
 		case OpCode::TOR:         return "tor";
 		case OpCode::TOI:         return "toi";
 		case OpCode::TOC:         return "toc";
+		case OpCode::TOQ:         return "toq";
 		case OpCode::TOB:         return "tob";
 		case OpCode::TOS:         return "tos";
 
 		case OpCode::TOREALARR:   return "torealarr";
 		case OpCode::TOINTARR:    return "tointarr";
 		case OpCode::TOCPLXARR:   return "tocplxarr";
+		case OpCode::TOQUATARR:   return "toquatarr";
 
 		case OpCode::JMP:         return "jmp";
 		case OpCode::JMPCND:      return "jmpcnd";

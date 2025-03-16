@@ -550,7 +550,8 @@ void Grammar::CreateVariables()
 	// expression -> ( real, real, real, real ) [quaternion constant]
 #ifdef CREATE_PRODUCTION_RULES
 	expression->AddRule({ bracket_open,
-		sym_real, comma, sym_real, comma, sym_real, comma, sym_real,
+		sym_real /*1*/, comma, sym_real /*3*/, comma,
+		sym_real /*5*/, comma, sym_real /*7*/,
 		bracket_close }, semanticindex);
 #endif
 #ifdef CREATE_SEMANTIC_RULES
@@ -564,7 +565,8 @@ void Grammar::CreateVariables()
 		auto imag1_node = std::dynamic_pointer_cast<ASTNumConst<t_real>>(args[3]);
 		auto imag2_node = std::dynamic_pointer_cast<ASTNumConst<t_real>>(args[5]);
 		auto imag3_node = std::dynamic_pointer_cast<ASTNumConst<t_real>>(args[7]);
-		const t_quat num{real_node->GetVal(), imag1_node->GetVal(), imag2_node->GetVal(), imag3_node->GetVal()};
+		const t_quat num{real_node->GetVal(), imag1_node->GetVal(),
+			imag2_node->GetVal(), imag3_node->GetVal()};
 		return std::make_shared<ASTNumConst<t_quat>>(num);
 	}));
 #endif

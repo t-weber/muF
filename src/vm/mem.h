@@ -362,9 +362,9 @@ t_val VM::ReadMemRaw(typename VM::t_addr addr) const
 		const t_real* imag1 = reinterpret_cast<t_real*>(
 			&m_mem[addr + GetDataTypeSize<t_real>()]);
 		const t_real* imag2 = reinterpret_cast<t_real*>(
-			&m_mem[addr + GetDataTypeSize<t_real>()]);
+			&m_mem[addr + GetDataTypeSize<t_real>()*2]);
 		const t_real* imag3 = reinterpret_cast<t_real*>(
-			&m_mem[addr + GetDataTypeSize<t_real>()]);
+			&m_mem[addr + GetDataTypeSize<t_real>()*3]);
 
 		return t_quat{*real, *imag1, *imag2, *imag3};
 	}

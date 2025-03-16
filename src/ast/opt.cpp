@@ -68,7 +68,7 @@ ASTPtr ASTOpt::OptConsts(ASTPtr ast)
 		else if constexpr(std::is_same_v<t_ast, ASTPow>)
 		{
 			++m_arith_opts;
-			term1->SetVal(pow<t_val>(term1->GetVal(), term2->GetVal()));
+			term1->SetVal(power<t_val, t_val>(term1->GetVal(), term2->GetVal()));
 		}
 		else if constexpr(std::is_same_v<t_ast, ASTComp>)
 		{

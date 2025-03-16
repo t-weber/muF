@@ -18,6 +18,7 @@ bool Codegen::IsArray(SymbolType ty) const
 		case SymbolType::REAL_ARRAY:
 		case SymbolType::INT_ARRAY:
 		case SymbolType::CPLX_ARRAY:
+		case SymbolType::QUAT_ARRAY:
 			return true;
 		default:
 			return false;
@@ -49,6 +50,10 @@ Codegen::GetArrayTypeConst(SymbolType ty) const
 		case SymbolType::CPLX_ARRAY:
 			arr_ty = m_cplx_array_const;
 			arr_elem_ty = m_cplx_const;
+			break;
+		case SymbolType::QUAT_ARRAY:
+			arr_ty = m_quat_array_const;
+			arr_elem_ty = m_quat_const;
 			break;
 		default:
 			break;
@@ -291,6 +296,8 @@ t_astret Codegen::visit(const ASTExprList* ast)
 			m_ostr->put(static_cast<t_vm_byte>(OpCode::MAKEINTARR));
 		else if(arr_sym_ty == SymbolType::CPLX_ARRAY)
 			m_ostr->put(static_cast<t_vm_byte>(OpCode::MAKECPLXARR));
+		else if(arr_sym_ty == SymbolType::QUAT_ARRAY)
+			m_ostr->put(static_cast<t_vm_byte>(OpCode::MAKEQUATARR));
 		else
 			 throw std::runtime_error("ASTExprList: Invalid array type.");
 

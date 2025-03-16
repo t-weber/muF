@@ -283,11 +283,20 @@ protected:
 	// pop a complex number from the stack
 	t_cplx PopComplex();
 
+	// pop a quaternion from the stack
+	t_quat PopQuaternion();
+
 	// get the complex number on top of the stack
 	t_cplx TopComplex(t_addr sp_offs = 0) const;
 
+	// get the quaternion on top of the stack
+	t_quat TopQuaternion(t_addr sp_offs = 0) const;
+
 	// push a complex number to the stack
 	void PushComplex(const t_cplx& val, bool raw = true);
+
+	// push a quaternion to the stack
+	void PushQuaternion(const t_quat& val, bool raw = true);
 
 	// pop a string from the stack
 	t_str PopString();

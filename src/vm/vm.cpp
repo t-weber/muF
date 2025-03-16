@@ -237,6 +237,25 @@ VM::t_cplx VM::PopComplex()
 
 
 /**
+ * pop a quaternion from the stack
+ */
+VM::t_quat VM::PopQuaternion()
+{
+	CheckMemoryBounds(m_sp, GetDataTypeSize<t_quat>());
+
+	t_real* begin = reinterpret_cast<t_real*>(m_mem.get() + m_sp);
+	t_quat quat{*begin, *(begin + 1), *(begin + 2), *(begin + 3)};
+
+	m_sp += GetDataTypeSize<t_quat>();
+
+	if(m_zeropoppedvals)
+		std::memset(begin, 0, GetDataTypeSize<t_quat>());
+
+	return quat;
+}
+
+
+/**
  * get a complex number from the top of the stack
  */
 VM::t_cplx VM::TopComplex(t_addr sp_offs) const
@@ -247,6 +266,20 @@ VM::t_cplx VM::TopComplex(t_addr sp_offs) const
 	const t_real* begin = reinterpret_cast<t_real*>(m_mem.get() + addr);
 
 	return t_cplx{*begin, *(begin + 1)};
+}
+
+
+/**
+ * get a quaternion from the top of the stack
+ */
+VM::t_quat VM::TopQuaternion(t_addr sp_offs) const
+{
+	t_addr addr = m_sp + sp_offs;
+
+	CheckMemoryBounds(addr, GetDataTypeSize<t_quat>());
+	const t_real* begin = reinterpret_cast<t_real*>(m_mem.get() + addr);
+
+	return t_quat{*begin, *(begin + 1), *(begin + 2), *(begin + 3)};
 }
 
 
@@ -270,6 +303,35 @@ void VM::PushComplex(const VM::t_cplx& cplx, bool raw)
 
 		if(m_debug)
 			std::cout << "pushed complex " << cplx << "." << std::endl;
+	}
+}
+
+
+/**
+ * push a quaternion to the stack
+ */
+void VM::PushQuaternion(const VM::t_quat& quat, bool raw)
+{
+	CheckMemoryBounds(m_sp, -GetDataTypeSize<t_quat>());
+
+	m_sp -= GetDataTypeSize<t_quat>();
+	t_real* begin = reinterpret_cast<t_real*>(m_mem.get() + m_sp);
+
+	*(begin + 0) = quat.real();
+	*(begin + 1) = quat.imag1();
+	*(begin + 2) = quat.imag2();
+	*(begin + 3) = quat.imag3();
+
+	if(!raw)
+	{
+		// push descriptor
+		PushRaw<t_byte, m_bytesize>(static_cast<t_byte>(VMType::QUAT));
+
+		if(m_debug)
+		{
+			using namespace m_ops;
+			std::cout << "pushed quaternion " << quat << "." << std::endl;
+		}
 	}
 }
 
@@ -306,6 +368,13 @@ VM::t_data VM::TopData() const
 		{
 			dat = t_data{std::in_place_index<m_cplxidx>,
 				TopComplex(m_bytesize)};
+			break;
+		}
+
+		case VMType::QUAT:
+		{
+			dat = t_data{std::in_place_index<m_quatidx>,
+				TopQuaternion(m_bytesize)};
 			break;
 		}
 
@@ -355,10 +424,17 @@ VM::t_data VM::TopData() const
 				break;
 		}
 
+		case VMType::QUATARR:
+		{
+			dat = t_data{std::in_place_index<m_quatarridx>,
+				TopArray<t_vec_quat>(m_bytesize)};
+				break;
+		}
+
 		default:
 		{
 			std::ostringstream msg;
-			msg << "Top: Data type " << (int)tyval
+			msg << "TopData: Data type " << (int)tyval
 				<< " (" << get_vm_type_name(ty) << ")"
 				<< " not yet implemented.";
 			throw std::runtime_error(msg.str());
@@ -419,6 +495,17 @@ VM::t_data VM::PopData()
 			break;
 		}
 
+		case VMType::QUAT:
+		{
+			dat = t_data{std::in_place_index<m_quatidx>, PopQuaternion()};
+			if(m_debug)
+			{
+				using namespace m_ops;
+				std::cout << "popped quaternion " << std::get<m_quatidx>(dat)
+					<< "." << std::endl;
+			}
+			break;
+		}
 
 		case VMType::BOOL:
 		{
@@ -499,10 +586,23 @@ VM::t_data VM::PopData()
 			break;
 		}
 
+		case VMType::QUATARR:
+		{
+			dat = t_data{std::in_place_index<m_quatarridx>, PopArray<t_vec_quat>()};
+			if(m_debug)
+			{
+				using namespace m_ops;
+				std::cout << "popped " << GetDataTypeName(dat) << " "
+					<< std::get<m_quatarridx>(dat)
+					<< "." << std::endl;
+			}
+			break;
+		}
+
 		default:
 		{
 			std::ostringstream msg;
-			msg << "Pop: Data type " << (int)tyval
+			msg << "PopData: Data type " << (int)tyval
 				<< " (" << get_vm_type_name(ty) << ")"
 				<< " not yet implemented.";
 			throw std::runtime_error(msg.str());
@@ -558,6 +658,13 @@ void VM::PushData(const VM::t_data& data, VMType ty, bool err_on_unknown)
 	{
 		// push the actual complex number
 		PushComplex(std::get<m_cplxidx>(data), false);
+	}
+
+	// quaternion data
+	else if(data.index() == m_quatidx)
+	{
+		// push the actual quaternion
+		PushQuaternion(std::get<m_quatidx>(data), false);
 	}
 
 	// bool data
@@ -622,11 +729,18 @@ void VM::PushData(const VM::t_data& data, VMType ty, bool err_on_unknown)
 		PushArray<t_vec_cplx>(std::get<m_cplxarridx>(data), false);
 	}
 
+	// quaternion array data
+	else if(data.index() == m_quatarridx)
+	{
+		// push the actual array
+		PushArray<t_vec_quat>(std::get<m_quatarridx>(data), false);
+	}
+
 	// unknown data
 	else if(err_on_unknown)
 	{
 		std::ostringstream msg;
-		msg << "Push: Data type " << (int)ty
+		msg << "PushData: Data type " << (int)ty
 			<< " (" << get_vm_type_name(ty) << ")"
 			<< " not yet implemented.";
 		throw std::runtime_error(msg.str());
@@ -658,7 +772,7 @@ std::tuple<VMType, VM::t_data> VM::ReadMemData(VM::t_addr addr)
 
 	switch(ty)
 	{
-		case VMType::REAL:
+		case VMType::REAL:     // int type
 		{
 			t_real val = ReadMemRaw<t_real>(addr);
 			dat = t_data{std::in_place_index<m_realidx>, val};
@@ -672,7 +786,7 @@ std::tuple<VMType, VM::t_data> VM::ReadMemData(VM::t_addr addr)
 			break;
 		}
 
-		case VMType::INT:
+		case VMType::INT:      // int type
 		{
 			t_int val = ReadMemRaw<t_int>(addr);
 			dat = t_data{std::in_place_index<m_intidx>, val};
@@ -686,7 +800,7 @@ std::tuple<VMType, VM::t_data> VM::ReadMemData(VM::t_addr addr)
 			break;
 		}
 
-		case VMType::CPLX:
+		case VMType::CPLX:     // complex type
 		{
 			t_cplx val = ReadMemRaw<t_cplx>(addr);
 			dat = t_data{std::in_place_index<m_cplxidx>, val};
@@ -700,7 +814,22 @@ std::tuple<VMType, VM::t_data> VM::ReadMemData(VM::t_addr addr)
 			break;
 		}
 
-		case VMType::BOOL:
+		case VMType::QUAT:     // quaternion type
+		{
+			t_quat val = ReadMemRaw<t_quat>(addr);
+			dat = t_data{std::in_place_index<m_quatidx>, val};
+
+			if(m_debug)
+			{
+				using namespace m_ops;
+				std::cout << "read quaternion " << val
+					<< " from address " << (addr - 1)
+					<< "." << std::endl;
+			}
+			break;
+		}
+
+		case VMType::BOOL:     // bool type
 		{
 			t_bool val = ReadMemRaw<t_bool>(addr);
 			dat = t_data{std::in_place_index<m_boolidx>, val};
@@ -791,10 +920,25 @@ std::tuple<VMType, VM::t_data> VM::ReadMemData(VM::t_addr addr)
 			break;
 		}
 
+		case VMType::QUATARR:  // quaternion array type
+		{
+			t_vec_quat vec = ReadMemRaw<t_vec_quat>(addr);
+			dat = t_data{std::in_place_index<m_quatarridx>, vec};
+
+			if(m_debug)
+			{
+				using namespace m_ops;
+				std::cout << "read " << GetDataTypeName(dat) << " " << vec
+					<< " from address " << (addr - 1)
+					<< "." << std::endl;
+			}
+			break;
+		}
+
 		default:
 		{
 			std::ostringstream msg;
-			msg << "ReadMem at address " << (addr - 1)
+			msg << "ReadMemData at address " << (addr - 1)
 				<< ": Data type " << (int)ty
 				<< " (" << get_vm_type_name(ty) << ")"
 				<< " not yet implemented.";
@@ -867,6 +1011,26 @@ void VM::WriteMemData(VM::t_addr addr, const VM::t_data& data)
 
 		// write the actual data
 		WriteMemRaw<t_cplx>(addr, std::get<m_cplxidx>(data));
+	}
+
+	// quaternion type
+	else if(data.index() == m_quatidx)
+	{
+		if(m_debug)
+		{
+			using namespace m_ops;
+			std::cout << "writing quaternion "
+				<< std::get<m_quatidx>(data)
+				<< " to address " << addr
+				<< "." << std::endl;
+		}
+
+		// write descriptor prefix
+		WriteMemRaw<t_byte>(addr, static_cast<t_byte>(VMType::QUAT));
+		addr += m_bytesize;
+
+		// write the actual data
+		WriteMemRaw<t_quat>(addr, std::get<m_quatidx>(data));
 	}
 
 	// bool type
@@ -944,10 +1108,16 @@ void VM::WriteMemData(VM::t_addr addr, const VM::t_data& data)
 		WriteArray<t_vec_cplx>(addr, std::get<m_cplxarridx>(data), false);
 	}
 
+	// quaternion array type
+	else if(data.index() == m_quatarridx)
+	{
+		WriteArray<t_vec_quat>(addr, std::get<m_quatarridx>(data), false);
+	}
+
 	// unknown type
 	else
 	{
-		throw std::runtime_error("WriteMem: Data type not yet implemented.");
+		throw std::runtime_error("WriteMemData: Data type not yet implemented.");
 	}
 }
 
@@ -963,6 +1133,8 @@ VM::t_addr VM::GetDataSize(const t_data& data) const
 		return GetDataTypeSize<t_int>();
 	else if(data.index() == m_cplxidx)
 		return GetDataTypeSize<t_cplx>();
+	else if(data.index() == m_quatidx)
+		return GetDataTypeSize<t_quat>();
 	else if(data.index() == m_boolidx)
 		return GetDataTypeSize<t_bool>();
 	else if(data.index() == m_addridx)
