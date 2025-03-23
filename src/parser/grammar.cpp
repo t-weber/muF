@@ -23,6 +23,8 @@ void Grammar::CreateGrammar()
 	full_identlist = std::make_shared<lalr1::NonTerminal>(FULL_IDENTLIST, "full_identlist");
 	identlist = std::make_shared<lalr1::NonTerminal>(IDENTLIST, "identlist");
 	function = std::make_shared<lalr1::NonTerminal>(FUNCTION, "function");
+	opt_recursive = std::make_shared<lalr1::NonTerminal>(OPT_RECURSIVE, "opt_recursive");
+	opt_intent = std::make_shared<lalr1::NonTerminal>(OPT_INTENT, "opt_intent");
 	opt_assign = std::make_shared<lalr1::NonTerminal>(OPT_ASSIGN, "opt_assign");
 	var_range = std::make_shared<lalr1::NonTerminal>(VAR_RANGE, "var_range");
 	cases = std::make_shared<lalr1::NonTerminal>(CASES, "cases");
@@ -89,6 +91,10 @@ void Grammar::CreateGrammar()
 	keyword_func = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::FUNC), "function");
 	keyword_procedure = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::PROC), "procedure");
 	keyword_ret = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::RET), "return");
+	keyword_recursive = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::RECURSIVE), "recursive");
+	keyword_intent = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::INTENT), "intent");
+	keyword_in = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::IN), "in");
+	keyword_out = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::OUT), "out");
 	keyword_program = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::PROGRAM), "program");
 
 	keyword_results = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::RESULTS), "results");

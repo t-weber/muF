@@ -130,7 +130,7 @@ void Grammar::CreateVariables()
 	// --------------------------------------------------------------------------------
 	// int declaration
 #ifdef CREATE_PRODUCTION_RULES
-	statement->AddRule({ int_decl, type_sep, variables/*, stmt_end*/ }, semanticindex);
+	statement->AddRule({ int_decl, opt_intent, type_sep, variables/*, stmt_end*/ }, semanticindex);
 #endif
 #ifdef CREATE_SEMANTIC_RULES
 	rules.emplace(std::make_pair(semanticindex,
@@ -141,14 +141,25 @@ void Grammar::CreateVariables()
 
 		if(!full_match)
 			return nullptr;
-		return args[2];
+
+		auto vars = std::dynamic_pointer_cast<ASTVarDecl>(args[3]);
+
+		// optional intent for function arguments and returns
+		if(args[1])
+		{
+			auto options = std::dynamic_pointer_cast<ASTInternalMisc>(args[1]);
+			vars->SetIntentIn(options->GetIntentIn());
+			vars->SetIntentOut(options->GetIntentOut());
+		}
+
+		return vars;
 	}));
 #endif
 	++semanticindex;
 
 	// real declaration
 #ifdef CREATE_PRODUCTION_RULES
-	statement->AddRule({ real_decl, type_sep, variables/*, stmt_end*/ }, semanticindex);
+	statement->AddRule({ real_decl, opt_intent, type_sep, variables/*, stmt_end*/ }, semanticindex);
 #endif
 #ifdef CREATE_SEMANTIC_RULES
 	rules.emplace(std::make_pair(semanticindex,
@@ -159,14 +170,25 @@ void Grammar::CreateVariables()
 
 		if(!full_match)
 			return nullptr;
-		return args[2];
+
+		auto vars = std::dynamic_pointer_cast<ASTVarDecl>(args[3]);
+
+		// optional intent for function arguments and returns
+		if(args[1])
+		{
+			auto options = std::dynamic_pointer_cast<ASTInternalMisc>(args[1]);
+			vars->SetIntentIn(options->GetIntentIn());
+			vars->SetIntentOut(options->GetIntentOut());
+		}
+
+		return vars;
 	}));
 #endif
 	++semanticindex;
 
 	// complex declaration
 #ifdef CREATE_PRODUCTION_RULES
-	statement->AddRule({ cplx_decl, type_sep, variables/*, stmt_end*/ }, semanticindex);
+	statement->AddRule({ cplx_decl, opt_intent, type_sep, variables/*, stmt_end*/ }, semanticindex);
 #endif
 #ifdef CREATE_SEMANTIC_RULES
 	rules.emplace(std::make_pair(semanticindex,
@@ -177,14 +199,25 @@ void Grammar::CreateVariables()
 
 		if(!full_match)
 			return nullptr;
-		return args[2];
+
+		auto vars = std::dynamic_pointer_cast<ASTVarDecl>(args[3]);
+
+		// optional intent for function arguments and returns
+		if(args[1])
+		{
+			auto options = std::dynamic_pointer_cast<ASTInternalMisc>(args[1]);
+			vars->SetIntentIn(options->GetIntentIn());
+			vars->SetIntentOut(options->GetIntentOut());
+		}
+
+		return vars;
 	}));
 #endif
 	++semanticindex;
 
 	// quaternion declaration
 #ifdef CREATE_PRODUCTION_RULES
-	statement->AddRule({ quat_decl, type_sep, variables/*, stmt_end*/ }, semanticindex);
+	statement->AddRule({ quat_decl, opt_intent, type_sep, variables/*, stmt_end*/ }, semanticindex);
 #endif
 #ifdef CREATE_SEMANTIC_RULES
 	rules.emplace(std::make_pair(semanticindex,
@@ -195,14 +228,25 @@ void Grammar::CreateVariables()
 
 		if(!full_match)
 			return nullptr;
-		return args[2];
+
+		auto vars = std::dynamic_pointer_cast<ASTVarDecl>(args[3]);
+
+		// optional intent for function arguments and returns
+		if(args[1])
+		{
+			auto options = std::dynamic_pointer_cast<ASTInternalMisc>(args[1]);
+			vars->SetIntentIn(options->GetIntentIn());
+			vars->SetIntentOut(options->GetIntentOut());
+		}
+
+		return vars;
 	}));
 #endif
 	++semanticindex;
 
 	// bool declaration
 #ifdef CREATE_PRODUCTION_RULES
-	statement->AddRule({ bool_decl, type_sep, variables/*, stmt_end*/ }, semanticindex);
+	statement->AddRule({ bool_decl, opt_intent, type_sep, variables/*, stmt_end*/ }, semanticindex);
 #endif
 #ifdef CREATE_SEMANTIC_RULES
 	rules.emplace(std::make_pair(semanticindex,
@@ -213,7 +257,18 @@ void Grammar::CreateVariables()
 
 		if(!full_match)
 			return nullptr;
-		return args[2];
+
+		auto vars = std::dynamic_pointer_cast<ASTVarDecl>(args[3]);
+
+		// optional intent for function arguments and returns
+		if(args[1])
+		{
+			auto options = std::dynamic_pointer_cast<ASTInternalMisc>(args[1]);
+			vars->SetIntentIn(options->GetIntentIn());
+			vars->SetIntentOut(options->GetIntentOut());
+		}
+
+		return vars;
 	}));
 #endif
 	++semanticindex;
@@ -221,8 +276,8 @@ void Grammar::CreateVariables()
 	// int array declaration
 #ifdef CREATE_PRODUCTION_RULES
 	statement->AddRule({ int_decl, comma,
-		keyword_dim, bracket_open, int_constants, bracket_close,
-		type_sep, variables/*, stmt_end*/ }, semanticindex);
+		keyword_dim, bracket_open, int_constants /*4*/, bracket_close,
+		opt_intent /*6*/, type_sep, variables /*8*/ /*, stmt_end*/ }, semanticindex);
 #endif
 #ifdef CREATE_SEMANTIC_RULES
 	rules.emplace(std::make_pair(semanticindex,
@@ -242,7 +297,18 @@ void Grammar::CreateVariables()
 
 		if(!full_match)
 			return nullptr;
-		return args[7];
+
+		auto vars = std::dynamic_pointer_cast<ASTVarDecl>(args[8]);
+
+		// optional intent for function arguments and returns
+		if(args[6])
+		{
+			auto options = std::dynamic_pointer_cast<ASTInternalMisc>(args[6]);
+			vars->SetIntentIn(options->GetIntentIn());
+			vars->SetIntentOut(options->GetIntentOut());
+		}
+
+		return vars;
 	}));
 #endif
 	++semanticindex;
@@ -250,8 +316,8 @@ void Grammar::CreateVariables()
 	// real array declaration
 #ifdef CREATE_PRODUCTION_RULES
 	statement->AddRule({ real_decl, comma,
-		keyword_dim, bracket_open, int_constants, bracket_close,
-		type_sep, variables/*, stmt_end*/ }, semanticindex);
+		keyword_dim, bracket_open, int_constants /*4*/, bracket_close,
+		opt_intent /*6*/, type_sep, variables /*8*/ /*, stmt_end*/ }, semanticindex);
 #endif
 #ifdef CREATE_SEMANTIC_RULES
 	rules.emplace(std::make_pair(semanticindex,
@@ -272,7 +338,18 @@ void Grammar::CreateVariables()
 
 		if(!full_match)
 			return nullptr;
-		return args[7];
+
+		auto vars = std::dynamic_pointer_cast<ASTVarDecl>(args[8]);
+
+		// optional intent for function arguments and returns
+		if(args[6])
+		{
+			auto options = std::dynamic_pointer_cast<ASTInternalMisc>(args[6]);
+			vars->SetIntentIn(options->GetIntentIn());
+			vars->SetIntentOut(options->GetIntentOut());
+		}
+
+		return vars;
 	}));
 #endif
 	++semanticindex;
@@ -280,8 +357,8 @@ void Grammar::CreateVariables()
 	// complex array declaration
 #ifdef CREATE_PRODUCTION_RULES
 	statement->AddRule({ cplx_decl, comma,
-		keyword_dim, bracket_open, sym_int, bracket_close,
-		type_sep, variables/*, stmt_end*/ }, semanticindex);
+		keyword_dim, bracket_open, sym_int /*4*/, bracket_close,
+		opt_intent /*6*/, type_sep, variables /*8*/ /*, stmt_end*/ }, semanticindex);
 #endif
 #ifdef CREATE_SEMANTIC_RULES
 	rules.emplace(std::make_pair(semanticindex,
@@ -301,7 +378,18 @@ void Grammar::CreateVariables()
 
 		if(!full_match)
 			return nullptr;
-		return args[7];
+
+		auto vars = std::dynamic_pointer_cast<ASTVarDecl>(args[8]);
+
+		// optional intent for function arguments and returns
+		if(args[6])
+		{
+			auto options = std::dynamic_pointer_cast<ASTInternalMisc>(args[6]);
+			vars->SetIntentIn(options->GetIntentIn());
+			vars->SetIntentOut(options->GetIntentOut());
+		}
+
+		return vars;
 	}));
 #endif
 	++semanticindex;
@@ -309,8 +397,8 @@ void Grammar::CreateVariables()
 	// quaternion array declaration
 #ifdef CREATE_PRODUCTION_RULES
 	statement->AddRule({ quat_decl, comma,
-		keyword_dim, bracket_open, sym_int, bracket_close,
-		type_sep, variables/*, stmt_end*/ }, semanticindex);
+		keyword_dim, bracket_open, sym_int /*4*/, bracket_close,
+		opt_intent /*6*/, type_sep, variables /*8*/ /*, stmt_end*/ }, semanticindex);
 #endif
 #ifdef CREATE_SEMANTIC_RULES
 	rules.emplace(std::make_pair(semanticindex,
@@ -330,20 +418,31 @@ void Grammar::CreateVariables()
 
 		if(!full_match)
 			return nullptr;
-		return args[7];
+
+		auto vars = std::dynamic_pointer_cast<ASTVarDecl>(args[8]);
+
+		// optional intent for function arguments and returns
+		if(args[6])
+		{
+			auto options = std::dynamic_pointer_cast<ASTInternalMisc>(args[6]);
+			vars->SetIntentIn(options->GetIntentIn());
+			vars->SetIntentOut(options->GetIntentOut());
+		}
+
+		return vars;
 	}));
 #endif
 	++semanticindex;
 
 	// string declaration with default size
 #ifdef CREATE_PRODUCTION_RULES
-	statement->AddRule({ str_decl, type_sep, variables/*, stmt_end*/ }, semanticindex);
+	statement->AddRule({ str_decl, opt_intent, type_sep, variables/*, stmt_end*/ }, semanticindex);
 #endif
 #ifdef CREATE_SEMANTIC_RULES
 	rules.emplace(std::make_pair(semanticindex,
 	[this](bool full_match, const lalr1::t_semanticargs& args, [[maybe_unused]] lalr1::t_astbaseptr retval) -> lalr1::t_astbaseptr
 	{
-		if(args.size() == 2)
+		if(args.size() == 3)
 		{
 			m_context.SetSymType(SymbolType::STRING);
 			m_context.SetSymDim(default_string_size);
@@ -351,7 +450,18 @@ void Grammar::CreateVariables()
 
 		if(!full_match)
 			return nullptr;
-		return args[2];
+
+		auto vars = std::dynamic_pointer_cast<ASTVarDecl>(args[3]);
+
+		// optional intent for function arguments and returns
+		if(args[1])
+		{
+			auto options = std::dynamic_pointer_cast<ASTInternalMisc>(args[1]);
+			vars->SetIntentIn(options->GetIntentIn());
+			vars->SetIntentOut(options->GetIntentOut());
+		}
+
+		return vars;
 	}));
 #endif
 	++semanticindex;
@@ -359,8 +469,8 @@ void Grammar::CreateVariables()
 	// string declaration with given static size
 #ifdef CREATE_PRODUCTION_RULES
 	statement->AddRule({ str_decl, comma,
-		keyword_dim, bracket_open, sym_int, bracket_close,
-		type_sep, variables/*, stmt_end*/ }, semanticindex);
+		keyword_dim, bracket_open, sym_int /*4*/, bracket_close,
+		opt_intent /*6*/, type_sep, variables /*8*/ /*, stmt_end*/ }, semanticindex);
 #endif
 #ifdef CREATE_SEMANTIC_RULES
 	rules.emplace(std::make_pair(semanticindex,
@@ -377,7 +487,18 @@ void Grammar::CreateVariables()
 
 		if(!full_match)
 			return nullptr;
-		return args[7];
+
+		auto vars = std::dynamic_pointer_cast<ASTVarDecl>(args[8]);
+
+		// optional intent for function arguments and returns
+		if(args[6])
+		{
+			auto options = std::dynamic_pointer_cast<ASTInternalMisc>(args[6]);
+			vars->SetIntentIn(options->GetIntentIn());
+			vars->SetIntentOut(options->GetIntentOut());
+		}
+
+		return vars;
 	}));
 #endif
 	++semanticindex;
@@ -441,7 +562,7 @@ void Grammar::CreateVariables()
         {
                 if(!full_match)
                         return nullptr;
-                return std::make_shared<ASTArgNames>();
+                return std::make_shared<ASTInternalArgNames>();
         }));
 #endif
         ++semanticindex;
@@ -461,7 +582,7 @@ void Grammar::CreateVariables()
 			return nullptr;
 
 		auto argname = std::dynamic_pointer_cast<ASTStrConst>(args[0]);
-		auto idents = std::dynamic_pointer_cast<ASTArgNames>(args[2]);
+		auto idents = std::dynamic_pointer_cast<ASTInternalArgNames>(args[2]);
 
 		idents->AddArg(argname->GetVal());
 		return idents;
@@ -480,7 +601,7 @@ void Grammar::CreateVariables()
 			return nullptr;
 
 		auto argname = std::dynamic_pointer_cast<ASTStrConst>(args[0]);
-		auto idents = std::make_shared<ASTArgNames>();
+		auto idents = std::make_shared<ASTInternalArgNames>();
 
 		idents->AddArg(argname->GetVal());
 		return idents;
@@ -688,7 +809,7 @@ void Grammar::CreateVariables()
 		if(!full_match)
 			return nullptr;
 
-		auto idents = std::dynamic_pointer_cast<ASTArgNames>(args[1]);
+		auto idents = std::dynamic_pointer_cast<ASTInternalArgNames>(args[1]);
 		auto term = std::dynamic_pointer_cast<AST>(args[3]);
 		return std::make_shared<ASTAssign>(idents->GetArgIdents(), term);
 	}));

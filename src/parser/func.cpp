@@ -15,13 +15,13 @@ void Grammar::CreateFunctions()
 	// --------------------------------------------------------------------------------
 	// procedure with argument identifiers and no return value
 #ifdef CREATE_PRODUCTION_RULES
-	function->AddRule({ keyword_procedure, ident /*1*/,
-		bracket_open, full_identlist /*3*/, bracket_close,
-		statements /*5*/, keyword_end, keyword_func }, semanticindex);
+	function->AddRule({ opt_recursive, keyword_procedure, ident /*2*/,
+		bracket_open, full_identlist /*4*/, bracket_close,
+		statements /*6*/, keyword_end, keyword_procedure }, semanticindex);
 #endif
 #ifdef CREATE_SEMANTIC_RULES
 	// fill in missing type infos for arguments using symbol table
-	auto update_func_arg_types = [this](std::shared_ptr<ASTArgNames> args)
+	auto update_func_arg_types = [this](std::shared_ptr<ASTInternalArgNames> args)
 	{
 		for(std::size_t idx = 0; idx < args->GetNumArgs(); ++idx)
 		{
@@ -39,7 +39,7 @@ void Grammar::CreateFunctions()
 	};
 
 	// fill in missing type infos for return values using symbol table
-	auto update_func_ret_types = [this](std::shared_ptr<ASTArgNames> args)
+	auto update_func_ret_types = [this](std::shared_ptr<ASTInternalArgNames> args)
 	{
 		for(std::size_t idx = 0; idx < args->GetNumArgs(); ++idx)
 		{
@@ -60,16 +60,17 @@ void Grammar::CreateFunctions()
 	[this, update_func_arg_types](
 		bool full_match, const lalr1::t_semanticargs& args, [[maybe_unused]] lalr1::t_astbaseptr retval) -> lalr1::t_astbaseptr
 	{
-		if(args.size() == 2)
+		if(args.size() == 3)
 		{
-			auto funcname = std::dynamic_pointer_cast<ASTStrConst>(args[1]);
+			auto funcname = std::dynamic_pointer_cast<ASTStrConst>(args[2]);
 			m_context.EnterScope(funcname->GetVal());
 			//std::cout << "Entering function \"" << funcname->GetVal() << "\" scope." << std::endl;
 		}
-		else if(args.size() == /*5*/ 4) // check
+		else if(args.size() == 5)
 		{
-			auto funcname = std::dynamic_pointer_cast<ASTStrConst>(args[1]);
-			auto funcargs = std::dynamic_pointer_cast<ASTArgNames>(args[3]);
+			auto options = std::dynamic_pointer_cast<ASTInternalMisc>(args[0]);
+			auto funcname = std::dynamic_pointer_cast<ASTStrConst>(args[2]);
+			auto funcargs = std::dynamic_pointer_cast<ASTInternalArgNames>(args[4]);
 
 			// register argument variables
 			std::size_t argidx = 0;
@@ -87,49 +88,54 @@ void Grammar::CreateFunctions()
 			// register the function in the symbol map
 			m_context.GetSymbols().AddFunc(
 				m_context.GetScopeName(1), funcname->GetVal(),
-				SymbolType::VOID, funcargs->GetArgTypes());
+				SymbolType::VOID /*ret type*/, funcargs->GetArgTypes() /*arg types*/,
+				nullptr /*ret dims*/, nullptr /*multi ret types*/,
+				false /*external*/, options->GetRecursive());
 		}
 
 		if(!full_match)
 			return nullptr;
 
-		auto funcname = std::dynamic_pointer_cast<ASTStrConst>(args[1]);
-		auto funcargs = std::dynamic_pointer_cast<ASTArgNames>(args[3]);
-		auto funcblock = std::dynamic_pointer_cast<ASTStmts>(args[5]);
+		auto options = std::dynamic_pointer_cast<ASTInternalMisc>(args[0]);
+		auto funcname = std::dynamic_pointer_cast<ASTStrConst>(args[2]);
+		auto funcargs = std::dynamic_pointer_cast<ASTInternalArgNames>(args[4]);
+		auto funcblock = std::dynamic_pointer_cast<ASTStmts>(args[6]);
 
 		// fill in missing type infos for arguments
 		update_func_arg_types(funcargs);
 
-		auto res = std::make_shared<ASTFunc>(funcname->GetVal(), funcargs, funcblock);
+		auto func = std::make_shared<ASTFunc>(funcname->GetVal(), funcargs, funcblock);
+		func->SetRecursive(options->GetRecursive());
 		m_context.LeaveScope(funcname->GetVal());
-		return res;
+		return func;
 	}));
 #endif
 	++semanticindex;
 
 	// function with argument identifiers and return values
 #ifdef CREATE_PRODUCTION_RULES
-	function->AddRule({ keyword_func, ident /*1*/,
-		bracket_open, full_identlist /*3*/, bracket_close,
-		keyword_results, bracket_open, full_identlist /*7*/, bracket_close,
-		statements /*9*/, keyword_end, keyword_func }, semanticindex);
+	function->AddRule({ opt_recursive, keyword_func, ident /*2*/,
+		bracket_open, full_identlist /*4*/, bracket_close,
+		keyword_results, bracket_open, full_identlist /*8*/, bracket_close,
+		statements /*10*/, keyword_end, keyword_func }, semanticindex);
 #endif
 #ifdef CREATE_SEMANTIC_RULES
 	rules.emplace(std::make_pair(semanticindex,
 	[this, update_func_arg_types, update_func_ret_types](
 		bool full_match, const lalr1::t_semanticargs& args, [[maybe_unused]] lalr1::t_astbaseptr retval) -> lalr1::t_astbaseptr
 	{
-		if(args.size() == 5)  // keyword_results is the first unique partial match
+		if(args.size() == 6)  // keyword_results is the first unique partial match
 		{
-			auto funcname = std::dynamic_pointer_cast<ASTStrConst>(args[1]);
+			auto funcname = std::dynamic_pointer_cast<ASTStrConst>(args[2]);
 			m_context.EnterScope(funcname->GetVal());
 			//std::cout << "Entering function \"" << funcname->GetVal() << "\" scope." << std::endl;
 		}
-		else if(args.size() == 8)
+		else if(args.size() == 9)
 		{
-			auto funcname = std::dynamic_pointer_cast<ASTStrConst>(args[1]);
-			auto funcargs = std::dynamic_pointer_cast<ASTArgNames>(args[3]);
-			auto retargs = std::dynamic_pointer_cast<ASTArgNames>(args[7]);
+			auto options = std::dynamic_pointer_cast<ASTInternalMisc>(args[0]);
+			auto funcname = std::dynamic_pointer_cast<ASTStrConst>(args[2]);
+			auto funcargs = std::dynamic_pointer_cast<ASTInternalArgNames>(args[4]);
+			auto retargs = std::dynamic_pointer_cast<ASTInternalArgNames>(args[8]);
 
 			// register argument variables
 			std::size_t argidx = 0;
@@ -161,26 +167,118 @@ void Grammar::CreateFunctions()
 			std::vector<SymbolType> multirettypes = retargs->GetArgTypes();
 			m_context.GetSymbols().AddFunc(
 				m_context.GetScopeName(1), funcname->GetVal(),
-				SymbolType::COMP, funcargs->GetArgTypes(),
-				nullptr, &multirettypes);
+				SymbolType::COMP /*ret type*/, funcargs->GetArgTypes() /*arg types*/,
+				nullptr /*ret dims*/, &multirettypes /*multi ret types*/,
+				false /*external*/, options->GetRecursive());
 		}
 
 		if(!full_match)
 			return nullptr;
 
-		auto funcname = std::dynamic_pointer_cast<ASTStrConst>(args[1]);
-		auto funcargs = std::dynamic_pointer_cast<ASTArgNames>(args[3]);
-		auto retargs = std::dynamic_pointer_cast<ASTArgNames>(args[7]);
-		auto funcblock = std::dynamic_pointer_cast<ASTStmts>(args[9]);
+		auto options = std::dynamic_pointer_cast<ASTInternalMisc>(args[0]);
+		auto funcname = std::dynamic_pointer_cast<ASTStrConst>(args[2]);
+		auto funcargs = std::dynamic_pointer_cast<ASTInternalArgNames>(args[4]);
+		auto retargs = std::dynamic_pointer_cast<ASTInternalArgNames>(args[8]);
+		auto funcblock = std::dynamic_pointer_cast<ASTStmts>(args[10]);
 
 		// fill in missing type infos for arguments and return variables
 		update_func_arg_types(funcargs);
 		update_func_ret_types(retargs);
 
-		auto res = std::make_shared<ASTFunc>(
+		auto func = std::make_shared<ASTFunc>(
 			funcname->GetVal(), funcargs, funcblock, retargs);
+		func->SetRecursive(options->GetRecursive());
 		m_context.LeaveScope(funcname->GetVal());
-		return res;
+		return func;
+	}));
+#endif
+	++semanticindex;
+	// --------------------------------------------------------------------------------
+
+	// --------------------------------------------------------------------------------
+	// opt_recursive
+	// --------------------------------------------------------------------------------
+#ifdef CREATE_PRODUCTION_RULES
+	opt_recursive->AddRule({ keyword_recursive }, semanticindex);
+#endif
+#ifdef CREATE_SEMANTIC_RULES
+	rules.emplace(std::make_pair(semanticindex,
+	[](bool full_match, [[maybe_unused]] const lalr1::t_semanticargs& args, [[maybe_unused]] lalr1::t_astbaseptr retval) -> lalr1::t_astbaseptr
+	{
+		if(!full_match)
+			return nullptr;
+		auto options = std::make_shared<ASTInternalMisc>();
+		options->SetRecursive(true);
+		return options;
+	}));
+#endif
+	++semanticindex;
+
+	// opt_recursive -> eps
+#ifdef CREATE_PRODUCTION_RULES
+	opt_recursive->AddRule({ lalr1::g_eps }, semanticindex);
+#endif
+#ifdef CREATE_SEMANTIC_RULES
+	rules.emplace(std::make_pair(semanticindex,
+	[]([[maybe_unused]] bool full_match, [[maybe_unused]] const lalr1::t_semanticargs& args, [[maybe_unused]] lalr1::t_astbaseptr retval) -> lalr1::t_astbaseptr
+	{
+		if(!full_match)
+			return nullptr;
+		auto options = std::make_shared<ASTInternalMisc>();
+		options->SetRecursive(false);
+		return options;
+	}));
+#endif
+	++semanticindex;
+	// --------------------------------------------------------------------------------
+
+
+	// --------------------------------------------------------------------------------
+	// opt_intent
+	// --------------------------------------------------------------------------------
+	// opt_intent -> , intent(in)
+#ifdef CREATE_PRODUCTION_RULES
+	opt_intent->AddRule({ comma, keyword_intent, bracket_open, keyword_in, bracket_close }, semanticindex);
+#endif
+#ifdef CREATE_SEMANTIC_RULES
+	rules.emplace(std::make_pair(semanticindex,
+	[](bool full_match, [[maybe_unused]] const lalr1::t_semanticargs& args, [[maybe_unused]] lalr1::t_astbaseptr retval) -> lalr1::t_astbaseptr
+	{
+		if(!full_match)
+			return nullptr;
+		auto options = std::make_shared<ASTInternalMisc>();
+		options->SetIntentIn(true);
+		return options;
+	}));
+#endif
+	++semanticindex;
+
+	// opt_intent -> , intent(out)
+#ifdef CREATE_PRODUCTION_RULES
+	opt_intent->AddRule({ comma, keyword_intent, bracket_open, keyword_out, bracket_close }, semanticindex);
+#endif
+#ifdef CREATE_SEMANTIC_RULES
+	rules.emplace(std::make_pair(semanticindex,
+	[](bool full_match, [[maybe_unused]] const lalr1::t_semanticargs& args, [[maybe_unused]] lalr1::t_astbaseptr retval) -> lalr1::t_astbaseptr
+	{
+		if(!full_match)
+			return nullptr;
+		auto options = std::make_shared<ASTInternalMisc>();
+		options->SetIntentOut(true);
+		return options;
+	}));
+#endif
+	++semanticindex;
+
+	// opt_intent -> eps
+#ifdef CREATE_PRODUCTION_RULES
+	opt_intent->AddRule({ lalr1::g_eps }, semanticindex);
+#endif
+#ifdef CREATE_SEMANTIC_RULES
+	rules.emplace(std::make_pair(semanticindex,
+	[]([[maybe_unused]] bool full_match, [[maybe_unused]] const lalr1::t_semanticargs& args, [[maybe_unused]] lalr1::t_astbaseptr retval) -> lalr1::t_astbaseptr
+	{
+		return nullptr;
 	}));
 #endif
 	++semanticindex;

@@ -117,8 +117,14 @@ t_astret Codegen::visit(const ASTVarDecl* ast)
 		t_astret sym = GetSym(varname);
 		if(!sym)
 			throw std::runtime_error("ASTVarDecl: Variable \"" + varname + "\" is not in symbol table.");
+
 		if(sym->is_arg)
 			continue;  // arguments already declared with function
+		if(!(sym->is_arg || sym->is_ret) && (ast->GetIntentIn() || ast->GetIntentOut()))
+			throw std::runtime_error("ASTVarDecl: Variable \"" + varname + "\" is not a function argument or return value, but has an intent declaration.");
+		if(sym->is_ret && ast->GetIntentIn())
+			throw std::runtime_error("ASTVarDecl: Variable \"" + varname + "\" is a function return value, but has an intent(in) declaration.");
+
 		if(sym->addr)
 			throw std::runtime_error("ASTVarDecl: Variable \"" + varname + "\" already declared.");
 

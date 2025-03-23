@@ -6,8 +6,8 @@
 !
 ! recursive factorial
 !
-function fac_rec(n) result(res)
-	integer :: n
+recursive function fac_rec(n) result(res)
+	integer, intent(in) :: n
 	integer :: res = 1
 
 	if(n <= 1) then
@@ -22,7 +22,7 @@ end function
 ! iterative factorial
 !
 function fac(n) result(res)
-	integer :: n
+	integer, intent(in) :: n
 	integer :: res = 1
 
 	if(n <= 1) then
@@ -30,7 +30,7 @@ function fac(n) result(res)
 	end if
 
 	integer :: i = 1
-	do i = 1, n
+	do i = 2, n
 		res = res * i
 	end do
 end function
@@ -41,7 +41,7 @@ end function
 ! see: https://en.wikipedia.org/wiki/Binomial_coefficient
 !
 function binom(n, k) result(res)
-	integer :: n, k
+	integer, intent(in) :: n, k
 	integer :: res
 
 	res = fac(n) / (fac(n - k) * fac(k))
@@ -49,11 +49,11 @@ end function
 
 
 !
-! variation of a tuple without repetition
+! variation (partial permutation) of a tuple without repetition
 ! see: https://de.wikipedia.org/wiki/Variation_(Kombinatorik)
 !
 function var_norep(n, k) result(res)
-	integer :: n, k
+	integer, intent(in) :: n, k
 	integer :: res = 0
 
 	if(k > n) then
@@ -69,7 +69,7 @@ end function
 ! see: https://de.wikipedia.org/wiki/Variation_(Kombinatorik)
 !
 function var_rep(n, k) result(res)
-	integer :: n, k
+	integer, intent(in) :: n, k
 	integer :: res
 
 	res = n**k
@@ -81,7 +81,7 @@ end function
 ! see: https://en.wikipedia.org/wiki/Combination
 !
 function comb_norep(n, k) result(res)
-	integer :: n, k
+	integer, intent(in) :: n, k
 	integer :: res = 0
 
 	if(k > n) then
@@ -97,7 +97,7 @@ end function
 ! see: https://en.wikipedia.org/wiki/Combination
 !
 function comb_rep(n, k) result(res)
-	integer :: n, k
+	integer, intent(in) :: n, k
 	integer :: res
 
 	res = binom(n + k - 1, k)
@@ -109,7 +109,7 @@ program comb
 		integer :: n = getint("n = ")
 		integer :: k = getint("k = ")
 		if(n < 0 .or. k < 0) then
-			break
+			exit
 		end if
 
 		!print("B(" + n + ", " + k + ") = " + binom(n, k))

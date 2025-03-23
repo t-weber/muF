@@ -63,8 +63,8 @@ public:
 	// ------------------------------------------------------------------------
 	// internally handled dummy nodes
 	// ------------------------------------------------------------------------
-	virtual t_astret visit(ASTArgNames*) override { return nullptr; }
-	virtual t_astret visit(ASTTypeDecl*) override { return nullptr; }
+	virtual t_astret visit(ASTInternalArgNames*) override { return nullptr; }
+	virtual t_astret visit(ASTInternalMisc*) override { return nullptr; }
 	// ------------------------------------------------------------------------
 
 

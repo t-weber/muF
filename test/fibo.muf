@@ -3,8 +3,8 @@
 !
 
 
-function fibo(n) result(m)
-	integer :: n
+recursive function fibo(n) result(m)
+	integer, intent(in) :: n
 	integer :: m
 
 	if(n <= 1) then
@@ -15,8 +15,8 @@ function fibo(n) result(m)
 end function
 
 
-function fac(n) result(m)
-	integer :: n
+recursive function fac(n) result(m)
+	integer, intent(in) :: n
 	integer :: m
 
 	if(n <= 1) then
@@ -28,11 +28,11 @@ function fac(n) result(m)
 end function
 
 
-program fibo
+program fibotest
 	do while(.true.)
 		integer :: n = getint("n = ")
 		if(n < 0) then
-			break
+			exit
 		end if
 
 		print(n + "! = " + fac(n))

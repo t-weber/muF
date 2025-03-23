@@ -84,6 +84,10 @@ enum class Token : lalr1::t_symbol_id
 	PROC        = 7001,
 	RET         = 7002,
 	RESULTS     = 7003,
+	RECURSIVE   = 7004,
+	INTENT      = 7005,
+	IN          = 7006,
+	OUT         = 7007,
 	PROGRAM     = 7010,
 
 	// jumps

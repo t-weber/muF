@@ -35,9 +35,10 @@ enum : std::size_t
 	IDENTLIST,
 
 	FUNCTION,
+	OPT_RECURSIVE,
+	OPT_INTENT,
 
 	OPT_ASSIGN,
-
 	VAR_RANGE,
 
 	CASES,
@@ -59,7 +60,8 @@ public:
 			statement, statements,
 			variables, int_constants,
 			full_identlist, identlist,
-			function, opt_assign, var_range,
+			function, opt_recursive, opt_intent,
+			opt_assign, var_range,
 			cases,
 		}};
 	}
@@ -91,7 +93,8 @@ private:
 		statements{}, statement{},
 		variables{}, int_constants{},
 		full_identlist{}, identlist{},
-		function{}, opt_assign{}, var_range{},
+		function{}, opt_recursive{}, opt_intent{},
+		opt_assign{}, var_range{},
 		cases{};
 
 	// terminals
@@ -107,8 +110,10 @@ private:
 	lalr1::TerminalPtr keyword_select{}, keyword_case{}, keyword_default{};
 	lalr1::TerminalPtr keyword_while{}, keyword_do{};
 	lalr1::TerminalPtr keyword_break{}, keyword_next{}, keyword_end{};
-	lalr1::TerminalPtr keyword_func{}, keyword_procedure{}, keyword_ret{};
-	lalr1::TerminalPtr keyword_results{};
+	lalr1::TerminalPtr keyword_func{}, keyword_procedure{};
+	lalr1::TerminalPtr keyword_ret{}, keyword_results{};
+	lalr1::TerminalPtr keyword_recursive{};
+	lalr1::TerminalPtr keyword_intent{}, keyword_in{}, keyword_out{};
 	lalr1::TerminalPtr keyword_program{};
 	lalr1::TerminalPtr keyword_assign{}, keyword_dim{};
 	lalr1::TerminalPtr comma{}/*, stmt_end{}*/;

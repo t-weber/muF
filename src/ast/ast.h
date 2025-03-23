@@ -24,8 +24,8 @@ class AST;
 class ASTStmts; class ASTExprList;
 class ASTUMinus; class ASTPlus; class ASTMult; class ASTMod;
 class ASTPow; class ASTNorm;
-class ASTVarDecl; class ASTVar; class ASTTypeDecl;
-class ASTFunc; class ASTReturn; class ASTCall; class ASTArgNames;
+class ASTVarDecl; class ASTVar;
+class ASTFunc; class ASTReturn; class ASTCall;
 class ASTVarRange; class ASTAssign;
 class ASTArrayAssign; class ASTArrayAccess;
 class ASTCond; class ASTCases; class ASTComp; class ASTBool;
@@ -34,6 +34,7 @@ class ASTJump; class ASTLabel;
 class ASTStrConst;
 template<class> class ASTNumConst;
 template<class> class ASTNumConstList;
+class ASTInternalArgNames; class ASTInternalMisc;
 
 
 enum class ASTType
@@ -41,14 +42,15 @@ enum class ASTType
 	Stmts, ExprList,
 	UMinus, Plus, Mult, Mod,
 	Pow, Norm,
-	VarDecl, Var, TypeDecl,
-	Func, Return, Call, ArgNames,
+	VarDecl, Var,
+	Func, Return, Call,
 	VarRange, Assign,
 	ArrayAssign, ArrayAccess,
 	Cond, Cases, Comp, Bool,
 	Loop, RangedLoop, LoopBreak, LoopNext,
 	Jump, Label,
 	StrConst, NumConst, NumConstList,
+	InternalArgNames, InternalMisc,
 };
 
 
@@ -108,8 +110,8 @@ public:
 	virtual t_astret visit(const ASTLabel* ast) = 0;
 	virtual t_astret visit(const ASTJump* ast) = 0;
 
-	virtual t_astret visit(const ASTArgNames* ast) = 0;
-	virtual t_astret visit(const ASTTypeDecl* ast) = 0;
+	virtual t_astret visit(const ASTInternalArgNames* ast) = 0;
+	virtual t_astret visit(const ASTInternalMisc* ast) = 0;
 };
 
 
@@ -165,8 +167,8 @@ public:
 	virtual t_astret visit(ASTLabel* ast) = 0;
 	virtual t_astret visit(ASTJump* ast) = 0;
 
-	virtual t_astret visit(ASTArgNames* ast) = 0;
-	virtual t_astret visit(ASTTypeDecl* ast) = 0;
+	virtual t_astret visit(ASTInternalArgNames* ast) = 0;
+	virtual t_astret visit(ASTInternalMisc* ast) = 0;
 };
 
 
@@ -408,6 +410,12 @@ public:
 	const std::shared_ptr<ASTAssign> GetAssignment() const { return optAssign; }
 	void SetAssignment(const std::shared_ptr<ASTAssign> term) { this->optAssign = term; }
 
+	bool GetIntentIn() const { return intent_in; }
+	void SetIntentIn(bool b) { intent_in = b; }
+
+	bool GetIntentOut() const { return intent_out; }
+	void SetIntentOut(bool b) { intent_out = b; }
+
 	virtual ASTType type() override { return ASTType::VarDecl; }
 
 private:
@@ -415,13 +423,17 @@ private:
 
 	// optional assignment
 	std::shared_ptr<ASTAssign> optAssign{};
+
+	// for function arguments or returns
+	bool intent_in{ false };
+	bool intent_out{ false };
 };
 
 
-class ASTArgNames : public ASTAcceptor<ASTArgNames>
+class ASTInternalArgNames : public ASTAcceptor<ASTInternalArgNames>
 {
 public:
-	ASTArgNames() : argnames{}
+	ASTInternalArgNames() : argnames{}
 	{}
 
 	void AddArg(const t_str& argname, SymbolType ty=SymbolType::UNKNOWN,
@@ -468,39 +480,10 @@ public:
 		std::get<2>(*std::next(argnames.begin(), idx)) = dims;
 	}
 
-	virtual ASTType type() override { return ASTType::ArgNames; }
+	virtual ASTType type() override { return ASTType::InternalArgNames; }
 
 private:
 	std::list<std::tuple<t_str, SymbolType, std::vector<std::size_t>>> argnames{};
-};
-
-
-class ASTTypeDecl : public ASTAcceptor<ASTTypeDecl>
-{
-public:
-	ASTTypeDecl(SymbolType ty)
-		: ty{ty}, dims{1}
-	{}
-
-	template<template<class...> class t_vec = std::vector>
-	ASTTypeDecl(SymbolType ty, const t_vec<std::size_t>& dims)
-		: ty{ty}, dims{dims}
-	{}
-
-	SymbolType GetType() const { return ty; }
-
-	const std::vector<std::size_t>& GetDims() const { return dims; }
-
-	std::tuple<SymbolType, std::vector<std::size_t>> GetRet() const
-	{
-		return std::make_tuple(ty, dims);
-	}
-
-	virtual ASTType type() override { return ASTType::TypeDecl; }
-
-private:
-	SymbolType ty{ SymbolType::UNKNOWN };
-	std::vector<std::size_t> dims{ 1 };
 };
 
 
@@ -508,8 +491,8 @@ class ASTFunc : public ASTAcceptor<ASTFunc>
 {
 public:
 	ASTFunc(const t_str& ident,
-		std::shared_ptr<ASTArgNames> args, std::shared_ptr<ASTStmts> stmts,
-		std::shared_ptr<ASTArgNames> rets = nullptr)
+		std::shared_ptr<ASTInternalArgNames> args, std::shared_ptr<ASTStmts> stmts,
+		std::shared_ptr<ASTInternalArgNames> rets = nullptr)
 		: ident{ident}, args{args->GetArgs()}, rets{}, stmts{stmts}
 	{
 		if(rets)
@@ -526,10 +509,14 @@ public:
 
 	const std::shared_ptr<ASTStmts> GetStatements() const { return stmts; }
 
+	bool GetRecursive() const { return recursive; }
+	void SetRecursive(bool b) { recursive = b; }
+
 	virtual ASTType type() override { return ASTType::Func; }
 
 private:
 	t_str ident{};
+	bool recursive{ true };
 	std::list<std::tuple<t_str, SymbolType, std::vector<std::size_t>>> args{};
 	std::list<std::tuple<t_str, SymbolType, std::vector<std::size_t>>> rets{};
 	std::shared_ptr<ASTStmts> stmts{};
@@ -958,6 +945,33 @@ public:
 
 private:
 	t_str val{};
+};
+
+
+/**
+ * miscellaneous options
+ */
+class ASTInternalMisc : public ASTAcceptor<ASTInternalMisc>
+{
+public:
+	ASTInternalMisc()
+	{}
+
+	bool GetRecursive() const { return recursive; }
+	void SetRecursive(bool b) { recursive = b; }
+
+	bool GetIntentIn() const { return intent_in; }
+	void SetIntentIn(bool b) { intent_in = b; }
+
+	bool GetIntentOut() const { return intent_out; }
+	void SetIntentOut(bool b) { intent_out = b; }
+
+	virtual ASTType type() override { return ASTType::InternalMisc; }
+
+private:
+	bool recursive{ true };
+	bool intent_in{ false };
+	bool intent_out{ false };
 };
 
 

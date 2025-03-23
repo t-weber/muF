@@ -369,8 +369,23 @@ t_astret Codegen::visit(const ASTNorm* ast)
 
 t_astret Codegen::visit(const ASTComp* ast)
 {
-	ast->GetTerm1()->accept(this);
-	ast->GetTerm2()->accept(this);
+	t_astret term1 = ast->GetTerm1()->accept(this);
+	std::streampos term1_pos = m_ostr->tellp();
+	// placeholder for potential cast
+	m_ostr->put(static_cast<t_vm_byte>(OpCode::NOP));
+
+	t_astret term2 = ast->GetTerm2()->accept(this);
+	std::streampos term2_pos = m_ostr->tellp();
+
+	t_astret common_type = term1;
+
+	// cast if needed
+	auto [first_ty, second_ty, res_ty] = GetCastSymType(term1, term2);
+	if(first_ty)
+		CastTo(first_ty, term1_pos);
+	if(second_ty)
+		CastTo(second_ty, term2_pos);
+	common_type = res_ty;
 
 	switch(ast->GetOp())
 	{
@@ -397,7 +412,7 @@ t_astret Codegen::visit(const ASTComp* ast)
 			break;
 	}
 
-	return nullptr;
+	return common_type;
 }
 
 

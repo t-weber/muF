@@ -107,12 +107,12 @@ Lexer::GetMatchingTokens(const std::string& str, std::size_t line)
 		matches.emplace_back(std::make_tuple(
 			static_cast<t_symbol_id>(Token::WHILE), str, line));
 	}
-	else if(str == "break")
+	else if(str == "break" || str == "exit")
 	{
 		matches.emplace_back(std::make_tuple(
 			static_cast<t_symbol_id>(Token::BREAK), str, line));
 	}
-	else if(str == "next")
+	else if(str == "next" || str == "cycle")
 	{
 		matches.emplace_back(std::make_tuple(
 			static_cast<t_symbol_id>(Token::NEXT), str, line));
@@ -142,15 +142,35 @@ Lexer::GetMatchingTokens(const std::string& str, std::size_t line)
 		matches.emplace_back(std::make_tuple(
 			static_cast<t_symbol_id>(Token::END), str, line));
 	}
+	else if(str == "recursive")
+	{
+		matches.emplace_back(std::make_tuple(
+			static_cast<t_symbol_id>(Token::RECURSIVE), str, line));
+	}
 	else if(str == "function")
 	{
 		matches.emplace_back(std::make_tuple(
 			static_cast<t_symbol_id>(Token::FUNC), str, line));
 	}
-	else if(str == "procedure")
+	else if(str == "procedure" || str == "subroutine")
 	{
 		matches.emplace_back(std::make_tuple(
 			static_cast<t_symbol_id>(Token::PROC), str, line));
+	}
+	else if(str == "intent")
+	{
+		matches.emplace_back(std::make_tuple(
+			static_cast<t_symbol_id>(Token::INTENT), str, line));
+	}
+	else if(str == "in")
+	{
+		matches.emplace_back(std::make_tuple(
+			static_cast<t_symbol_id>(Token::IN), str, line));
+	}
+	else if(str == "out")
+	{
+		matches.emplace_back(std::make_tuple(
+			static_cast<t_symbol_id>(Token::OUT), str, line));
 	}
 	else if(str == "return")
 	{

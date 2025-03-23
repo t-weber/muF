@@ -72,9 +72,10 @@ struct Symbol
 	// for compound type
 	std::vector<SymbolPtr> elems{};
 
-	bool is_tmp{false};                 // temporary or declared variable?
-	bool is_external{false};            // link to external variable or function?
-	bool is_global{false};              // symbol is global
+	bool is_tmp{ false };               // temporary or declared variable?
+	bool is_external{ false };          // link to external variable or function?
+	bool is_recursive{ false };         // recursive function?
+	bool is_global{ false };            // symbol is global
 	std::optional<t_int> addr{};        // optional address of function or variable
 	std::optional<t_int> end_addr{};    // optional address of function
 
@@ -116,7 +117,7 @@ public:
 		const std::vector<SymbolType>& argtypes,
 		const std::vector<std::size_t>* retdims = nullptr,
 		const std::vector<SymbolType>* multirettypes = nullptr,
-		bool is_external = false);
+		bool is_external = false, bool is_recursive = true);
 
 	SymbolPtr AddExtFunc(const t_str& scope,
 		const t_str& name, const t_str& extfunc_name,

@@ -75,7 +75,7 @@ SymbolPtr SymTab::AddFunc(const t_str& scope,
 	const std::vector<SymbolType>& argtypes,
 	const std::vector<std::size_t>* retdims,
 	const std::vector<SymbolType>* rettypes,
-	bool is_external)
+	bool is_external, bool is_recursive)
 {
 	SymbolPtr sym = std::make_shared<Symbol>();
 
@@ -86,6 +86,7 @@ SymbolPtr SymTab::AddFunc(const t_str& scope,
 	sym->argty = argtypes;
 	sym->retty = retty;
 	sym->is_external = is_external;
+	sym->is_recursive = is_recursive;
 	sym->refcnt = 0;
 
 	if(retdims)
@@ -182,6 +183,8 @@ std::ostream& operator<<(std::ostream& ostr, const SymTab& tab)
 		std::string ty = Symbol::get_type_name(sym.ty);
 		if(sym.is_external)
 			ty += " (ext)";
+		if(sym.is_recursive)
+			ty += " (rec)";
 		if(sym.is_global)
 			ty += " (global)";
 		if(sym.is_arg)
