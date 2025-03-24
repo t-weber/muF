@@ -8,13 +8,14 @@
 !
 recursive function fac_rec(n) result(res)
 	integer, intent(in) :: n
-	integer :: res = 1
+	integer :: res
 
 	if(n <= 1) then
+		res = 1
 		return
 	end if
 
-	res = n*fac(n - 1)
+	res = n * fac(n - 1)
 end function
 
 
@@ -23,8 +24,9 @@ end function
 !
 function fac(n) result(res)
 	integer, intent(in) :: n
-	integer :: res = 1
+	integer :: res
 
+	res = 1
 	if(n <= 1) then
 		return
 	end if
@@ -54,9 +56,10 @@ end function
 !
 function var_norep(n, k) result(res)
 	integer, intent(in) :: n, k
-	integer :: res = 0
+	integer :: res
 
 	if(k > n) then
+		res = 0
 		return
 	end if
 
@@ -82,9 +85,10 @@ end function
 !
 function comb_norep(n, k) result(res)
 	integer, intent(in) :: n, k
-	integer :: res = 0
+	integer :: res
 
 	if(k > n) then
+		res = 0
 		return
 	end if
 
@@ -105,9 +109,11 @@ end function
 
 
 program comb
+	integer :: n, k
+
 	do while(.true.)
-		integer :: n = getint("n = ")
-		integer :: k = getint("k = ")
+		n = getint("n = ")
+		k = getint("k = ")
 		if(n < 0 .or. k < 0) then
 			exit
 		end if
