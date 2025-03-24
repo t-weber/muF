@@ -29,8 +29,10 @@ end function
 
 
 program fibotest
+	integer :: n
+
 	do while(.true.)
-		integer :: n = getint("n = ")
+		n = getint("n = ")
 		if(n < 0) then
 			exit
 		end if
