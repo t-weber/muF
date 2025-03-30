@@ -29,18 +29,14 @@ enum class SymbolType
 {
 	VOID,
 
-	REAL,
-	INT,
-	CPLX,
-	QUAT,
+	REAL, INT,
+	CPLX, QUAT,
 
 	BOOL,
 	STRING,
 
-	REAL_ARRAY,
-	INT_ARRAY,
-	CPLX_ARRAY,
-	QUAT_ARRAY,
+	REAL_ARRAY, INT_ARRAY,
+	CPLX_ARRAY, QUAT_ARRAY,
 
 	COMP,     // compound
 	FUNC,     // function pointer
@@ -69,7 +65,7 @@ struct Symbol
 	SymbolType retty = SymbolType::VOID;
 	std::vector<std::size_t> retdims{ 1 };
 
-	// for compound type
+	// for compound type or function return type
 	std::vector<SymbolPtr> elems{};
 
 	bool is_tmp{ false };               // temporary or declared variable?
@@ -97,6 +93,7 @@ struct Symbol
 	static t_str get_type_name(SymbolType ty);
 
 	static const t_str& get_scopenameseparator();
+	static t_str remove_scope(const t_str& name);
 };
 
 
@@ -110,7 +107,7 @@ public:
 	SymbolPtr AddSymbol(const t_str& scope,
 		const t_str& name, SymbolType ty,
 		const std::vector<std::size_t>& dims,
-		bool is_temp = false);
+		bool add_to_table = true);
 
 	SymbolPtr AddFunc(const t_str& scope,
 		const t_str& name, SymbolType retty,
@@ -133,11 +130,14 @@ public:
 
 	const std::unordered_map<t_str, SymbolPtr>& GetSymbols() const;
 
+	void SetDebug(bool b) { m_debug = b; }
+
 	friend std::ostream& operator<<(std::ostream& ostr, const SymTab& tab);
 
 
 private:
-	std::unordered_map<t_str, SymbolPtr> m_syms{};
+	std::unordered_map<t_str, SymbolPtr> m_syms{ };
+	bool m_debug{ false };
 };
 
 

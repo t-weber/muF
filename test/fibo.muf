@@ -30,6 +30,7 @@ end function
 
 program fibotest
 	integer :: n
+	integer :: fibo, fac  ! optional re-declaration of functions
 
 	do while(.true.)
 		n = getint("n = ")

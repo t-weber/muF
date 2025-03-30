@@ -84,6 +84,8 @@ protected:
 	void CreateLoops();
 	void CreateFunctions();
 
+	bool CheckSymbolForConflicts(SymbolPtr sym) const;
+
 
 private:
 #ifdef CREATE_PRODUCTION_RULES

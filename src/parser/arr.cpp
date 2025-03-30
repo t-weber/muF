@@ -27,7 +27,7 @@ void Grammar::CreateArrays()
 		auto exprs = std::dynamic_pointer_cast<ASTExprList>(args[1]);
 
 		// set array symbol type from context (if available)
-		SymbolType ctx_sym_ty = m_context.GetSymType();
+		SymbolType ctx_sym_ty = GetContext().GetSymType();
 		if(ctx_sym_ty == SymbolType::REAL_ARRAY ||
 			ctx_sym_ty == SymbolType::INT_ARRAY ||
 			ctx_sym_ty == SymbolType::CPLX_ARRAY)

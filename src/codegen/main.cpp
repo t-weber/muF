@@ -133,6 +133,7 @@ int main(int argc, char** argv)
 
 		Grammar grammar;
 		ParserContext& ctx = grammar.GetContext();
+		ctx.SetDebug(debug);
 		grammar.CreateGrammar();
 		const auto& rules = grammar.GetSemanticRules();
 

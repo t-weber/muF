@@ -11,19 +11,23 @@
 /**
  * find the symbol with a specific name in the symbol table
  */
-t_astret Codegen::GetSym(const t_str& name) const
+t_astret Codegen::GetSym(const t_str& name, bool name_already_scoped) const
 {
 	t_str scoped_name;
-	for(const t_str& scope : m_curscope)
-		scoped_name += scope + Symbol::get_scopenameseparator();
-	scoped_name += name;
+	if(!name_already_scoped)
+	{
+		for(const t_str& scope : m_curscope)
+			scoped_name += scope + Symbol::get_scopenameseparator();
+		scoped_name += name;
+	}
 
 	SymbolPtr sym;
 	if(m_syms)
 	{
-		sym = m_syms->FindSymbol(scoped_name);
+		if(scoped_name != "")
+			sym = m_syms->FindSymbol(scoped_name);
 
-		// try global scope instead
+		// try global scope (or already scoped names)
 		if(!sym)
 			sym = m_syms->FindSymbol(name);
 	}
@@ -114,9 +118,32 @@ t_astret Codegen::visit(const ASTVarDecl* ast)
 	for(const auto& varname : ast->GetVariables())
 	{
 		// get variable from symbol table and assign an address
-		t_astret sym = GetSym(varname);
+		t_astret sym = GetSym(varname, true);
 		if(!sym)
 			throw std::runtime_error("ASTVarDecl: Variable \"" + varname + "\" is not in symbol table.");
+
+		// --------------------------------------------------------------------
+		// NOTE: not actually needed, because this is already handled in Grammar::CheckSymbolForConflicts
+		/*// don't declare local variables having the same name as a global function
+		t_astret globsym = m_syms->FindSymbol(Symbol::remove_scope(varname));
+		//if(globsym)
+		//	std::cout << varname << ": " << Symbol::get_type_name(globsym->ty) << std::endl;
+		if(globsym && globsym->ty == SymbolType::FUNC)
+		{
+			// but still check if the declaration corresponds to the function return type
+			if(globsym->retty != sym->ty)
+			{
+				std::ostringstream ostr;
+				ostr << "ASTVarDecl: Function \"" << varname << "\" declaration mismatch: "
+					<< "Return type is " << Symbol::get_type_name(globsym->retty)
+					<< ", but redeclaration has type " << Symbol::get_type_name(sym->ty)
+					<< ".";
+				//throw std::runtime_error(ostr.str());
+				std::cout << "Warning: " << ostr.str() << "." << std::endl;
+			}
+			continue;
+		}*/
+		// --------------------------------------------------------------------
 
 		if(sym->is_arg)
 			continue;  // arguments already declared with function

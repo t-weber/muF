@@ -21,38 +21,62 @@ void Grammar::CreateFunctions()
 #endif
 #ifdef CREATE_SEMANTIC_RULES
 	// fill in missing type infos for arguments using symbol table
-	auto update_func_arg_types = [this](std::shared_ptr<ASTInternalArgNames> args)
+	auto update_func_arg_types = [this](std::shared_ptr<ASTInternalArgNames> args, const t_str& func_name)
 	{
+		SymbolPtr func_sym = GetContext().FindGlobalSymbol(func_name);
+		if(!func_sym)
+			throw std::runtime_error("Unknown function \"" + func_name + "\".");
+		if(func_sym->argty.size() != args->GetNumArgs())
+			throw std::runtime_error("Mismatch in number of arguments for function \"" + func_name + "\".");
+
 		for(std::size_t idx = 0; idx < args->GetNumArgs(); ++idx)
 		{
 			const t_str& ident = args->GetArgIdent(idx);
-			const SymbolPtr sym = m_context.FindScopedSymbol(ident);
+			const SymbolPtr sym = GetContext().FindScopedSymbol(ident);
 			if(!sym || !sym->is_arg)
 			{
 				std::cerr << "Cannot find argument symbol \""
 					<< ident << "\"." << std::endl;
 				return;
 			}
+
 			args->SetArgType(idx, sym->ty);
 			args->SetArgDims(idx, sym->dims);
+
+			func_sym->argty[sym->argidx] = sym->ty;
+			// TODO: arg dims
+
+			//std::cout << "arg " << sym->name << " type: " << Symbol::get_type_name(sym->ty) << std::endl;
 		}
 	};
 
 	// fill in missing type infos for return values using symbol table
-	auto update_func_ret_types = [this](std::shared_ptr<ASTInternalArgNames> args)
+	auto update_func_ret_types = [this](std::shared_ptr<ASTInternalArgNames> args, const t_str& func_name)
 	{
+		SymbolPtr func_sym = GetContext().FindGlobalSymbol(func_name);
+		if(!func_sym)
+			throw std::runtime_error("Unknown function \"" + func_name + "\".");
+		if(func_sym->elems.size() != args->GetNumArgs())
+			throw std::runtime_error("Mismatch in number of return values for function \"" + func_name + "\".");
+
 		for(std::size_t idx = 0; idx < args->GetNumArgs(); ++idx)
 		{
 			const t_str& ident = args->GetArgIdent(idx);
-			const SymbolPtr sym = m_context.FindScopedSymbol(ident);
+			const SymbolPtr sym = GetContext().FindScopedSymbol(ident);
 			if(!sym || !sym->is_ret)
 			{
 				std::cerr << "Cannot find return symbol \""
 					<< ident << "\"." << std::endl;
 				return;
 			}
+
 			args->SetArgType(idx, sym->ty);
 			args->SetArgDims(idx, sym->dims);
+
+			func_sym->elems[sym->retidx]->ty = sym->ty;
+			func_sym->elems[sym->retidx]->dims = sym->dims;
+
+			//std::cout << "ret " << sym->name << " type: " << Symbol::get_type_name(sym->ty) << std::endl;
 		}
 	};
 
@@ -63,7 +87,7 @@ void Grammar::CreateFunctions()
 		if(args.size() == 3)
 		{
 			auto funcname = std::dynamic_pointer_cast<ASTStrConst>(args[2]);
-			m_context.EnterScope(funcname->GetVal());
+			GetContext().EnterScope(funcname->GetVal());
 			//std::cout << "Entering function \"" << funcname->GetVal() << "\" scope." << std::endl;
 		}
 		else if(args.size() == 5)
@@ -76,8 +100,7 @@ void Grammar::CreateFunctions()
 			std::size_t argidx = 0;
 			for(const auto& arg : funcargs->GetArgs())
 			{
-				SymbolPtr sym =
-					m_context.AddScopedSymbol(std::get<0>(arg));
+				SymbolPtr sym = GetContext().AddScopedSymbol(std::get<0>(arg));
 				sym->is_arg = true;
 				sym->argidx = argidx;
 				//sym->ty = std::get<1>(arg);
@@ -86,8 +109,8 @@ void Grammar::CreateFunctions()
 			}
 
 			// register the function in the symbol map
-			m_context.GetSymbols().AddFunc(
-				m_context.GetScopeName(1), funcname->GetVal(),
+			GetContext().GetSymbols().AddFunc(
+				GetContext().GetScopeName(1), funcname->GetVal(),
 				SymbolType::VOID /*ret type*/, funcargs->GetArgTypes() /*arg types*/,
 				nullptr /*ret dims*/, nullptr /*multi ret types*/,
 				false /*external*/, options->GetRecursive());
@@ -102,11 +125,11 @@ void Grammar::CreateFunctions()
 		auto funcblock = std::dynamic_pointer_cast<ASTStmts>(args[6]);
 
 		// fill in missing type infos for arguments
-		update_func_arg_types(funcargs);
+		update_func_arg_types(funcargs, GetContext().GetScopeName(1) + funcname->GetVal());
 
 		auto func = std::make_shared<ASTFunc>(funcname->GetVal(), funcargs, funcblock);
 		func->SetRecursive(options->GetRecursive());
-		m_context.LeaveScope(funcname->GetVal());
+		GetContext().LeaveScope(funcname->GetVal());
 		return func;
 	}));
 #endif
@@ -127,7 +150,7 @@ void Grammar::CreateFunctions()
 		if(args.size() == 6)  // keyword_results is the first unique partial match
 		{
 			auto funcname = std::dynamic_pointer_cast<ASTStrConst>(args[2]);
-			m_context.EnterScope(funcname->GetVal());
+			GetContext().EnterScope(funcname->GetVal());
 			//std::cout << "Entering function \"" << funcname->GetVal() << "\" scope." << std::endl;
 		}
 		else if(args.size() == 9)
@@ -141,8 +164,7 @@ void Grammar::CreateFunctions()
 			std::size_t argidx = 0;
 			for(const auto& arg : funcargs->GetArgs())
 			{
-				SymbolPtr sym =
-					m_context.AddScopedSymbol(std::get<0>(arg));
+				SymbolPtr sym = GetContext().AddScopedSymbol(std::get<0>(arg));
 				sym->is_arg = true;
 				sym->argidx = argidx;
 				//sym->ty = std::get<1>(arg);
@@ -154,8 +176,7 @@ void Grammar::CreateFunctions()
 			std::size_t retidx = 0;
 			for(const auto& arg : retargs->GetArgs())
 			{
-				SymbolPtr sym =
-					m_context.AddScopedSymbol(std::get<0>(arg));
+				SymbolPtr sym = GetContext().AddScopedSymbol(std::get<0>(arg));
 				sym->is_ret = true;
 				sym->retidx = retidx;
 				//sym->ty = std::get<1>(arg);
@@ -165,8 +186,8 @@ void Grammar::CreateFunctions()
 
 			// register the function in the symbol map
 			std::vector<SymbolType> multirettypes = retargs->GetArgTypes();
-			m_context.GetSymbols().AddFunc(
-				m_context.GetScopeName(1), funcname->GetVal(),
+			GetContext().GetSymbols().AddFunc(
+				GetContext().GetScopeName(1), funcname->GetVal(),
 				SymbolType::COMP /*ret type*/, funcargs->GetArgTypes() /*arg types*/,
 				nullptr /*ret dims*/, &multirettypes /*multi ret types*/,
 				false /*external*/, options->GetRecursive());
@@ -182,13 +203,13 @@ void Grammar::CreateFunctions()
 		auto funcblock = std::dynamic_pointer_cast<ASTStmts>(args[10]);
 
 		// fill in missing type infos for arguments and return variables
-		update_func_arg_types(funcargs);
-		update_func_ret_types(retargs);
+		update_func_arg_types(funcargs, GetContext().GetScopeName(1) + funcname->GetVal());
+		update_func_ret_types(retargs, GetContext().GetScopeName(1) + funcname->GetVal());
 
 		auto func = std::make_shared<ASTFunc>(
 			funcname->GetVal(), funcargs, funcblock, retargs);
 		func->SetRecursive(options->GetRecursive());
-		m_context.LeaveScope(funcname->GetVal());
+		GetContext().LeaveScope(funcname->GetVal());
 		return func;
 	}));
 #endif
@@ -300,7 +321,7 @@ void Grammar::CreateFunctions()
 
 		auto identnode = std::dynamic_pointer_cast<ASTStrConst>(args[0]);
 		const t_str& funcname = identnode->GetVal();
-		const SymbolPtr sym = m_context.GetSymbols().FindSymbol(funcname);
+		const SymbolPtr sym = GetContext().GetSymbols().FindSymbol(funcname);
 
 		if(sym && sym->ty == SymbolType::FUNC)
 		{
@@ -331,7 +352,7 @@ void Grammar::CreateFunctions()
 
 		auto identnode = std::dynamic_pointer_cast<ASTStrConst>(args[0]);
 		const t_str& funcname = identnode->GetVal();
-		const SymbolPtr sym = m_context.GetSymbols().FindSymbol(funcname);
+		const SymbolPtr sym = GetContext().GetSymbols().FindSymbol(funcname);
 
 		if(sym && sym->ty == SymbolType::FUNC)
 		{

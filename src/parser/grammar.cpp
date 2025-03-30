@@ -172,7 +172,7 @@ void Grammar::CreateGrammar()
 		if(!full_match)
 			return nullptr;
 		auto stmts = std::dynamic_pointer_cast<ASTStmts>(args[0]);
-		m_context.SetStatements(stmts);
+		GetContext().SetStatements(stmts);
 		return stmts;
 	}));
 #endif
@@ -245,7 +245,7 @@ void Grammar::CreateGrammar()
 		if(!full_match)
 			return nullptr;
 		auto stmts = std::dynamic_pointer_cast<ASTStmts>(args[2]);
-		//m_context.SetStatements(stmts);
+		//GetContext().SetStatements(stmts);
 		return stmts;
 	}));
 #endif

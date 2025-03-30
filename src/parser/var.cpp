@@ -8,6 +8,39 @@
 #include "grammar.h"
 
 
+bool Grammar::CheckSymbolForConflicts(SymbolPtr sym) const
+{
+	// symbols marked as temporary have been singled out
+	if(!sym->is_tmp)
+		return false;  // no conflicts
+
+	// don't declare local variables having the same name as a global function
+	t_astret globsym = GetContext().GetSymbols().FindSymbol(sym->name);
+	//if(globsym)
+	//	std::cout << sym->name << ": " << Symbol::get_type_name(globsym->ty) << std::endl;
+	if(globsym && globsym->ty == SymbolType::FUNC)
+	{
+		// but still check if the declaration corresponds to the function return type
+		SymbolType func_ty = globsym->retty;
+		// use first type for compound return types
+		if(globsym->retty == SymbolType::COMP && globsym->elems.size() > 0)
+			func_ty = globsym->elems[0]->ty;
+
+		if(func_ty != sym->ty)
+		{
+			std::ostringstream ostr;
+			ostr << "Function \"" << globsym->name << "\" declaration mismatch: "
+				<< "Return type is " << Symbol::get_type_name(func_ty)
+				<< ", but redeclaration has type " << Symbol::get_type_name(sym->ty)
+				<< ".";
+			throw std::runtime_error(ostr.str());
+		}
+	}
+
+	return true;  // has conflicts
+}
+
+
 void Grammar::CreateVariables()
 {
 	// --------------------------------------------------------------------------------
@@ -28,7 +61,11 @@ void Grammar::CreateVariables()
 		const t_str& name = varident->GetVal();
 
 		auto lst = std::dynamic_pointer_cast<ASTVarDecl>(args[2]);
-		lst->AddVariable(m_context.AddScopedSymbol(name)->scoped_name);
+		if(SymbolPtr sym = GetContext().AddScopedSymbol(name); sym)
+		{
+			if(!CheckSymbolForConflicts(sym))
+				lst->AddVariable(sym->scoped_name);
+		}
 		return lst;
 	}));
 #endif
@@ -49,7 +86,11 @@ void Grammar::CreateVariables()
 		const t_str& name = ident->GetVal();
 
 		auto lst = std::make_shared<ASTVarDecl>();
-		lst->AddVariable(m_context.AddScopedSymbol(name)->scoped_name);
+		if(SymbolPtr sym = GetContext().AddScopedSymbol(name); sym)
+		{
+			if(!CheckSymbolForConflicts(sym))
+				lst->AddVariable(sym->scoped_name);
+		}
 		return lst;
 	}));
 #endif
@@ -72,7 +113,11 @@ void Grammar::CreateVariables()
 		auto term = std::dynamic_pointer_cast<AST>(args[2]);
 
 		auto lst = std::make_shared<ASTVarDecl>(std::make_shared<ASTAssign>(name, term));
-		lst->AddVariable(m_context.AddScopedSymbol(name)->scoped_name);
+		if(SymbolPtr sym = GetContext().AddScopedSymbol(name); sym)
+		{
+			if(!CheckSymbolForConflicts(sym))
+				lst->AddVariable(sym->scoped_name);
+		}
 		return lst;
 	}));
 #endif
@@ -137,7 +182,7 @@ void Grammar::CreateVariables()
 	[this](bool full_match, const lalr1::t_semanticargs& args, [[maybe_unused]] lalr1::t_astbaseptr retval) -> lalr1::t_astbaseptr
 	{
 		if(args.size() == 1)
-			m_context.SetSymType(SymbolType::INT);
+			GetContext().SetSymType(SymbolType::INT);
 
 		if(!full_match)
 			return nullptr;
@@ -166,7 +211,7 @@ void Grammar::CreateVariables()
 	[this](bool full_match, const lalr1::t_semanticargs& args, [[maybe_unused]] lalr1::t_astbaseptr retval) -> lalr1::t_astbaseptr
 	{
 		if(args.size() == 1)
-			m_context.SetSymType(SymbolType::REAL);
+			GetContext().SetSymType(SymbolType::REAL);
 
 		if(!full_match)
 			return nullptr;
@@ -195,7 +240,7 @@ void Grammar::CreateVariables()
 	[this](bool full_match, const lalr1::t_semanticargs& args, [[maybe_unused]] lalr1::t_astbaseptr retval) -> lalr1::t_astbaseptr
 	{
 		if(args.size() == 1)
-			m_context.SetSymType(SymbolType::CPLX);
+			GetContext().SetSymType(SymbolType::CPLX);
 
 		if(!full_match)
 			return nullptr;
@@ -224,7 +269,7 @@ void Grammar::CreateVariables()
 	[this](bool full_match, const lalr1::t_semanticargs& args, [[maybe_unused]] lalr1::t_astbaseptr retval) -> lalr1::t_astbaseptr
 	{
 		if(args.size() == 1)
-			m_context.SetSymType(SymbolType::QUAT);
+			GetContext().SetSymType(SymbolType::QUAT);
 
 		if(!full_match)
 			return nullptr;
@@ -253,7 +298,7 @@ void Grammar::CreateVariables()
 	[this](bool full_match, const lalr1::t_semanticargs& args, [[maybe_unused]] lalr1::t_astbaseptr retval) -> lalr1::t_astbaseptr
 	{
 		if(args.size() == 1)
-			m_context.SetSymType(SymbolType::BOOL);
+			GetContext().SetSymType(SymbolType::BOOL);
 
 		if(!full_match)
 			return nullptr;
@@ -291,8 +336,8 @@ void Grammar::CreateVariables()
 			for(t_int dim : dim_node->GetValues())
 				dims.push_back(static_cast<std::size_t>(dim));
 
-			m_context.SetSymType(SymbolType::INT_ARRAY);
-			m_context.SetSymDims(dims);
+			GetContext().SetSymType(SymbolType::INT_ARRAY);
+			GetContext().SetSymDims(dims);
 		}
 
 		if(!full_match)
@@ -332,8 +377,8 @@ void Grammar::CreateVariables()
 				dims.push_back(static_cast<std::size_t>(dim));
 
 
-			m_context.SetSymType(SymbolType::REAL_ARRAY);
-			m_context.SetSymDims(dims);
+			GetContext().SetSymType(SymbolType::REAL_ARRAY);
+			GetContext().SetSymDims(dims);
 		}
 
 		if(!full_match)
@@ -372,8 +417,8 @@ void Grammar::CreateVariables()
 			for(t_int dim : dim_node->GetValues())
 				dims.push_back(static_cast<std::size_t>(dim));
 
-			m_context.SetSymType(SymbolType::CPLX_ARRAY);
-			m_context.SetSymDims(dims);
+			GetContext().SetSymType(SymbolType::CPLX_ARRAY);
+			GetContext().SetSymDims(dims);
 		}
 
 		if(!full_match)
@@ -412,8 +457,8 @@ void Grammar::CreateVariables()
 			for(t_int dim : dim_node->GetValues())
 				dims.push_back(static_cast<std::size_t>(dim));
 
-			m_context.SetSymType(SymbolType::QUAT_ARRAY);
-			m_context.SetSymDims(dims);
+			GetContext().SetSymType(SymbolType::QUAT_ARRAY);
+			GetContext().SetSymDims(dims);
 		}
 
 		if(!full_match)
@@ -444,8 +489,8 @@ void Grammar::CreateVariables()
 	{
 		if(args.size() == 3)
 		{
-			m_context.SetSymType(SymbolType::STRING);
-			m_context.SetSymDim(default_string_size);
+			GetContext().SetSymType(SymbolType::STRING);
+			GetContext().SetSymDim(default_string_size);
 		}
 
 		if(!full_match)
@@ -481,8 +526,8 @@ void Grammar::CreateVariables()
 			auto dim_node = std::dynamic_pointer_cast<ASTNumConst<t_int>>(args[4]);
 			const t_int dim = dim_node->GetVal();
 
-			m_context.SetSymType(SymbolType::STRING);
-			m_context.SetSymDim(std::size_t(dim));
+			GetContext().SetSymType(SymbolType::STRING);
+			GetContext().SetSymDim(std::size_t(dim));
 		}
 
 		if(!full_match)
@@ -743,7 +788,7 @@ void Grammar::CreateVariables()
 		const t_str& identstr = identnode->GetVal();
 
 		// does the identifier name a constant?
-		auto pair = m_context.GetConst(identstr);
+		auto pair = GetContext().GetConst(identstr);
 		if(std::get<0>(pair))
 		{
 			auto variant = std::get<1>(pair);
@@ -759,11 +804,11 @@ void Grammar::CreateVariables()
 		else
 		{
 			// try finding local symbol
-			SymbolPtr sym = m_context.FindScopedSymbol(identstr);
+			SymbolPtr sym = GetContext().FindScopedSymbol(identstr);
 
 			// try finding global symbol
 			if(!sym)
-				sym = m_context.FindGlobalSymbol(identstr);
+				sym = GetContext().FindGlobalSymbol(identstr);
 
 			if(sym)
 				++sym->refcnt;

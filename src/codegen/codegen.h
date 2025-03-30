@@ -88,7 +88,7 @@ public:
 
 protected:
 	// finds the symbol with a specific name in the symbol table
-	t_astret GetSym(const t_str& name) const;
+	t_astret GetSym(const t_str& name, bool name_already_scoped = false) const;
 
 	// finds the size of the symbol for the stack frame
 	std::size_t GetSymSize(const SymbolPtr sym) const;

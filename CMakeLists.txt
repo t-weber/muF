@@ -53,6 +53,8 @@ add_executable(parsergen
 	src/parser/func.cpp src/parser/loops.cpp
 	src/parser/ops.cpp src/parser/var.cpp
 	src/parser/arr.cpp
+
+	src/common/sym.cpp src/common/sym.h
 )
 
 target_compile_definitions(parsergen

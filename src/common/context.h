@@ -69,6 +69,7 @@ public:
 	ParserContext() = default;
 	virtual ~ParserContext() = default;
 
+
 	virtual std::size_t GetCurLine() const
 	{
 		return 0;
@@ -80,6 +81,7 @@ public:
 	{
 		m_statements = stmts;
 	}
+
 
 	const std::shared_ptr<ASTStmts> GetStatements() const
 	{
@@ -97,6 +99,7 @@ public:
 		return m_curscope;
 	}
 
+
 	/**
 	 * get the currently active scope name, ignoring the last "up" levels
 	 */
@@ -112,10 +115,12 @@ public:
 		return name;
 	}
 
+
 	void EnterScope(const t_str& name)
 	{
 		m_curscope.push_back(name);
 	}
+
 
 	void LeaveScope(const t_str& name)
 	{
@@ -142,6 +147,10 @@ public:
 		// look for existing symbol
 		if(SymbolPtr sym = m_symbols.FindSymbol(scope + name); sym)
 		{
+			// don't modify already registered functions here
+			if(sym->ty == SymbolType::FUNC)
+				return m_symbols.AddSymbol(scope, name, m_symtype, m_symdims, false);
+
 			sym->ty = m_symtype;
 			sym->dims = m_symdims;
 
@@ -176,31 +185,37 @@ public:
 		return m_symbols.AddSymbol(scope, name, m_symtype, m_symdims);
 	}
 
+
 	const SymbolPtr FindScopedSymbol(const t_str& name) const
 	{
 		const t_str scope = GetScopeName();
 		return m_symbols.FindSymbol(scope + name);
 	}
 
+
 	const SymbolPtr FindGlobalSymbol(const t_str& name) const
 	{
 		return m_symbols.FindSymbol(name);
 	}
+
 
 	SymbolPtr FindGlobalSymbol(const t_str& name)
 	{
 		return m_symbols.FindSymbol(name);
 	}
 
+
 	const SymTab& GetSymbols() const
 	{
 		return m_symbols;
 	}
 
+
 	SymTab& GetSymbols()
 	{
 		return m_symbols;
 	}
+
 
 	/**
 	 * type of current symbol
@@ -210,10 +225,12 @@ public:
 		m_symtype = ty;
 	}
 
+
 	SymbolType GetSymType() const
 	{
 		return m_symtype;
 	}
+
 
 	/**
 	 * dimensions of n-d vector symbol
@@ -222,6 +239,7 @@ public:
 	{
 		m_symdims = dims;
 	}
+
 
 	/**
 	 * dimension of 1-d vector symbol
@@ -232,6 +250,7 @@ public:
 		m_symdims[0] = dim;
 	}
 
+
 	std::pair<bool, t_variant> GetConst(const t_str& name) const
 	{
 		auto iter = m_consts.find(name);
@@ -241,6 +260,12 @@ public:
 		return std::make_pair(true, iter->second);
 	}
 	// --------------------------------------------------------------------
+
+
+	void SetDebug(bool b)
+	{
+		m_symbols.SetDebug(b);
+	}
 };
 
 

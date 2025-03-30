@@ -39,6 +39,14 @@ function func5(a) result(x)
 end function
 
 
+function func6(a, b) result(x)
+	integer, dimension(4) :: a, b, x
+
+	print("\nTest 6")
+	x = a + b
+end function
+
+
 program func_test
 	func1()
 
@@ -55,5 +63,9 @@ program func_test
 
 	integer, dimension(4) :: a = [ 1, 2, 3, 4 ]
 	a = func5(a)
+	print("a = " + a)
+
+	integer, dimension(4) :: b = [ 9, 8, 7, 6 ]
+	a = func6(a, b)
 	print("a = " + a)
 end program

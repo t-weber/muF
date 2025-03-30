@@ -49,23 +49,54 @@ const t_str& Symbol::get_scopenameseparator()
 }
 
 
+t_str Symbol::remove_scope(const t_str& name)
+{
+	const t_str& sep = get_scopenameseparator();
+
+	std::size_t pos = name.find(sep);
+	if(pos == std::string::npos)
+		return name;
+
+	return t_str{name.begin() + pos + sep.length(), name.end()};
+}
+
+
 SymbolPtr SymTab::AddSymbol(const t_str& scope,
 	const t_str& name, SymbolType ty,
 	const std::vector<std::size_t>& dims,
-	bool is_temp)
+	bool add_to_table)
 {
-	SymbolPtr sym = std::make_shared<Symbol>();
+	std::string scoped_name = scope + name;
+	if(add_to_table)
+	{
+		if(SymbolPtr othersym = FindSymbol(scoped_name); othersym)
+		{
+			std::cerr << "Symbol \"" << scoped_name
+				<< "\" is already in the symbol table and has type "
+				<< Symbol::get_type_name(othersym->ty)
+				<< "." << std::endl;
+			return nullptr;
+		}
+	}
 
+	SymbolPtr sym = std::make_shared<Symbol>();
 	sym->name = name;
-	sym->scoped_name = scope + name;
+	sym->scoped_name = std::move(scoped_name);
 	sym->scope_name = scope;
 	sym->ty = ty;
 	sym->dims = dims;
 	sym->elems = {};
-	sym->is_tmp = is_temp;
+	sym->is_tmp = !add_to_table;
 	sym->refcnt = 0;
 
-	auto pair = m_syms.insert_or_assign(sym->scoped_name, sym);
+	// add the symbol to the table or keep it as dummy symbol?
+	if(!add_to_table)
+		return sym;
+
+	auto pair = m_syms.insert(std::make_pair(sym->scoped_name, sym));
+	if(m_debug)
+		std::cout << "Added variable \"" << sym->scoped_name << "\" to symbol table." << std::endl;
+
 	return pair.first->second;
 }
 
@@ -77,10 +108,18 @@ SymbolPtr SymTab::AddFunc(const t_str& scope,
 	const std::vector<SymbolType>* rettypes,
 	bool is_external, bool is_recursive)
 {
-	SymbolPtr sym = std::make_shared<Symbol>();
+	std::string scoped_name = scope + name;
+	if(FindSymbol(scoped_name))
+	{
+		std::cerr << "Symbol \"" << scoped_name
+			<< "\" is already in the symbol table."
+			<< std::endl;
+		return nullptr;
+	}
 
+	SymbolPtr sym = std::make_shared<Symbol>();
 	sym->name = name;
-	sym->scoped_name = scope + name;
+	sym->scoped_name = std::move(scoped_name);
 	sym->scope_name = scope;
 	sym->ty = SymbolType::FUNC;
 	sym->argty = argtypes;
@@ -102,7 +141,10 @@ SymbolPtr SymTab::AddFunc(const t_str& scope,
 		}
 	}
 
-	auto pair = m_syms.insert_or_assign(sym->scoped_name, sym);
+	auto pair = m_syms.insert(std::make_pair(sym->scoped_name, sym));
+	if(m_debug)
+		std::cout << "Added function \"" << sym->scoped_name << "\" to symbol table." << std::endl;
+
 	return pair.first->second;
 }
 
@@ -116,6 +158,9 @@ SymbolPtr SymTab::AddExtFunc(const t_str& scope,
 {
 	SymbolPtr sym =
 		AddFunc(scope, name, retty, argtypes, retdims, rettypes, true);
+	if(!sym)
+		return nullptr;
+
 	sym->ext_name = extfunc_name;
 	return sym;
 }
