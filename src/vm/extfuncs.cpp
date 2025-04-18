@@ -22,6 +22,9 @@ VM::t_data VM::CallExternal(const t_str& func_name)
 			<< "." << std::endl;
 	}
 
+	// --------------------------------------------------------------------
+	// mathematical functions
+	// --------------------------------------------------------------------
 	if(func_name == "abs" || func_name == "fabs" || func_name == "norm")
 	{
 		t_data dat = PopData();
@@ -104,17 +107,36 @@ VM::t_data VM::CallExternal(const t_str& func_name)
 	{
 		retval = t_data{std::in_place_index<m_realidx>, m_eps};
 	}
-	else if(func_name == "to_str")
+	// --------------------------------------------------------------------
+
+	// --------------------------------------------------------------------
+	// string functions
+	// --------------------------------------------------------------------
+	else if(func_name == "to_string")
 	{
 		OpCast<m_stridx>();
 	}
-	else if(func_name == "print")
+	else if(func_name == "strlen")
+	{
+		OpCast<m_stridx>();
+		std::string arg = std::get<m_stridx>(PopData());
+
+		retval = t_data{std::in_place_index<m_intidx>, arg.length()};
+	}
+	else if(func_name == "write")
 	{
 		OpCast<m_stridx>();
 		const t_str/*&*/ arg = std::get<m_stridx>(PopData());
 		std::cout << arg << std::endl;
 	}
-	else if(func_name == "getflt")
+	else if(func_name == "write_no_cr")
+	{
+		OpCast<m_stridx>();
+		const t_str/*&*/ arg = std::get<m_stridx>(PopData());
+		std::cout << arg;
+		std::cout.flush();
+	}
+	else if(func_name == "read_real")
 	{
 		OpCast<m_stridx>();
 		const t_str/*&*/ arg = std::get<m_stridx>(PopData());
@@ -126,7 +148,7 @@ VM::t_data VM::CallExternal(const t_str& func_name)
 
 		retval = t_data{std::in_place_index<m_realidx>, val};
 	}
-	else if(func_name == "getint")
+	else if(func_name == "read_integer")
 	{
 		OpCast<m_stridx>();
 		const t_str/*&*/ arg = std::get<m_stridx>(PopData());
@@ -138,6 +160,8 @@ VM::t_data VM::CallExternal(const t_str& func_name)
 
 		retval = t_data{std::in_place_index<m_intidx>, val};
 	}
+	// --------------------------------------------------------------------
+
 	else if(func_name == "set_isr")
 	{
 		OpCast<m_intidx>();

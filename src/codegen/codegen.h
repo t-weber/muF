@@ -12,6 +12,7 @@
 #include "consttab.h"
 #include "vm/opcodes.h"
 
+#include <optional>
 #include <stack>
 #include <unordered_map>
 
@@ -88,7 +89,8 @@ public:
 
 protected:
 	// finds the symbol with a specific name in the symbol table
-	t_astret GetSym(const t_str& name, bool name_already_scoped = false) const;
+	t_astret GetSym(const t_str& name, bool name_already_scoped = false,
+		std::optional<SymbolType> = std::nullopt) const;
 
 	// finds the size of the symbol for the stack frame
 	std::size_t GetSymSize(const SymbolPtr sym) const;

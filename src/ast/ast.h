@@ -383,7 +383,14 @@ public:
 	ASTStmts() : stmts{}
 	{}
 
-	void AddStatement(ASTPtr stmt) { stmts.push_front(stmt); }
+	void AddStatement(ASTPtr stmt, bool back = false)
+	{
+		if(back)
+			stmts.push_back(stmt);
+		else
+			stmts.push_front(stmt);
+	}
+
 	const std::list<ASTPtr>& GetStatementList() const { return stmts; }
 
 	virtual ASTType type() override { return ASTType::Stmts; }
@@ -548,7 +555,18 @@ public:
 	ASTExprList()
 	{}
 
-	void AddExpr(ASTPtr expr) { exprs.push_front(expr); }
+	ASTExprList(ASTPtr expr)
+	{
+		AddExpr(expr);
+	}
+
+	void AddExpr(ASTPtr expr, bool back = false)
+	{
+		if(back)
+			exprs.push_back(expr);
+		else
+			exprs.push_front(expr);
+	}
 
 	const std::list<ASTPtr>& GetList() const { return exprs; }
 	std::list<ASTPtr>& GetList() { return exprs; }

@@ -11,7 +11,8 @@
 /**
  * find the symbol with a specific name in the symbol table
  */
-t_astret Codegen::GetSym(const t_str& name, bool name_already_scoped) const
+t_astret Codegen::GetSym(const t_str& name, bool name_already_scoped,
+	std::optional<SymbolType> ty) const
 {
 	t_str scoped_name;
 	if(!name_already_scoped)
@@ -27,9 +28,19 @@ t_astret Codegen::GetSym(const t_str& name, bool name_already_scoped) const
 		if(scoped_name != "")
 			sym = m_syms->FindSymbol(scoped_name);
 
+		// optionally ensure symbol type
+		if(sym && ty && sym->ty != *ty)
+			sym = nullptr;
+
 		// try global scope (or already scoped names)
 		if(!sym)
+		{
 			sym = m_syms->FindSymbol(name);
+
+			// optionally ensure symbol type
+			if(sym && ty && sym->ty != *ty)
+				sym = nullptr;
+		}
 	}
 
 	if(!sym)

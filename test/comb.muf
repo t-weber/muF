@@ -15,7 +15,7 @@ recursive function fac_rec(n) result(res)
 		return
 	end if
 
-	res = n * fac(n - 1)
+	res = n * fac_rec(n - 1)
 end function
 
 
@@ -25,13 +25,13 @@ end function
 function fac(n) result(res)
 	integer, intent(in) :: n
 	integer :: res
+	integer :: i = 1
 
 	res = 1
 	if(n <= 1) then
 		return
 	end if
 
-	integer :: i = 1
 	do i = 2, n
 		res = res * i
 	end do
@@ -45,6 +45,7 @@ end function
 function binom(n, k) result(res)
 	integer, intent(in) :: n, k
 	integer :: res
+	integer :: fac
 
 	res = fac(n) / (fac(n - k) * fac(k))
 end function
@@ -57,6 +58,7 @@ end function
 function var_norep(n, k) result(res)
 	integer, intent(in) :: n, k
 	integer :: res
+	integer :: fac
 
 	if(k > n) then
 		res = 0
@@ -86,6 +88,7 @@ end function
 function comb_norep(n, k) result(res)
 	integer, intent(in) :: n, k
 	integer :: res
+	integer :: binom
 
 	if(k > n) then
 		res = 0
@@ -103,6 +106,7 @@ end function
 function comb_rep(n, k) result(res)
 	integer, intent(in) :: n, k
 	integer :: res
+	integer :: binom
 
 	res = binom(n + k - 1, k)
 end function
@@ -110,20 +114,23 @@ end function
 
 program comb
 	integer :: n, k
+	integer :: binom, var_norep, var_rep, comb_norep, comb_rep
 
 	do while(.true.)
-		n = getint("n = ")
-		k = getint("k = ")
+		!n = read_integer("n = ")
+		!k = read_integer("k = ")
+		print*, "n, k = "
+		read*, n, k
 		if(n < 0 .or. k < 0) then
 			exit
 		end if
 
-		!print("B(" + n + ", " + k + ") = " + binom(n, k))
-		print("Number of ways to select: ")
-		print("\t- a " + k + "-tuple from a " + n + "-set without repetitions: " + var_norep(n, k))
-		print("\t- a " + k + "-tuple from a " + n + "-set with    repetitions: " + var_rep(n, k))
-		print("\t- a " + k + "-set   from a " + n + "-set without repetitions: " + comb_norep(n, k))
-		print("\t- a " + k + "-set   from a " + n + "-set with    repetitions: " + comb_rep(n, k))
-		print("")
+		!print*, "B(", n, ", ", k, ") = ", binom(n, k)
+		print*, "Number of ways to select: "
+		print*, "\t- a ", k, "-tuple from a ", n, "-set without repetitions: ", var_norep(n, k)
+		print*, "\t- a ", k, "-tuple from a ", n, "-set with    repetitions: ", var_rep(n, k)
+		print*, "\t- a ", k, "-set   from a ", n, "-set without repetitions: ", comb_norep(n, k)
+		print*, "\t- a ", k, "-set   from a ", n, "-set with    repetitions: ", comb_rep(n, k)
+		print*, ""
 	end do
 end program

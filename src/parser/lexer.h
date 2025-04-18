@@ -95,6 +95,10 @@ enum class Token : lalr1::t_symbol_id
 	GOTO        = 8001,
 	COMEFROM    = 8002,
 
+	// input/output
+	READ        = 9000,
+	PRINT       = 9001,
+
 	// partial match (should not be left after final lexer run)
 	PARTIAL     = 9999,
 

@@ -102,6 +102,9 @@ void Grammar::CreateGrammar()
 	keyword_assign = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::ASSIGN), "assign");
 	keyword_dim = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::DIM), "dimension");
 
+	keyword_read = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::READ), "read");
+	keyword_print = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::PRINT), "print");
+
 	keyword_goto = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::GOTO), "goto");
 	keyword_comefrom = std::make_shared<lalr1::Terminal>(static_cast<std::size_t>(Token::COMEFROM), "comefrom");
 
@@ -287,6 +290,93 @@ void Grammar::CreateGrammar()
 		auto exprs = std::make_shared<ASTExprList>();
 		exprs->AddExpr(expr);
 		return exprs;
+	}));
+#endif
+	++semanticindex;
+	// --------------------------------------------------------------------------------
+
+	// --------------------------------------------------------------------------------
+	// input/output
+	// --------------------------------------------------------------------------------
+#ifdef CREATE_PRODUCTION_RULES
+	statement->AddRule({ keyword_print, op_mult, comma, expressions }, semanticindex);
+#endif
+#ifdef CREATE_SEMANTIC_RULES
+	rules.emplace(std::make_pair(semanticindex,
+	[](bool full_match, const lalr1::t_semanticargs& args, [[maybe_unused]] lalr1::t_astbaseptr retval) -> lalr1::t_astbaseptr
+	{
+		if(!full_match)
+			return nullptr;
+
+		auto write_stmts = std::make_shared<ASTStmts>();
+
+		// create a list of write statements out of the argument expressions
+		auto exprs = std::dynamic_pointer_cast<ASTExprList>(args[3]);
+		for(ASTPtr expr : exprs->GetList())
+		{
+			auto arg = std::make_shared<ASTExprList>(expr);
+			auto write_stmt = std::make_shared<ASTCall>("write_no_cr", arg);
+			write_stmts->AddStatement(write_stmt, true);
+		}
+
+		// newline
+		auto arg = std::make_shared<ASTExprList>(std::make_shared<ASTStrConst>("\n"));
+		auto write_stmt = std::make_shared<ASTCall>("write_no_cr", arg);
+		write_stmts->AddStatement(write_stmt, true);
+
+		return write_stmts;
+	}));
+#endif
+	++semanticindex;
+
+#ifdef CREATE_PRODUCTION_RULES
+	statement->AddRule({ keyword_read, op_mult, comma, identlist }, semanticindex);
+#endif
+#ifdef CREATE_SEMANTIC_RULES
+	rules.emplace(std::make_pair(semanticindex,
+	[this](bool full_match, const lalr1::t_semanticargs& args, [[maybe_unused]] lalr1::t_astbaseptr retval) -> lalr1::t_astbaseptr
+	{
+		if(!full_match)
+			return nullptr;
+
+		auto read_stmts = std::make_shared<ASTStmts>();
+
+		// create a list of read statements using each identifier
+		auto idents = std::dynamic_pointer_cast<ASTInternalArgNames>(args[3]);
+		for(const auto& [ident, _ty, _dims] : idents->GetArgs())
+		{
+			const SymbolPtr sym = GetContext().FindScopedSymbol(ident);
+			if(!sym)
+			{
+				std::ostringstream ostr;
+				ostr << "Cannot find symbol \"" << ident << "\" in read statement.";
+				throw std::runtime_error(ostr.str());
+			}
+
+			std::shared_ptr<ASTCall> read_stmt;
+			auto arg = std::make_shared<ASTExprList>(std::make_shared<ASTStrConst>(""));
+
+			if(sym->ty == SymbolType::REAL)
+			{
+				read_stmt = std::make_shared<ASTCall>("read_real", arg);
+			}
+			else if(sym->ty == SymbolType::INT)
+			{
+				read_stmt = std::make_shared<ASTCall>("read_integer", arg);
+			}
+			else
+			{
+				std::ostringstream ostr;
+				ostr << "Unsupported type \"" << Symbol::get_type_name(sym->ty)
+					<< "\" for \"" << ident << "\" in read statement.";
+				throw std::runtime_error(ostr.str());
+			}
+
+			auto assign = std::make_shared<ASTAssign>(ident, read_stmt);
+			read_stmts->AddStatement(assign, true);
+		}
+
+		return read_stmts;
 	}));
 #endif
 	++semanticindex;

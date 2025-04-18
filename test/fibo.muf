@@ -33,12 +33,14 @@ program fibotest
 	integer :: fibo, fac  ! optional re-declaration of functions
 
 	do while(.true.)
-		n = getint("n = ")
+		!n = read_integer("n = ")
+		print*, "n = "
+		read*, n
 		if(n < 0) then
 			exit
 		end if
 
-		print(n + "! = " + fac(n))
-		print("fib(" + n + ") = " + fibo(n))
+		print*, n, "! = ", fac(n)
+		print*, "fib(", n, ") = ", fibo(n)
 	end do
 end program

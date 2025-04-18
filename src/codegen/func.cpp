@@ -195,13 +195,19 @@ void Codegen::CallExternal(const t_str& funcname)
 t_astret Codegen::visit(const ASTCall* ast)
 {
 	const t_str* funcname = &ast->GetIdent();
-	t_astret func = GetSym(*funcname);
+	t_astret func = GetSym(*funcname, false, SymbolType::FUNC);
 	if(!func)
 		throw std::runtime_error("ASTCall: Function \"" + (*funcname) + "\" is not in symbol table.");
 
 	t_vm_int num_args = static_cast<t_vm_int>(func->argty.size());
 	if(static_cast<t_vm_int>(ast->GetArgumentList().size()) != num_args)
-		throw std::runtime_error("ASTCall: Invalid number of function parameters for \"" + (*funcname) + "\".");
+	{
+		std::ostringstream ostr;
+		ostr << "ASTCall: Invalid number of function arguments for \"" << (*funcname)
+			<< "\": expected " << num_args
+			<< ", got " << ast->GetArgumentList().size() << ".";
+		throw std::runtime_error(ostr.str());
+	}
 
 	for(auto iter = ast->GetArgumentList().rbegin(); iter != ast->GetArgumentList().rend(); ++iter)
 		(*iter)->accept(this);
